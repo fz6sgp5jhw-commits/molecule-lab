@@ -137,6 +137,11 @@
   .chairinfo th{background:#d4d0c8;font-weight:600}
   .chairinfo td.g{font:18px/1 var(--crt)}
   .chairinfo .ax{color:#a000a0;font-weight:600} .chairinfo .eq{color:#006b80;font-weight:600}
+.howto{margin-top:8px;padding:6px 8px;background:#fff;box-shadow:var(--sunken);font-size:15px}
+  .howto summary{cursor:pointer;font-weight:600}
+  .howto ol{margin:6px 0 2px;padding-left:22px}
+  .howto li{margin:3px 0}
+  .howto li.warn{list-style:'! ';color:var(--warn)}
   .chairinfo .small{color:var(--muted);font-size:13px;margin-top:6px}
   .placeholder{color:#707070;text-align:center;padding:24px;font-size:15px}
   .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#00ff66;font:22px/1.2 var(--crt);pointer-events:none;text-align:center;padding:24px;text-shadow:0 0 6px rgba(0,255,102,.5)}
@@ -206,6 +211,7 @@
         <div class="namebox"><div id="iupac" class="result-name empty">Draw or build a molecule to start.</div>
         <div id="common" class="common"></div></div>
         <div id="verify"></div>
+        <details class="howto" id="explain" hidden><summary>How this name was built</summary><ol id="explainSteps"></ol></details>
         <dl class="facts" id="facts" hidden>
           <dt>Formula</dt><dd id="fFormula"></dd>
           <dt>Molar mass</dt><dd id="fMass"></dd>
@@ -217,7 +223,7 @@
           <button id="copyBtn" type="button" disabled>Copy SMILES</button>
         </div>
         <div class="msg" id="nameItMsg"></div>
-        <div class="note" id="aiNote">Formula, mass, stereo (R/S, E/Z) and SMILES are calculated in the page and are reliable. Names are looked up in <a href="https://pubchem.ncbi.nlm.nih.gov/" target="_blank" rel="noopener">PubChem</a> (NIH) and checked with <a href="https://www.ebi.ac.uk/opsin/" target="_blank" rel="noopener">OPSIN</a>, which reads a name back into a structure. If neither service knows a structure, the app says so rather than guessing.</div>
+        <div class="note" id="aiNote">Formula, mass, stereo (R/S, E/Z) and SMILES are calculated in the page and are reliable. Names are looked up in <a href="https://pubchem.ncbi.nlm.nih.gov/" target="_blank" rel="noopener">PubChem</a> (NIH). For structures PubChem doesn’t have, the app names them with its own IUPAC 2013 rules (chains, rings, benzene and the common functional groups). Every name is checked with <a href="https://www.ebi.ac.uk/opsin/" target="_blank" rel="noopener">OPSIN</a>, which reads it back into a structure. When the app can’t name something, it says so rather than guessing.</div>
       </div>
     </section>
   </div>
@@ -283,6 +289,7 @@
 <script type="module">
 import * as OCL from './openchemlib.js';
 import { findChairRings, buildChairs, toXYZ, flipFrames } from './chair.js';
+import { nameMolecule } from './namer.js';
 
 const $ = (id) => document.getElementById(id);
 const state = { mol: null, smiles: '', style: 'ballstick', seed: 1, nameFor: null, busyToken: 0 };
@@ -471,7 +478,14 @@ function resetName(text){
   el.textContent = text;
   $('common').textContent = '';
   $('verify').innerHTML = '';
+  hideExplain();
   setMsg($('nameItMsg'), '');
+}
+function hideExplain(){ $('explain').hidden = true; $('explainSteps').innerHTML = ''; }
+function showExplain(steps, warnings){
+  const li = (t, cls) => { const x = document.createElement('li'); if (cls) x.className = cls; x.textContent = t; return x; };
+  $('explainSteps').replaceChildren(...steps.map(t => li(t)), ...warnings.map(t => li(t, 'warn')));
+  $('explain').hidden = !steps.length && !warnings.length;
 }
 
 function showName(iupac, common, forId){
@@ -579,6 +593,23 @@ async function buildFromInput(){
 $('nameForm').addEventListener('submit', (e) => { e.preventDefault(); buildFromInput(); });
 
 // ---------- structure -> name ----------
+// Show a name from the built-in IUPAC namer and check it by having OPSIN read it back.
+async function builtInName(r, m, id, why, stale){
+  showName(r.name, '', id);
+  showExplain(r.steps, r.warnings);
+  badge('busy', 'Named by the app’s own IUPAC rules. Double-checking with OPSIN…');
+  let op = null, opErr = null;
+  try { op = await opsin(r.name); } catch (e) { opErr = e; }
+  if (stale()) return;
+  const back = compareMols(m, op && op.mol);
+  const src = `Named by the app’s built-in IUPAC rules (${why})`;
+  if (back === 'same') badge('ok', `✓ ${src}, and checked: OPSIN reads the name back to your structure.`);
+  else if (back === 'stereo') badge('warn', `${src}. OPSIN reads it back with different stereo (R/S or E/Z), so use the calculated stereo below.`);
+  else if (back === 'different') badge('bad', `${src}, but OPSIN reads it as a different structure, so the name is probably wrong. Check it by hand.`);
+  else if (opErr) badge('warn', `${src}. It couldn’t be double-checked because OPSIN couldn’t be reached${navigator.onLine === false ? ' (you’re offline)' : ''}.`);
+  else badge('warn', `${src}. OPSIN couldn’t read this name, so it couldn’t be double-checked.`);
+}
+
 async function nameStructure(opts = {}){
   const m = state.mol; if (!m) return;
   const id = idcode(m);
@@ -586,29 +617,43 @@ async function nameStructure(opts = {}){
   const stale = () => token !== state.busyToken || !state.mol || idcode(state.mol) !== id;
   $('nameItBtn').disabled = true;
   setMsg($('nameItMsg'), '');
-  $('iupac').className = 'result-name empty'; $('iupac').textContent = 'Looking up the name…'; $('common').textContent = ''; $('verify').innerHTML = '';
+  $('iupac').className = 'result-name empty'; $('iupac').textContent = 'Looking up the name…'; $('common').textContent = ''; $('verify').innerHTML = ''; hideExplain();
   try {
-    let rec = await pubchemProps('smiles', m.toIsomericSmiles());
+    let rec = null, pcErr = null, stereoDropped = false;
+    try {
+      rec = await pubchemProps('smiles', m.toIsomericSmiles());
+      if (!rec){
+        // PubChem may know the compound only without the stereo that was drawn.
+        const flat = withoutStereo(m);
+        if (flat && flat !== m.toIsomericSmiles()){
+          rec = await pubchemProps('smiles', flat);
+          stereoDropped = !!rec;
+        }
+      }
+    } catch (e) { pcErr = e; rec = null; }
     if (stale()) return;
-    let stereoDropped = false;
-    if (!rec){
-      // PubChem may know the compound only without the stereo that was drawn.
-      const flat = withoutStereo(m);
-      if (flat && flat !== m.toIsomericSmiles()){
-        rec = await pubchemProps('smiles', flat);
-        if (stale()) return;
-        stereoDropped = !!rec;
+    if (!rec || !rec.iupac || stereoDropped){
+      // PubChem can't give the full name: use the app's own IUPAC rules, then check the result with OPSIN.
+      const why = pcErr ? 'PubChem couldn’t be reached' : stereoDropped ? 'PubChem only has this compound without stereo' : 'PubChem has no record of this structure';
+      const r = nameMolecule(OCL, m);
+      if (r.name){
+        await builtInName(r, m, id, why, stale);
+        return;
       }
-    }
-    if (!rec || !rec.iupac){
-      if (opts.fromOpsin){
-        showName(opts.fromOpsin, '', id);
-        badge('warn', `Built by OPSIN from your name. ${opts.pcDown ? 'PubChem couldn’t be reached' : 'PubChem has no record of this structure'}, so the name shown is the one you typed, not a checked IUPAC name.`);
-      } else {
-        resetName('No name found.');
-        setMsg($('nameItMsg'), 'PubChem has no record of this exact structure, so there’s no name to give. This is common for unusual structures. Check the drawing (charges, hydrogens, stereo) or name it by hand using the rules.', 'warn');
+      if (!stereoDropped){
+        const reason = `The app’s built-in namer doesn’t handle ${r.error} yet.`;
+        if (opts.fromOpsin){
+          showName(opts.fromOpsin, '', id);
+          badge('warn', `Built by OPSIN from your name. ${opts.pcDown || pcErr ? 'PubChem couldn’t be reached' : 'PubChem has no record of this structure'}, so the name shown is the one you typed, not a checked IUPAC name. ${reason}`);
+        } else if (pcErr){
+          resetName('No name found.');
+          setMsg($('nameItMsg'), `${friendly(pcErr, 'PubChem')} ${reason}`);
+        } else {
+          resetName('No name found.');
+          setMsg($('nameItMsg'), `PubChem has no record of this exact structure, and ${reason.charAt(0).toLowerCase() + reason.slice(1)} So there’s no name to give rather than a guess. Check the drawing (charges, hydrogens, stereo) or name it by hand using the rules.`, 'warn');
+        }
+        return;
       }
-      return;
     }
     showName(rec.iupac, rec.title, id);
     const link = `<a href="${pubchemLink(rec.cid)}" target="_blank" rel="noopener">PubChem record</a>`;
