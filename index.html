@@ -122,6 +122,22 @@
   #line2d{height:470px;display:flex;align-items:center;justify-content:center;padding:16px;background:#fff;box-shadow:var(--sunken)}
   #line2d svg{max-width:100%;height:auto;max-height:100%}
   @media (max-width:600px){#line2d{height:360px}}
+  #chairBox{position:relative}
+  #viewerChair{height:420px;position:relative;background:#000;box-shadow:var(--sunken);border:2px solid transparent}
+  @media (max-width:600px){#viewerChair{height:340px}}
+  .chairtag{position:absolute;left:10px;top:8px;color:#00ff66;font:22px/1 var(--crt);pointer-events:none;text-shadow:0 0 6px rgba(0,255,102,.5)}
+  .chairkey{position:absolute;right:10px;top:8px;font:18px/1.15 var(--crt);pointer-events:none;text-align:right}
+  .chairkey .ax{color:#ff66ff} .chairkey .eq{color:#55ffff} .chairkey .rn{color:#ffff55}
+  #ringSel{font:15px var(--ui);background:#fff;border:none;box-shadow:var(--field);padding:5px 6px;min-height:30px;color:#000}
+  .chairinfo{margin-top:8px;padding:8px 10px;background:#fff;box-shadow:var(--sunken);font-size:15px}
+  .chairinfo:empty{display:none}
+  .chairinfo .energy{font:20px/1.15 var(--crt)}
+  .chairinfo table{border-collapse:collapse;width:100%;margin-top:8px;font-size:14px}
+  .chairinfo th,.chairinfo td{text-align:left;padding:3px 6px;border-bottom:1px solid #c0c0c0;vertical-align:top}
+  .chairinfo th{background:#d4d0c8;font-weight:600}
+  .chairinfo td.g{font:18px/1 var(--crt)}
+  .chairinfo .ax{color:#a000a0;font-weight:600} .chairinfo .eq{color:#006b80;font-weight:600}
+  .chairinfo .small{color:var(--muted);font-size:13px;margin-top:6px}
   .placeholder{color:#707070;text-align:center;padding:24px;font-size:15px}
   .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#00ff66;font:22px/1.2 var(--crt);pointer-events:none;text-align:center;padding:24px;text-shadow:0 0 6px rgba(0,255,102,.5)}
   .soon-view{padding:40px 24px;text-align:center;color:var(--muted);background:#fff;box-shadow:var(--sunken);min-height:200px}
@@ -212,6 +228,7 @@
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" data-view="v3d" aria-selected="true">3D model</button>
         <button class="tab" role="tab" data-view="v2d" aria-selected="false">Line drawing</button>
+        <button class="tab" role="tab" data-view="vchair" aria-selected="false">Chair</button>
         <button class="tab" role="tab" data-view="vnewman" aria-selected="false">Newman<span class="soon">· soon</span></button>
         <button class="tab" role="tab" data-view="vfischer" aria-selected="false">Fischer<span class="soon">· soon</span></button>
       </div>
@@ -236,6 +253,21 @@
         <div id="line2d"><div class="placeholder">Your molecule's skeletal (bond-line) drawing will appear here.</div></div>
       </div>
 
+      <div class="view" id="vchair">
+        <div id="chairBox">
+          <div id="viewerChair"><div class="overlay" id="overlayChair">Draw or build a cyclohexane-type ring (six-membered, no double bonds in the ring) to see its chairs.</div></div>
+          <div class="chairtag" id="chairTag"></div>
+          <div class="chairkey" id="chairKey" hidden><span class="ax">ax = axial</span><br><span class="eq">eq = equatorial</span><br><span class="rn">1–6 ring atoms</span></div>
+        </div>
+        <div class="controls">
+          <select id="ringSel" hidden aria-label="Which ring"></select>
+          <button class="primary" id="flipBtn" type="button" disabled title="Flip to the other chair: every axial group becomes equatorial and vice versa">⟲ Ring flip</button>
+          <label class="toggle"><input type="checkbox" id="chairHLabels"> Label every H</label>
+          <label class="toggle"><input type="checkbox" id="chairSpin"> Spin</label>
+        </div>
+        <div class="chairinfo" id="chairInfo"></div>
+      </div>
+
       <div class="view" id="vnewman">
         <div class="soon-view"><strong>Newman projections are coming in stage 2</strong>Pick a C–C bond, look down it, and rotate the back carbon to compare staggered, eclipsed, gauche and anti.</div>
       </div>
@@ -250,6 +282,7 @@
 <script src="./3Dmol-min.js"></script>
 <script type="module">
 import * as OCL from './openchemlib.js';
+import { findChairRings, buildChairs, toXYZ, flipFrames } from './chair.js';
 
 const $ = (id) => document.getElementById(id);
 const state = { mol: null, smiles: '', style: 'ballstick', seed: 1, nameFor: null, busyToken: 0 };
@@ -278,7 +311,7 @@ function idcode(m, mode){
 }
 
 // ---------- examples ----------
-const examples = ['2-methylbutan-1-ol','(R)-butan-2-ol','cyclohexanone','(E)-but-2-enoic acid','3-ethyl-2-methylhexane','ethyl acetate','aspirin','aldehydo-D-glucose'];
+const examples = ['2-methylbutan-1-ol','(R)-butan-2-ol','cyclohexanone','(E)-but-2-enoic acid','3-ethyl-2-methylhexane','ethyl acetate','aspirin','aldehydo-D-glucose','menthol'];
 for (const ex of examples){
   const b = document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=ex;
   b.onclick = () => { $('nameInput').value = ex; buildFromInput(); };
@@ -470,6 +503,7 @@ function refresh(){
     renderFacts(m);
     render2D(m);
     build3D(m);
+    if (chairTabOpen()) updateChair();
     if (!m) resetName('Draw or build a molecule to start.');
     else if (state.nameFor !== idcode(m)) resetName('Press “Get IUPAC name” to name this structure.');
   }
@@ -629,11 +663,155 @@ $('styleSeg').addEventListener('click', (e) => {
 ['showH','spin','labels'].forEach(id => $(id).addEventListener('change', apply3DStyle));
 $('reconfBtn').onclick = () => { if (!state.mol) return; state.seed++; build3D(state.mol); };
 
+// ---------- chair conformations ----------
+const chair = { key: '', data: null, shown: 0, animating: false, viewer: null, ringIdx: 0, rings: [] };
+const chairTabOpen = () => document.querySelector('#vchair').classList.contains('active');
+function chairViewer(){
+  if (!chair.viewer && window.$3Dmol) chair.viewer = $3Dmol.createViewer($('viewerChair'), { backgroundColor: '#000000', antialias: true });
+  return chair.viewer;
+}
+const AX = '#ff66ff', EQ = '#55ffff', RN = '#ffff55';
+const RT = 0.593; // kcal/mol at 25 °C
+
+function chairMessage(text){
+  const v = chairViewer();
+  if (v){ v.removeAllModels(); v.removeAllLabels(); v.render(); }
+  $('overlayChair').style.display = 'flex'; $('overlayChair').textContent = text;
+  $('chairTag').textContent = ''; $('chairKey').hidden = true; $('chairInfo').innerHTML = ''; $('flipBtn').disabled = true;
+}
+
+function updateChair(){
+  const m = state.mol;
+  if (!m){ chair.key = ''; chair.data = null; $('ringSel').hidden = true; chairMessage('Draw or build a cyclohexane-type ring (six-membered, no double bonds in the ring) to see its chairs.'); return; }
+  const rings = findChairRings(OCL, m);
+  const id = idcode(m);
+  if (id !== chair.molId){ chair.molId = id; chair.ringIdx = 0; }
+  chair.rings = rings;
+  const sel = $('ringSel');
+  sel.hidden = rings.length < 2;
+  sel.innerHTML = rings.map((r, i) => {
+    const els = {}; r.forEach(a => { const e = m.getAtomLabel(a); els[e] = (els[e] || 0) + 1; });
+    return `<option value="${i}">Ring ${i + 1} (${Object.entries(els).map(([e, n]) => e + (n > 1 ? n : '')).join('')})</option>`;
+  }).join('');
+  sel.value = String(chair.ringIdx);
+  if (!rings.length){ chair.key = ''; chair.data = null; chairMessage('No cyclohexane-type ring here. Chairs need a six-membered ring with only single bonds in the ring (benzene is flat, so it has no chair).'); return; }
+  const key = id + '|' + chair.ringIdx;
+  if (key === chair.key && chair.data){ chair.viewer && (chair.viewer.resize(), chair.viewer.render()); return; }
+  chair.key = key; chair.data = null;
+  chairMessage('Building both chairs…');
+  setTimeout(() => {
+    if (chair.key !== key) return;
+    let d;
+    try { d = buildChairs(OCL, m, rings[chair.ringIdx]); } catch (e) { console.warn(e); d = { error: 'Couldn’t build the chairs for this structure.' }; }
+    if (chair.key !== key) return;
+    if (d.error){ chairMessage(d.error); return; }
+    // show the more stable chair first
+    if (d.chairs.length === 2 && d.chairs[1].energy < d.chairs[0].energy - 0.05) d.chairs.reverse();
+    // Number the ring like a textbook: an -OH/-NH2/-SH group gets 1, then lowest locants for the other groups.
+    const groups = d.chairs[0].subs.filter(s => !s.isH);
+    let bestMap = null, bestScore = null;
+    for (let start = 0; start < 6; start++) for (const dir of [1, -1]){
+      const map = Array.from({ length: 6 }, (_, k) => ((dir * (k - start) + 12) % 6) + 1);
+      const suffix = groups.some(g => /^(OH|NH2|SH)$/.test(g.group) && map[g.ringPos - 1] === 1) ? 0 : 1;
+      const hetero = d.ringLabels.some((e, k) => e !== 'C' && map[k] === 1) ? 0 : 1;
+      const locs = groups.map(g => map[g.ringPos - 1]).sort((a, b) => a - b);
+      const score = [hetero, suffix, ...locs];
+      if (!bestScore || lexLess(score, bestScore)){ bestScore = score; bestMap = map; }
+    }
+    d.numMap = bestMap;
+    chair.data = d; chair.shown = 0;
+    $('overlayChair').style.display = 'none';
+    drawChair();
+    renderChairInfo();
+  }, 30);
+}
+$('ringSel').addEventListener('change', () => { chair.ringIdx = Number($('ringSel').value); updateChair(); });
+
+const ringNo = (d, pos) => d.numMap[pos - 1];
+function lexLess(a, b){ for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] < b[i]; return false; }
+
+function drawChair(coords){
+  const v = chairViewer(); if (!v || !chair.data) return;
+  const d = chair.data, c = d.chairs[chair.shown];
+  v.removeAllModels(); v.removeAllLabels();
+  v.addModel(toXYZ(c.elements, coords || c.coords), 'xyz');
+  v.setStyle({}, { stick: { radius: 0.12, colorscheme: 'Jmol' }, sphere: { scale: 0.24, colorscheme: 'Jmol' } });
+  // ring bonds a bit thicker and grey so the chair shape stands out
+  v.setStyle({ index: d.ring }, { stick: { radius: 0.17, color: '#b0b0b0' }, sphere: { scale: 0.26, colorscheme: 'Jmol' } });
+  for (const s of c.subs) if (s.isH) v.setStyle({ index: s.atom }, { stick: { radius: 0.12, color: s.axial ? AX : EQ }, sphere: { scale: 0.24, color: s.axial ? AX : EQ } });
+  if (!coords){
+    const P = (a) => ({ x: c.coords[a][0], y: c.coords[a][1], z: c.coords[a][2] });
+    d.ring.forEach((a, k) => v.addLabel(String(ringNo(d, k + 1)), { position: P(a), fontSize: 13, fontColor: RN, backgroundOpacity: 0, inFront: true, alignment: 'center' }));
+    for (const s of c.subs){
+      if (s.isH && !$('chairHLabels').checked) continue;
+      const txt = s.isH ? (s.axial ? 'ax' : 'eq') : `${s.group} ${s.axial ? 'ax' : 'eq'}`;
+      v.addLabel(txt, { position: P(s.atom), fontSize: s.isH ? 11 : 13, fontColor: s.axial ? AX : EQ, backgroundColor: 'black', backgroundOpacity: 0.55, inFront: true, alignment: 'center' });
+    }
+  }
+  if (!coords && !chair.keepView){ v.zoomTo(); v.zoom(1.2); }
+  v.spin($('chairSpin').checked ? 'y' : false);
+  v.render();
+  $('chairTag').textContent = d.chairs.length === 2 ? `CHAIR ${chair.shown === 0 ? 'A' : 'B'}` : 'CHAIR';
+  $('chairKey').hidden = false;
+  $('flipBtn').disabled = !d.canFlip || chair.animating;
+}
+
+function renderChairInfo(){
+  const d = chair.data; if (!d) return;
+  const [A, B] = d.chairs, cur = d.chairs[chair.shown], other = d.chairs[1 - chair.shown];
+  let energy = '';
+  if (B){
+    const dE = B.energy - A.energy;
+    const pctA = 100 / (1 + Math.exp(-dE / RT));
+    energy = Math.abs(dE) < 0.05
+      ? `Both chairs have the same energy, so they are equally populated (50 : 50).`
+      : `Chair A is more stable by ${dE.toFixed(1)} kcal/mol, about ${pctA.toFixed(pctA > 99.5 ? 1 : 0)} : ${(100 - pctA).toFixed(pctA > 99.5 ? 1 : 0)} A : B at 25 °C.`;
+  }
+  const rows = cur.subs.filter(s => !s.isH).sort((a, b) => ringNo(d, a.ringPos) - ringNo(d, b.ringPos)).map(s => {
+    const o = other && other.subs.find(x => x.atom === s.atom);
+    const pos = (x) => x ? `<span class="${x.axial ? 'ax' : 'eq'}">${x.axial ? 'axial' : 'equatorial'}</span>, ${x.up ? 'up' : 'down'}` : '–';
+    // 1,3-diaxial partners: axial groups on the same face two ring atoms away
+    let note = '';
+    if (s.axial){
+      const partners = cur.subs.filter(x => x.axial && x.up === s.up && x.atom !== s.atom && [2, 4].includes((x.ringPos - s.ringPos + 6) % 6));
+      if (partners.length) note = `<div class="small">1,3-diaxial with ${partners.map(x => `${x.group} on ${ringNo(d, x.ringPos)}`).join(' and ')}</div>`;
+    }
+    return `<tr><td>${ringNo(d, s.ringPos)}</td><td class="g">${s.group === 'ring' ? 'ring bond' : s.group}</td><td>${pos(s)}${note}</td>${other ? `<td>${pos(o)}</td>` : ''}</tr>`;
+  }).join('');
+  const hAx = cur.subs.filter(s => s.isH && s.axial).length, hEq = cur.subs.filter(s => s.isH && !s.axial).length;
+  $('chairInfo').innerHTML =
+    (energy ? `<div class="energy">${energy}</div>` : '') +
+    (rows ? `<table><thead><tr><th>Ring atom</th><th>Group</th><th>Chair ${B ? (chair.shown ? 'B' : 'A') : ''} (shown)</th>${other ? `<th>After flip</th>` : ''}</tr></thead><tbody>${rows}</tbody></table>` : '<div>No groups other than hydrogen on this ring.</div>') +
+    `<div class="small">Hydrogens on the ring: ${hAx} axial (<span class="ax">pink</span>), ${hEq} equatorial (<span class="eq">cyan</span>). Ring atoms are numbered like a textbook (an OH, NH<sub>2</sub> or SH group, or a ring heteroatom, gets 1, then lowest numbers), but check them against your IUPAC name. “Up” and “down” are the two faces of the ring; a flip swaps axial and equatorial but never changes a group’s face, which is why cis/trans stays the same.</div>` +
+    (d.fused ? `<div class="small">This ring is fused to another ring, so the flip isn’t shown here. (trans-Fused rings such as trans-decalin can’t flip at all; cis-fused ones can.)</div>` : '') +
+    (B ? `<div class="small">Energies are MMFF94 force-field estimates calculated in the page, so they can differ from textbook A-values by a few tenths of a kcal/mol.</div>` : '');
+}
+
+$('flipBtn').onclick = () => {
+  const d = chair.data; if (!d || !d.canFlip || chair.animating) return;
+  const from = d.chairs[chair.shown].coords, to = d.chairs[1 - chair.shown].coords;
+  const frames = flipFrames(from, to, 28);
+  chair.animating = true; $('flipBtn').disabled = true; chair.keepView = true;
+  let i = 0;
+  const step = () => {
+    if (!chair.data || chair.data !== d){ chair.animating = false; chair.keepView = false; return; }
+    if (i < frames.length - 1){ drawChair(frames[i]); i++; setTimeout(step, 33); return; }
+    chair.shown = 1 - chair.shown; chair.animating = false;
+    drawChair(); chair.keepView = false;
+    renderChairInfo();
+  };
+  step();
+};
+$('chairHLabels').addEventListener('change', () => drawChair());
+$('chairSpin').addEventListener('change', () => { const v = chairViewer(); if (v){ v.spin($('chairSpin').checked ? 'y' : false); v.render(); } });
+window.addEventListener('resize', () => { if (chair.viewer){ chair.viewer.resize(); chair.viewer.render(); } });
+
 // ---------- tabs ----------
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
   document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', String(x === t)));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === t.dataset.view));
   if (t.dataset.view === 'v3d' && viewer){ viewer.resize(); viewer.render(); }
+  if (t.dataset.view === 'vchair') updateChair();
 }));
 window.addEventListener('resize', () => { if (viewer){ viewer.resize(); viewer.render(); } });
 
