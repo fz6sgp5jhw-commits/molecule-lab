@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Molecule Lab</title>
+<meta name="description" content="Draw a molecule to get its IUPAC name, or type a name to build the structure. Line drawing and 3D model.">
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#000080">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Molecule Lab">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="preload" href="./fonts/pixelify-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  /* fonts are shipped with the app so it looks right offline */
+  @font-face{font-family:'Pixelify Sans';font-style:normal;font-weight:400;font-display:swap;src:url(./fonts/pixelify-sans-latin-400-normal.woff2) format('woff2')}
+  @font-face{font-family:'Pixelify Sans';font-style:normal;font-weight:600;font-display:swap;src:url(./fonts/pixelify-sans-latin-600-normal.woff2) format('woff2')}
+  @font-face{font-family:'VT323';font-style:normal;font-weight:400;font-display:swap;src:url(./fonts/vt323-latin-400-normal.woff2) format('woff2')}
+  @font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;src:url(./fonts/press-start-2p-latin-400-normal.woff2) format('woff2')}
+
+  :root{
+    color-scheme:light;
+    --desk:#008080; --face:#c0c0c0; --hi:#ffffff; --lite:#dfdfdf; --shadow:#808080; --dark:#0a0a0a;
+    --title:#000080; --title2:#1084d0; --ink:#000000; --muted:#404040;
+    --ok:#006400; --warn:#7a5300; --bad:#a00000; --sel:#000080;
+    --ui:'Pixelify Sans','Courier New',monospace; --crt:'VT323','Courier New',monospace; --chunky:'Press Start 2P',monospace;
+    --raised: inset -1px -1px var(--dark), inset 1px 1px var(--hi), inset -2px -2px var(--shadow), inset 2px 2px var(--lite);
+    --sunken: inset -1px -1px var(--hi), inset 1px 1px var(--shadow), inset -2px -2px var(--lite), inset 2px 2px var(--dark);
+    --field: inset -1px -1px var(--hi), inset 1px 1px var(--shadow), inset -2px -2px var(--lite), inset 2px 2px var(--dark);
+  }
+  *{box-sizing:border-box;border-radius:0 !important}
+  html,body{margin:0;background:var(--desk);color:var(--ink);font:16px/1.35 var(--ui);-webkit-font-smoothing:none;-moz-osx-font-smoothing:unset;font-smooth:never}
+  body{background-image:radial-gradient(rgba(0,0,0,.08) 1px, transparent 1px);background-size:4px 4px}
+
+  /* app title bar */
+  header{max-width:1320px;margin:12px auto 0;padding:0 16px}
+  .appbar{background:var(--face);box-shadow:var(--raised);padding:3px}
+  .appbar .titlebar{padding:5px 6px}
+  .appbar h1{font:12px/1 var(--chunky);margin:0;color:#fff;letter-spacing:.5px}
+  .appbar p{margin:0;padding:6px 8px 5px;font-size:15px;color:var(--ink)}
+  main{max-width:1320px;margin:0 auto;padding:12px 16px 28px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+  @media (max-width:980px){main{grid-template-columns:1fr;padding:10px 8px 24px}header{padding:0 8px}}
+  .col{display:flex;flex-direction:column;gap:14px;min-width:0}
+
+  /* windows */
+  .card{background:var(--face);box-shadow:var(--raised);padding:3px;overflow:hidden}
+  .titlebar,.card-h{display:flex;align-items:center;gap:6px;padding:3px 3px 3px 6px;background:linear-gradient(90deg,var(--title),var(--title2));color:#fff;min-height:22px}
+  .card-h h2{font:600 15px/1 var(--ui);margin:0;color:#fff;letter-spacing:.3px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card-h h2::before{content:'';display:inline-block;width:10px;height:10px;margin-right:6px;background:#fff;box-shadow:inset -2px -2px #808080;vertical-align:-1px}
+  .wbtns{display:flex;gap:2px;margin-left:auto}
+  .wbtns i{display:inline-flex;align-items:center;justify-content:center;width:16px;height:14px;background:var(--face);box-shadow:var(--raised);font:700 10px/1 var(--ui);font-style:normal;color:#000}
+  .wbtns i:last-child{margin-left:2px}
+  .card-b{padding:10px 8px 8px}
+
+  /* fields */
+  .search{display:flex;gap:6px}
+  .search input,#ringPop input{flex:1;min-width:0;font:20px/1 var(--crt);padding:6px 8px;border:none;background:#fff;box-shadow:var(--field);color:#000;-webkit-text-fill-color:#000}
+  .search input::placeholder{color:#707070;-webkit-text-fill-color:#707070;opacity:1}
+  .search input:focus,#ringPop input:focus{outline:1px dotted #000;outline-offset:-5px}
+
+  /* buttons */
+  button{font:15px/1 var(--ui);cursor:pointer;border:none;background:var(--face);color:#000;padding:7px 14px;box-shadow:var(--raised);min-height:30px}
+  button:active:not(:disabled),button.pressed{box-shadow:var(--sunken);padding:8px 13px 6px 15px}
+  button:focus-visible{outline:1px dotted #000;outline-offset:-5px}
+  button:disabled{color:#808080;text-shadow:1px 1px #fff;cursor:default}
+  button.primary{box-shadow:0 0 0 1px #000, var(--raised);font-weight:600}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+  .chip{font-size:14px;padding:4px 8px;min-height:24px;color:#000}
+  .hint{font-size:14px;color:var(--muted);margin-top:8px}
+
+  /* editor */
+  #editor{height:430px;position:relative;margin:6px 4px 0;background:#fff;box-shadow:var(--sunken);padding:2px}
+  @media (max-width:600px){#editor{height:360px}}
+  .editor-bar{display:flex;gap:8px;align-items:center;padding:8px 6px 4px;flex-wrap:wrap}
+  .editor-bar .spacer{flex:1}
+
+  /* results */
+  .namebox{background:#fff;box-shadow:var(--field);padding:8px 10px;min-height:52px}
+  .result-name{font:30px/1.05 var(--crt);word-break:break-word;color:#000}
+  .result-name.empty{color:#707070;font-size:22px}
+  .common{color:var(--muted);margin-top:4px;font-size:15px}
+  .facts{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin-top:10px;font-size:15px;padding:8px 10px;box-shadow:var(--sunken);background:#d4d0c8}
+  .facts dt{color:var(--muted)}
+  .facts dd{margin:0;word-break:break-all;font:19px/1.05 var(--crt)}
+  .facts dd sub{font-size:14px}
+  .mono{font-family:var(--crt)}
+  .badge{display:flex;align-items:center;gap:8px;font-size:15px;padding:5px 8px;margin-top:8px;box-shadow:var(--sunken);background:var(--face)}
+  .badge::before{content:'';flex:0 0 12px;height:12px;box-shadow:inset -2px -2px rgba(0,0,0,.35)}
+  .badge.ok{color:var(--ok)} .badge.ok::before{background:#00a000}
+  .badge.warn{color:var(--warn)} .badge.warn::before{background:#e0b000}
+  .badge.bad{color:var(--bad)} .badge.bad::before{background:#d00000}
+  .badge.busy{color:var(--sel)} .badge.busy::before{background:repeating-linear-gradient(90deg,#000080 0 3px,transparent 3px 5px);animation:blink 1s steps(2) infinite}
+  @keyframes blink{50%{opacity:.25}}
+  .note{font-size:14px;color:var(--muted);margin-top:8px}
+  .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .msg{font-size:15px;margin-top:8px;padding:6px 8px;background:#ffffe1;border:1px solid #000}
+  .msg.bad{color:var(--bad)}
+  .msg.warn{color:var(--warn)}
+  .msg:empty{display:none}
+
+  /* tabs */
+  .tabs{display:flex;gap:0;padding:6px 4px 0 6px;flex-wrap:wrap;position:relative;z-index:1}
+  .tab{box-shadow:inset 1px 1px var(--hi), inset -1px 0 var(--dark), inset -2px 0 var(--shadow), inset 2px 2px var(--lite);padding:6px 12px 5px;margin-right:-1px;margin-top:3px;min-height:0;color:#000}
+  .tab:active:not(:disabled){box-shadow:inset 1px 1px var(--hi), inset -1px 0 var(--dark), inset -2px 0 var(--shadow), inset 2px 2px var(--lite);padding:6px 12px 5px}
+  .tab[aria-selected="true"]{margin-top:0;padding-bottom:9px;margin-bottom:-2px;background:var(--face);position:relative;z-index:2;font-weight:600}
+  .tab .soon{font-size:12px;margin-left:4px;color:#606060}
+  .panel{box-shadow:var(--raised);margin:0 4px 4px;padding:6px}
+  .view{display:none}
+  .view.active{display:block}
+  #viewer3d{height:470px;position:relative;background:#000;box-shadow:var(--sunken);border:2px solid transparent}
+  @media (max-width:600px){#viewer3d{height:360px}}
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 2px 2px}
+  .seg{display:inline-flex;gap:0}
+  .seg button{margin-right:-1px}
+  .seg button[aria-pressed="true"]{box-shadow:var(--sunken);background:repeating-conic-gradient(#c0c0c0 0 25%, #fff 0 50%) 0 0/2px 2px;font-weight:600}
+  .toggle{display:inline-flex;align-items:center;gap:6px;font-size:15px;color:#000;padding:0 4px;cursor:pointer}
+  .toggle input{appearance:none;-webkit-appearance:none;width:14px;height:14px;margin:0;background:#fff;box-shadow:var(--field);display:inline-grid;place-content:center;cursor:pointer}
+  .toggle input:checked::after{content:'';width:7px;height:4px;border-left:2px solid #000;border-bottom:2px solid #000;transform:translateY(-1px) rotate(-45deg)}
+  #line2d{height:470px;display:flex;align-items:center;justify-content:center;padding:16px;background:#fff;box-shadow:var(--sunken)}
+  #line2d svg{max-width:100%;height:auto;max-height:100%}
+  @media (max-width:600px){#line2d{height:360px}}
+  .placeholder{color:#707070;text-align:center;padding:24px;font-size:15px}
+  .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#00ff66;font:22px/1.2 var(--crt);pointer-events:none;text-align:center;padding:24px;text-shadow:0 0 6px rgba(0,255,102,.5)}
+  .soon-view{padding:40px 24px;text-align:center;color:var(--muted);background:#fff;box-shadow:var(--sunken);min-height:200px}
+  .soon-view strong{display:block;color:#000;font-size:17px;margin-bottom:6px}
+
+  /* tooltip, ring dialog, boot */
+  #tip{position:fixed;z-index:20;max-width:260px;background:#ffffe1;color:#000;font-size:14px;line-height:1.3;padding:4px 6px;border:1px solid #000;box-shadow:2px 2px 0 rgba(0,0,0,.35);pointer-events:none;opacity:0}
+  #tip.show{opacity:1}
+  #tip b{display:block;font-weight:600}
+  #ringPop{position:fixed;z-index:25;background:var(--face);box-shadow:var(--raised), 3px 3px 0 rgba(0,0,0,.35);padding:3px;display:none;flex-direction:column;font-size:15px;color:#000;min-width:250px}
+  #ringPop.show{display:flex}
+  #ringPop .rp-body{display:flex;align-items:center;gap:8px;padding:10px 8px 8px}
+  #ringPop input{flex:0 0 70px;width:70px}
+  #ringPop button{padding:6px 10px}
+  #ringGhost{position:fixed;z-index:24;pointer-events:none;display:none}
+  /* installed app: keep clear of the notch and home bar */
+  header{padding-top:env(safe-area-inset-top)}
+  main{padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+  header,main{padding-left:max(16px, env(safe-area-inset-left));padding-right:max(16px, env(safe-area-inset-right))}
+  @media (max-width:980px){header,main{padding-left:max(8px, env(safe-area-inset-left));padding-right:max(8px, env(safe-area-inset-right))}}
+  #net{display:none;margin:0 8px 5px;padding:3px 6px;font-size:14px;background:#ffffe1;border:1px solid #000}
+  #net.show{display:block}
+  .badge button{margin-left:auto;padding:4px 8px;min-height:24px;font-size:14px}
+  #boot{position:fixed;inset:0;background:var(--desk);display:flex;align-items:center;justify-content:center;color:#fff;z-index:10;font:12px/1.6 var(--chunky)}
+</style>
+</head>
+<body>
+<div id="tip" role="tooltip"></div>
+<svg id="ringGhost"></svg>
+<form id="ringPop"><div class="card-h"><h2>Ring size</h2></div><div class="rp-body"><label for="ringSize">Atoms:</label><input id="ringSize" type="number" min="3" max="40" value="6" inputmode="numeric"><button class="primary" type="submit">OK</button><button type="button" id="ringCancel">Cancel</button></div></form>
+<div id="boot">LOADING CHEMISTRY ENGINE...</div>
+<header>
+  <div class="appbar">
+    <div class="titlebar"><h1>MOLECULE LAB</h1><span class="wbtns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span></div>
+    <p>Draw a molecule to get its IUPAC name, or type a name to build the structure. Explore it as a line drawing or in 3D.</p>
+    <div id="net" role="status">You’re offline. Drawing, 3D and the calculated facts still work; naming needs a connection.</div>
+  </div>
+</header>
+<main>
+  <div class="col">
+    <section class="card">
+      <div class="card-h"><h2>Build from a name</h2><span class="wbtns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span></div>
+      <div class="card-b">
+        <form class="search" id="nameForm">
+          <input id="nameInput" type="text" autocomplete="off" spellcheck="false" placeholder="e.g. 2-methylbutan-1-ol, (R)-butan-2-ol, or a SMILES like CCO">
+          <button class="primary" id="nameBtn" type="submit">Build</button>
+        </form>
+        <div class="chips" id="chips"></div>
+        <div class="msg" id="nameMsg"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>Draw</h2><span class="wbtns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span></div>
+      <div id="editor"></div>
+      <div class="editor-bar">
+        <span class="hint" style="margin:0">Tip: draw a closed circle on the canvas, then type a number to add a ring of any size. Hover a toolbar button for help.</span>
+        <span class="spacer"></span>
+        <button id="clearBtn" type="button">Clear</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-h"><h2>Name &amp; properties</h2><span class="wbtns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span></div>
+      <div class="card-b">
+        <div class="namebox"><div id="iupac" class="result-name empty">Draw or build a molecule to start.</div>
+        <div id="common" class="common"></div></div>
+        <div id="verify"></div>
+        <dl class="facts" id="facts" hidden>
+          <dt>Formula</dt><dd id="fFormula"></dd>
+          <dt>Molar mass</dt><dd id="fMass"></dd>
+          <dt>Stereo</dt><dd id="fStereo"></dd>
+          <dt>SMILES</dt><dd class="mono" id="fSmiles"></dd>
+        </dl>
+        <div class="row">
+          <button class="primary" id="nameItBtn" type="button" disabled>Get IUPAC name</button>
+          <button id="copyBtn" type="button" disabled>Copy SMILES</button>
+        </div>
+        <div class="msg" id="nameItMsg"></div>
+        <div class="note" id="aiNote">Formula, mass, stereo (R/S, E/Z) and SMILES are calculated in the page and are reliable. Names are looked up in <a href="https://pubchem.ncbi.nlm.nih.gov/" target="_blank" rel="noopener">PubChem</a> (NIH) and checked with <a href="https://www.ebi.ac.uk/opsin/" target="_blank" rel="noopener">OPSIN</a>, which reads a name back into a structure. If neither service knows a structure, the app says so rather than guessing.</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="card">
+      <div class="card-h"><h2>Viewer</h2><span class="wbtns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span></div>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-view="v3d" aria-selected="true">3D model</button>
+        <button class="tab" role="tab" data-view="v2d" aria-selected="false">Line drawing</button>
+        <button class="tab" role="tab" data-view="vnewman" aria-selected="false">Newman<span class="soon">· soon</span></button>
+        <button class="tab" role="tab" data-view="vfischer" aria-selected="false">Fischer<span class="soon">· soon</span></button>
+      </div>
+      <div class="panel">
+      <div class="view active" id="v3d">
+        <div id="viewer3d"><div class="overlay" id="overlay3d">Your molecule will appear here in 3D.</div></div>
+        <div class="controls">
+          <div class="seg" id="styleSeg">
+            <button data-style="ballstick" aria-pressed="true">Ball &amp; stick</button>
+            <button data-style="stick" aria-pressed="false">Sticks</button>
+            <button data-style="spacefill" aria-pressed="false">Space-filling</button>
+            <button data-style="wire" aria-pressed="false">Wireframe</button>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showH" checked> Hydrogens</label>
+          <label class="toggle"><input type="checkbox" id="spin"> Spin</label>
+          <label class="toggle"><input type="checkbox" id="labels"> Atom labels</label>
+          <button id="reconfBtn" type="button" title="Generate another low-energy shape">New conformer</button>
+        </div>
+      </div>
+
+      <div class="view" id="v2d">
+        <div id="line2d"><div class="placeholder">Your molecule's skeletal (bond-line) drawing will appear here.</div></div>
+      </div>
+
+      <div class="view" id="vnewman">
+        <div class="soon-view"><strong>Newman projections are coming in stage 2</strong>Pick a C–C bond, look down it, and rotate the back carbon to compare staggered, eclipsed, gauche and anti.</div>
+      </div>
+      <div class="view" id="vfischer">
+        <div class="soon-view"><strong>Fischer projections are coming in stage 3</strong>For open chains with stereocentres, like sugars, amino acids and 2,3-dibromobutane, with R/S labels.</div>
+      </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script src="./3Dmol-min.js"></script>
+<script type="module">
+import * as OCL from './openchemlib.js';
+
+const $ = (id) => document.getElementById(id);
+const state = { mol: null, smiles: '', style: 'ballstick', seed: 1, nameFor: null, busyToken: 0 };
+
+// ---------- engine ----------
+try { await OCL.Resources.registerFromUrl('./resources.json'); } catch (e) { console.warn('resources', e); }
+
+const editor = new OCL.CanvasEditor($('editor'), { initialMode: 'molecule' });
+$('boot').remove();
+
+let viewer = null;
+function getViewer(){
+  if (!viewer && window.$3Dmol) viewer = $3Dmol.createViewer($('viewer3d'), { backgroundColor: '#000000', antialias: true });
+  return viewer;
+}
+
+// ---------- helpers ----------
+const formulaHTML = (f) => f.replace(/(\d+)/g, '<sub>$1</sub>');
+function setMsg(el, text, kind='bad'){ el.className = 'msg ' + kind; el.textContent = text || ''; }
+function currentMol(){
+  const m = editor.getMolecule();
+  return m && m.getAllAtoms() > 0 ? m.getCompactCopy() : null;
+}
+function idcode(m, mode){
+  try { return mode ? OCL.CanonizerUtil.getIDCode(m, mode) : m.getIDCode(); } catch { return ''; }
+}
+
+// ---------- examples ----------
+const examples = ['2-methylbutan-1-ol','(R)-butan-2-ol','cyclohexanone','(E)-but-2-enoic acid','3-ethyl-2-methylhexane','ethyl acetate','aspirin','aldehydo-D-glucose'];
+for (const ex of examples){
+  const b = document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=ex;
+  b.onclick = () => { $('nameInput').value = ex; buildFromInput(); };
+  $('chips').appendChild(b);
+}
+
+// ---------- chemistry services (PubChem + OPSIN) ----------
+// Names come only from these services. If they have no answer, the app says so and never makes one up.
+const PUG = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug';
+const OPSIN_URLS = ['https://www.ebi.ac.uk/opsin/ws/', 'https://opsin.ch.cam.ac.uk/opsin/'];
+const NOT_FOUND = Symbol('not found');
+
+class ServiceError extends Error {}
+const offlineError = () => new ServiceError('You’re offline. Naming needs an internet connection; everything else still works.');
+
+async function getJSON(url, init = {}){
+  if (navigator.onLine === false) throw offlineError();
+  let res;
+  try {
+    res = await fetch(url, { ...init, signal: AbortSignal.timeout(20000) });
+  } catch (e) {
+    if (navigator.onLine === false) throw offlineError();
+    throw new ServiceError(e && e.name === 'TimeoutError' ? 'took too long to answer' : 'couldn’t be reached. Check your internet connection');
+  }
+  if (res.status === 404 || res.status === 400) return NOT_FOUND;
+  if (res.status === 503) throw new ServiceError('is busy right now (too many requests)');
+  if (!res.ok) throw new ServiceError('answered with error ' + res.status);
+  try { return await res.json(); } catch { throw new ServiceError('sent an answer the app couldn’t read'); }
+}
+
+// PubChem property lookup. POST keeps SMILES characters like # / \ safe.
+async function pubchemProps(namespace, value){
+  const body = new URLSearchParams({ [namespace]: value });
+  const j = await getJSON(`${PUG}/compound/${namespace}/property/SMILES,IUPACName,Title/JSON`, { method: 'POST', body });
+  const p = j !== NOT_FOUND && j.PropertyTable && j.PropertyTable.Properties && j.PropertyTable.Properties[0];
+  if (!p || !p.CID) return null; // PubChem has no record
+  const smiles = p.SMILES || p.IsomericSMILES || '';
+  return { cid: p.CID, iupac: p.IUPACName || '', title: p.Title || '', smiles, mol: smiles ? trySmiles(smiles) : null };
+}
+
+// OPSIN: systematic name -> structure. Deterministic parser; it doesn't know trade or trivial names like "aspirin".
+async function opsin(name){
+  let lastErr = null;
+  for (const base of OPSIN_URLS){
+    try {
+      const j = await getJSON(base + encodeURIComponent(name) + '.json');
+      if (j === NOT_FOUND || !j || j.status === 'FAILURE' || !j.smiles) return { mol: null, message: (j && j !== NOT_FOUND && j.message) || '' };
+      return { mol: trySmiles(j.smiles), smiles: j.smiles, warning: j.status === 'WARNING' ? (j.message || 'OPSIN flagged this name as unusual.') : '' };
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr;
+}
+
+// Settle a promise without throwing, so one service being down doesn't hide the other's answer.
+const settle = (p) => p.then(value => ({ value }), error => ({ error }));
+function compareMols(a, b){
+  if (!a || !b) return 'unknown';
+  if (idcode(a) === idcode(b)) return 'same';
+  if (idcode(a, OCL.CanonizerUtil.NOSTEREO) === idcode(b, OCL.CanonizerUtil.NOSTEREO)) return 'stereo';
+  return 'different';
+}
+function withoutStereo(m){
+  try { const c = m.getCompactCopy(); c.stripStereoInformation(); return c.toIsomericSmiles(); } catch { return ''; }
+}
+function friendly(e, who){
+  if (e instanceof ServiceError) return e.message.startsWith('You’re') ? e.message : `${who} ${e.message}. Try again in a moment.`;
+  return (e && e.message) || 'Something went wrong.';
+}
+function pubchemLink(cid){ return `https://pubchem.ncbi.nlm.nih.gov/compound/${cid}`; }
+
+// CIP stereo labels, calculated by OpenChemLib
+function stereoInfo(m){
+  const c = m.getCompactCopy();
+  c.ensureHelperArrays(OCL.Molecule.cHelperCIP);
+  const centres = [], dbl = [];
+  for (let a = 0; a < c.getAtoms(); a++){
+    const p = c.getAtomCIPParity(a);
+    if (p === 1 || p === 2) centres.push({ atom: a + 1, el: c.getAtomLabel(a), cip: p === 1 ? 'R' : 'S' });
+  }
+  for (let b = 0; b < c.getBonds(); b++){
+    const p = c.getBondCIPParity(b);
+    if (p === 1 || p === 2) dbl.push({ a1: c.getBondAtom(0,b) + 1, a2: c.getBondAtom(1,b) + 1, cip: p === 1 ? 'E' : 'Z' });
+  }
+  return { c, centres, dbl };
+}
+// ---------- rendering ----------
+function render2D(m){
+  const box = $('line2d');
+  if (!m){ box.innerHTML = '<div class="placeholder">Your molecule’s skeletal (bond-line) drawing will appear here.</div>'; return; }
+  const c = m.getCompactCopy();
+  try { c.inventCoordinates(); } catch {}
+  box.innerHTML = c.toSVG(560, 420, 'line2dsvg', { autoCrop: true, autoCropMargin: 14, strokeWidth: 1.4, factorTextSize: 1, suppressChiralText: true, suppressESR: true });
+  const svg = box.querySelector('svg');
+  if (svg){
+    const vb = (svg.getAttribute('viewBox')||'').split(/\s+/).map(Number);
+    svg.removeAttribute('width'); svg.removeAttribute('height');
+    if (vb.length === 4 && vb[2] > 0) svg.style.width = Math.min(vb[2] * 1.7, 540) + 'px';
+  }
+}
+
+function build3D(m){
+  const v = getViewer();
+  if (!v) return;
+  v.removeAllModels(); v.removeAllLabels();
+  if (!m){ $('overlay3d').style.display='flex'; $('overlay3d').textContent='Your molecule will appear here in 3D.'; v.render(); return; }
+  let conf = null;
+  try {
+    conf = new OCL.ConformerGenerator(state.seed).getOneConformerAsMolecule(m.getCompactCopy());
+    if (conf){ try { new OCL.ForceFieldMMFF94(conf, 'MMFF94s+').minimise({ maxIts: 4000 }); } catch {} }
+  } catch (e) { console.warn(e); }
+  if (!conf){ $('overlay3d').style.display='flex'; $('overlay3d').textContent='Couldn’t build a 3D shape for this structure. Check for impossible valences.'; v.render(); return; }
+  $('overlay3d').style.display='none';
+  v.addModel(conf.toMolfile(), 'sdf');
+  apply3DStyle();
+  v.zoomTo(); v.zoom(0.9); v.render();
+}
+
+function apply3DStyle(){
+  const v = getViewer(); if (!v) return;
+  const s = state.style;
+  const styles = {
+    ballstick: { stick: { radius: 0.13, colorscheme: 'Jmol' }, sphere: { scale: 0.27, colorscheme: 'Jmol' } },
+    stick:     { stick: { radius: 0.2, colorscheme: 'Jmol' } },
+    spacefill: { sphere: { scale: 1.0, colorscheme: 'Jmol' } },
+    wire:      { line: { linewidth: 2, colorscheme: 'Jmol' } },
+  };
+  v.setStyle({}, styles[s]);
+  if (!$('showH').checked) v.setStyle({ elem: 'H' }, {});
+  v.removeAllLabels();
+  if ($('labels').checked){
+    const atoms = v.selectedAtoms({});
+    for (const a of atoms){
+      if (a.elem === 'H' && !$('showH').checked) continue;
+      v.addLabel(a.elem, { position: { x:a.x, y:a.y, z:a.z }, fontSize: 12, fontColor: 'white', backgroundOpacity: 0.35, backgroundColor: 'black', inFront: true, alignment: 'center' });
+    }
+  }
+  v.spin($('spin').checked ? 'y' : false);
+  v.render();
+}
+
+function renderFacts(m){
+  if (!m){ $('facts').hidden = true; $('copyBtn').disabled = true; $('nameItBtn').disabled = true; return; }
+  const f = m.getMolecularFormula();
+  $('fFormula').innerHTML = formulaHTML(f.formula);
+  $('fMass').textContent = f.relativeWeight.toFixed(2) + ' g/mol';
+  $('fSmiles').textContent = state.smiles;
+  const st = stereoInfo(m);
+  const parts = st.centres.map(x => `${x.cip} at ${x.el}${x.atom}`).concat(st.dbl.map(d => `${d.cip} double bond`));
+  $('fStereo').textContent = parts.length ? parts.join(', ') + ' (calculated)' : 'None specified';
+  $('facts').hidden = false; $('copyBtn').disabled = false; $('nameItBtn').disabled = false;
+}
+
+function resetName(text){
+  state.nameFor = null;
+  const el = $('iupac');
+  el.className = 'result-name empty';
+  el.textContent = text;
+  $('common').textContent = '';
+  $('verify').innerHTML = '';
+  setMsg($('nameItMsg'), '');
+}
+
+function showName(iupac, common, forId){
+  state.nameFor = forId;
+  $('iupac').className = 'result-name';
+  $('iupac').textContent = iupac || '(no name returned)';
+  $('common').textContent = common && common.toLowerCase() !== (iupac||'').toLowerCase() ? 'Also known as ' + common : '';
+}
+function badge(kind, html, btnText, onBtn){
+  $('verify').innerHTML = `<div class="badge ${kind}"><span>${html}</span></div>`;
+  if (btnText){
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = btnText; b.onclick = onBtn;
+    $('verify').firstElementChild.appendChild(b);
+  }
+}
+
+// ---------- update cycle ----------
+let debounce = 0;
+function onMoleculeChanged(){
+  clearTimeout(debounce);
+  debounce = setTimeout(refresh, 350);
+}
+function refresh(){
+  {
+    const m = currentMol();
+    state.mol = m;
+    state.smiles = m ? m.toIsomericSmiles() : '';
+    state.seed = 1;
+    renderFacts(m);
+    render2D(m);
+    build3D(m);
+    if (!m) resetName('Draw or build a molecule to start.');
+    else if (state.nameFor !== idcode(m)) resetName('Press “Get IUPAC name” to name this structure.');
+  }
+}
+editor.setOnChangeListener((e) => { if (!e || e.type === 'molecule') onMoleculeChanged(); });
+
+function loadMolecule(m){
+  editor.setMolecule(m);
+  editor.moleculeChanged();
+  clearTimeout(debounce);
+  refresh();
+}
+
+// ---------- name / SMILES -> structure ----------
+function looksLikeSmiles(s){
+  return !/\s/.test(s) && /[A-Z0-9\[\]=#()@]/.test(s) && !/^[0-9,]+-[a-z]/i.test(s);
+}
+function trySmiles(s){
+  try { const m = OCL.Molecule.fromSmiles(s); return m.getAllAtoms() > 0 ? m : null; } catch { return null; }
+}
+
+async function buildFromInput(){
+  const q = $('nameInput').value.trim();
+  setMsg($('nameMsg'), '');
+  if (!q) return;
+  if (looksLikeSmiles(q)){
+    const m = trySmiles(q);
+    if (m){ loadMolecule(m); return; }
+  }
+  const token = ++state.busyToken;
+  $('nameBtn').disabled = true; $('nameBtn').textContent = 'Building…';
+  try {
+    // PubChem first (knows common and trade names), OPSIN alongside (reads systematic names exactly).
+    const [pc, op] = await Promise.all([settle(pubchemProps('name', q)), settle(opsin(q))]);
+    if (token !== state.busyToken) return;
+    const pcHit = pc.value && pc.value.mol ? pc.value : null;
+    const opMol = op.value && op.value.mol;
+
+    if (!pcHit && !opMol){
+      if (pc.error && op.error){ setMsg($('nameMsg'), friendly(pc.error, 'PubChem')); return; }
+      const down = pc.error ? ' (PubChem couldn’t be reached, so it wasn’t checked.)' : op.error ? ' (OPSIN couldn’t be reached, so it wasn’t checked.)' : '';
+      const hint = op.value && op.value.message ? ` OPSIN says: ${op.value.message}` : '';
+      setMsg($('nameMsg'), `Neither PubChem nor OPSIN recognised “${q}”. Check the spelling, locants and hyphens.${hint}${down}`);
+      return;
+    }
+
+    if (pcHit){
+      loadMolecule(pcHit.mol);
+      showName(pcHit.iupac || q, pcHit.title, idcode(state.mol));
+      const rel = compareMols(pcHit.mol, opMol);
+      if (rel === 'same') badge('ok', `✓ Checked: PubChem and OPSIN give the same structure. <a href="${pubchemLink(pcHit.cid)}" target="_blank" rel="noopener">PubChem record</a>`);
+      else if (rel === 'unknown') badge('ok', `✓ Found in PubChem. <a href="${pubchemLink(pcHit.cid)}" target="_blank" rel="noopener">PubChem record</a>` + (op.error ? ' (OPSIN couldn’t be reached for a second check.)' : ' (OPSIN only reads systematic names, so it couldn’t double-check this one.)'));
+      else {
+        const what = rel === 'stereo' ? 'the same compound with different stereo (R/S or E/Z)' : 'a different structure';
+        badge('warn', `PubChem matched this name to the structure shown, but OPSIN reads the name as ${what}. The name may be ambiguous or non-standard; check it.`, 'Show OPSIN’s reading', () => {
+          loadMolecule(opMol); nameStructure({ auto: true });
+        });
+      }
+      if (op.value && op.value.warning) setMsg($('nameMsg'), 'OPSIN: ' + op.value.warning, 'warn');
+      return;
+    }
+
+    // Only OPSIN understood it. Build it, then ask PubChem for the structure's preferred name.
+    loadMolecule(opMol);
+    if (op.value.warning) setMsg($('nameMsg'), 'OPSIN: ' + op.value.warning, 'warn');
+    await nameStructure({ auto: true, fromOpsin: q, pcDown: !!pc.error });
+  } catch (e) {
+    setMsg($('nameMsg'), friendly(e, 'The naming service'));
+  } finally {
+    if (token === state.busyToken){ $('nameBtn').disabled = false; $('nameBtn').textContent = 'Build'; }
+  }
+}
+$('nameForm').addEventListener('submit', (e) => { e.preventDefault(); buildFromInput(); });
+
+// ---------- structure -> name ----------
+async function nameStructure(opts = {}){
+  const m = state.mol; if (!m) return;
+  const id = idcode(m);
+  const token = opts.auto ? state.busyToken : ++state.busyToken;
+  const stale = () => token !== state.busyToken || !state.mol || idcode(state.mol) !== id;
+  $('nameItBtn').disabled = true;
+  setMsg($('nameItMsg'), '');
+  $('iupac').className = 'result-name empty'; $('iupac').textContent = 'Looking up the name…'; $('common').textContent = ''; $('verify').innerHTML = '';
+  try {
+    let rec = await pubchemProps('smiles', m.toIsomericSmiles());
+    if (stale()) return;
+    let stereoDropped = false;
+    if (!rec){
+      // PubChem may know the compound only without the stereo that was drawn.
+      const flat = withoutStereo(m);
+      if (flat && flat !== m.toIsomericSmiles()){
+        rec = await pubchemProps('smiles', flat);
+        if (stale()) return;
+        stereoDropped = !!rec;
+      }
+    }
+    if (!rec || !rec.iupac){
+      if (opts.fromOpsin){
+        showName(opts.fromOpsin, '', id);
+        badge('warn', `Built by OPSIN from your name. ${opts.pcDown ? 'PubChem couldn’t be reached' : 'PubChem has no record of this structure'}, so the name shown is the one you typed, not a checked IUPAC name.`);
+      } else {
+        resetName('No name found.');
+        setMsg($('nameItMsg'), 'PubChem has no record of this exact structure, so there’s no name to give. This is common for unusual structures. Check the drawing (charges, hydrogens, stereo) or name it by hand using the rules.', 'warn');
+      }
+      return;
+    }
+    showName(rec.iupac, rec.title, id);
+    const link = `<a href="${pubchemLink(rec.cid)}" target="_blank" rel="noopener">PubChem record</a>`;
+    if (stereoDropped){
+      badge('warn', `PubChem only has this compound without stereo, so this name has no R/S or E/Z. Add the calculated stereo shown below to the name. ${link}`);
+      return;
+    }
+    // Is PubChem's record really the structure that was drawn?
+    const recRel = compareMols(m, rec.mol);
+    if (recRel === 'stereo'){ badge('warn', `PubChem’s record differs from your drawing in stereo only. Use the calculated stereo below. ${link}`); return; }
+    if (recRel === 'different'){
+      const sameTaut = rec.mol && idcode(m, OCL.CanonizerUtil.NOSTEREO_TAUTOMER) === idcode(rec.mol, OCL.CanonizerUtil.NOSTEREO_TAUTOMER);
+      badge(sameTaut ? 'warn' : 'bad', sameTaut
+        ? `PubChem stores this compound as a different tautomer or charge form, and the name is for that form. ${link}`
+        : `PubChem returned a record that doesn’t match your drawing, so this name may be wrong. Check it by hand. ${link}`);
+      return;
+    }
+    // Independent back-check: does OPSIN read the name back into the same structure?
+    badge('busy', 'Double-checking the name with OPSIN…');
+    let op = null;
+    try { op = await opsin(rec.iupac); } catch {}
+    if (stale()) return;
+    const back = compareMols(m, op && op.mol);
+    if (back === 'same') badge('ok', `✓ Checked: PubChem’s record matches your structure, and OPSIN reads the name back to it. ${link}`);
+    else if (back === 'unknown') badge('ok', `✓ PubChem’s record matches your structure. ${op ? 'OPSIN couldn’t parse the name for a second check.' : 'OPSIN couldn’t be reached for a second check.'} ${link}`);
+    else if (back === 'stereo') badge('warn', `PubChem’s record matches, but OPSIN reads the name with different stereo. Use the calculated stereo below. ${link}`);
+    else badge('bad', `PubChem’s record matches your structure, but OPSIN reads the name as a different structure. Check the name by hand. ${link}`);
+  } catch (e) {
+    if (stale()) return;
+    resetName('Press “Get IUPAC name” to name this structure.');
+    setMsg($('nameItMsg'), friendly(e, 'PubChem'));
+  } finally {
+    $('nameItBtn').disabled = !state.mol;
+  }
+}
+$('nameItBtn').onclick = () => nameStructure();
+
+$('copyBtn').onclick = async () => {
+  try { await navigator.clipboard.writeText(state.smiles); $('copyBtn').textContent = 'Copied'; }
+  catch { $('copyBtn').textContent = 'Select & copy above'; }
+  setTimeout(() => $('copyBtn').textContent = 'Copy SMILES', 1500);
+};
+$('clearBtn').onclick = () => { editor.clearAll(); onMoleculeChanged(); };
+
+// ---------- 3D controls ----------
+$('styleSeg').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.style = b.dataset.style;
+  for (const x of $('styleSeg').querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b));
+  apply3DStyle();
+});
+['showH','spin','labels'].forEach(id => $(id).addEventListener('change', apply3DStyle));
+$('reconfBtn').onclick = () => { if (!state.mol) return; state.seed++; build3D(state.mol); };
+
+// ---------- tabs ----------
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', String(x === t)));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === t.dataset.view));
+  if (t.dataset.view === 'v3d' && viewer){ viewer.resize(); viewer.render(); }
+}));
+window.addEventListener('resize', () => { if (viewer){ viewer.resize(); viewer.render(); } });
+
+// ---------- toolbar tooltips ----------
+// The editor's toolbar is drawn on a canvas (2 columns x 17 rows), so we map the pointer to a cell.
+const TOOLBAR = [
+  [['Clear all','Erase the whole drawing.'], ['Undo','Undo the last change.']],
+  [['Clean up','Tidy the drawing: even bond lengths and angles.'], ['Zoom','Drag up or down on the canvas to zoom in or out.']],
+  [['Lasso select','Drag around atoms to select them, then drag to move or press Delete to remove.'], ['Atom mapping','For reactions only; not used here.']],
+  [['Atom properties','Click an atom to set a custom label or advanced query features.'], ['Stereo group (abs / and / or)','Marks how stereocentres relate, e.g. racemic or relative stereo. Click the small arrow for options.']],
+  [['Eraser','Click an atom or bond to delete it.'], ['Text','Add a text note (not part of the molecule).']],
+  [['Bond','Drag from an atom to draw a bond. Click an existing bond to make it double; click again for triple.'], ['Chain','Drag to draw a zig-zag carbon chain of any length.']],
+  [['Wedge bond','Bond pointing toward you (out of the page). Use for R/S stereo.'], ['Hashed bond','Bond pointing away from you (into the page). Use for R/S stereo.']],
+  [['Cyclopropane ring','Click empty space, or click an atom or bond to fuse the ring onto it.'], ['Cyclobutane ring','Click empty space, or click an atom or bond to fuse the ring onto it.']],
+  [['Cyclopentane ring','Click empty space, or click an atom or bond to fuse the ring onto it.'], ['Cyclohexane ring','Click empty space, or click an atom or bond to fuse the ring onto it.']],
+  [['Cycloheptane ring','Click empty space, or click an atom or bond to fuse the ring onto it.'], ['Benzene ring','Aromatic six-membered ring. Click an atom or bond to fuse it on.']],
+  [['Positive charge','Click an atom to add +1 charge.'], ['Negative charge','Click an atom to add −1 charge.']],
+  [['Carbon (C)','Click an atom to change it to carbon, or empty space to add one.'], ['Silicon (Si)','Click an atom to change it to silicon.']],
+  [['Nitrogen (N)','Click an atom to change it to nitrogen.'], ['Phosphorus (P)','Click an atom to change it to phosphorus.']],
+  [['Oxygen (O)','Click an atom to change it to oxygen.'], ['Sulfur (S)','Click an atom to change it to sulfur.']],
+  [['Fluorine (F)','Click an atom to change it to fluorine.'], ['Chlorine (Cl)','Click an atom to change it to chlorine.']],
+  [['Bromine (Br)','Click an atom to change it to bromine.'], ['Iodine (I)','Click an atom to change it to iodine.']],
+  [['Hydrogen (H)','Add an explicit hydrogen, e.g. to set stereo with a wedged H.'], ['Other element','Open the periodic table to pick any element.']],
+];
+(function setupToolbarTips(){
+  const tip = $('tip');
+  let timer = 0, lastKey = '';
+  const hide = () => { clearTimeout(timer); tip.classList.remove('show'); lastKey = ''; };
+  const canvas = () => {
+    const find = (root) => {
+      const c = root.querySelector('canvas'); if (c) return c;
+      for (const el of root.querySelectorAll('*')) if (el.shadowRoot){ const x = find(el.shadowRoot); if (x) return x; }
+      return null;
+    };
+    return find($('editor'));
+  };
+  const onMove = (e) => {
+    const c = canvas(); if (!c){ hide(); return; }
+    const r = c.getBoundingClientRect();
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    if (x < 0 || y < 0 || x > r.width || y > r.height){ if (lastKey) hide(); return; }
+    const col = x < r.width / 2 ? 0 : 1;
+    const row = Math.floor(y / (r.height / TOOLBAR.length));
+    const item = TOOLBAR[row] && TOOLBAR[row][col];
+    if (!item){ hide(); return; }
+    const key = row + ':' + col;
+    const place = () => {
+      const left = Math.min(r.right + 10, window.innerWidth - 270);
+      tip.style.left = left + 'px';
+      tip.style.top = Math.max(8, Math.min(e.clientY - 14, window.innerHeight - 80)) + 'px';
+    };
+    if (key === lastKey){ if (tip.classList.contains('show')) place(); return; }
+    hide(); lastKey = key;
+    timer = setTimeout(() => {
+      tip.innerHTML = `<b>${item[0]}</b>${item[1]}`;
+      place(); tip.classList.add('show');
+    }, 700);
+  };
+  window.addEventListener('mousemove', onMove, true);
+  window.addEventListener('mousedown', hide, true);
+  window.addEventListener('scroll', hide, true);
+})();
+
+// ---------- circle gesture -> ring of any size ----------
+(function setupRingGesture(){
+  const drawCanvas = () => {
+    const find = (root) => {
+      const cs = root.querySelectorAll('canvas'); if (cs.length) return cs[cs.length - 1];
+      for (const el of root.querySelectorAll('*')) if (el.shadowRoot){ const x = find(el.shadowRoot); if (x) return x; }
+      return null;
+    };
+    return find($('editor'));
+  };
+  let pts = null, snap = null, rect = null, pending = null;
+  const pop = $('ringPop'), ghost = $('ringGhost');
+
+  window.addEventListener('pointerdown', (e) => {
+    if (pop.classList.contains('show')) return;
+    const c = drawCanvas(); if (!c) return;
+    const r = c.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom){ pts = null; return; }
+    rect = r; pts = [[e.clientX, e.clientY]];
+    snap = editor.getMolecule().getCompactCopy();
+  }, true);
+  window.addEventListener('pointermove', (e) => { if (pts && e.buttons) pts.push([e.clientX, e.clientY]); }, true);
+  window.addEventListener('pointerup', (e) => {
+    if (!pts) return;
+    const p = pts; pts = null; p.push([e.clientX, e.clientY]);
+    const circle = detectCircle(p);
+    if (!circle) return;
+    // let the editor finish handling this gesture, then decide
+    setTimeout(() => {
+      const live = editor.getMolecule();
+      for (let i = 0; i < live.getAllAtoms(); i++) if (live.isSelectedAtom(i)) return; // it was a lasso selection
+      // undo whatever the drag did to the drawing, keeping coordinates as they were
+      live.clear(); snap.copyMolecule(live); editor.moleculeChanged();
+      openPopup(circle);
+    }, 0);
+  }, true);
+
+  function detectCircle(p){
+    if (p.length < 12) return null;
+    let cx = 0, cy = 0; for (const [x,y] of p){ cx += x; cy += y; } cx /= p.length; cy /= p.length;
+    const rs = p.map(([x,y]) => Math.hypot(x - cx, y - cy));
+    const mean = rs.reduce((a,b) => a + b, 0) / rs.length;
+    if (mean < 14) return null;
+    const sd = Math.sqrt(rs.reduce((a,b) => a + (b - mean) ** 2, 0) / rs.length);
+    if (sd / mean > 0.35) return null;
+    const close = Math.hypot(p[0][0] - p[p.length-1][0], p[0][1] - p[p.length-1][1]);
+    if (close > mean * 0.9) return null;
+    let swept = 0;
+    for (let i = 1; i < p.length; i++){
+      let d = Math.atan2(p[i][1]-cy, p[i][0]-cx) - Math.atan2(p[i-1][1]-cy, p[i-1][0]-cx);
+      if (d > Math.PI) d -= 2*Math.PI; if (d < -Math.PI) d += 2*Math.PI;
+      swept += d;
+    }
+    if (Math.abs(swept) < Math.PI * 1.6) return null;
+    return { cx, cy, r: mean };
+  }
+
+  function openPopup(c){
+    pending = c;
+    ghost.setAttribute('width', c.r * 2 + 8); ghost.setAttribute('height', c.r * 2 + 8);
+    ghost.style.left = (c.cx - c.r - 4) + 'px'; ghost.style.top = (c.cy - c.r - 4) + 'px';
+    ghost.innerHTML = `<circle cx="${c.r+4}" cy="${c.r+4}" r="${c.r}" fill="rgba(47,91,211,.06)" stroke="#2f5bd3" stroke-dasharray="4 4" stroke-width="1.5"/>`;
+    ghost.style.display = 'block';
+    pop.classList.add('show');
+    const pw = pop.offsetWidth, ph = pop.offsetHeight;
+    pop.style.left = Math.max(8, Math.min(c.cx - pw / 2, window.innerWidth - pw - 8)) + 'px';
+    pop.style.top = Math.max(8, Math.min(c.cy + c.r + 10, window.innerHeight - ph - 8)) + 'px';
+    const inp = $('ringSize'); inp.focus(); inp.select();
+  }
+  function closePopup(){ pop.classList.remove('show'); ghost.style.display = 'none'; pending = null; }
+
+  pop.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const n = Math.round(Number($('ringSize').value));
+    if (!pending || !(n >= 3 && n <= 40)){ $('ringSize').focus(); return; }
+    const c = drawCanvas(); const r = c.getBoundingClientRect();
+    addRing(n, pending.cx - r.left, pending.cy - r.top);
+    closePopup();
+  });
+  $('ringCancel').onclick = closePopup;
+  pop.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePopup(); });
+  document.addEventListener('pointerdown', (e) => { if (pending && !pop.contains(e.target)) closePopup(); });
+
+  function addRing(n, x, y){
+    const m = editor.getMolecule();
+    let b = 0;
+    try { b = m.getAllBonds() ? m.getAverageBondLength(true) : 0; } catch {}
+    if (!(b > 5)) b = 24;
+    const R = b / (2 * Math.sin(Math.PI / n));
+    const ids = [];
+    for (let i = 0; i < n; i++){
+      const a = m.addAtom(6);
+      const t = -Math.PI / 2 + (2 * Math.PI * i) / n;
+      m.setAtomX(a, x + R * Math.cos(t)); m.setAtomY(a, y + R * Math.sin(t));
+      ids.push(a);
+    }
+    for (let i = 0; i < n; i++) m.addBond(ids[i], ids[(i + 1) % n]);
+    editor.moleculeChanged();
+    onMoleculeChanged();
+  }
+})();
+
+// plain tooltips for the page's own controls
+const titles = { ballstick:'Atoms as small balls joined by sticks', stick:'Bonds only, as thick sticks', spacefill:'Atoms at their van der Waals size: the molecule\u2019s real \u201cfilled\u201d shape', wire:'Thin lines only' };
+document.querySelectorAll('#styleSeg button').forEach(b => b.title = titles[b.dataset.style]);
+$('nameItBtn').title = 'Look up the IUPAC name in PubChem, then check it with OPSIN';
+$('copyBtn').title = 'Copy the SMILES text for this structure';
+$('clearBtn').title = 'Erase the whole drawing';
+
+// ---------- online status + offline install ----------
+const showNet = () => $('net').classList.toggle('show', navigator.onLine === false);
+window.addEventListener('online', showNet); window.addEventListener('offline', showNet); showNet();
+if ('serviceWorker' in navigator && location.protocol !== 'file:'){
+  navigator.serviceWorker.register('./sw.js').catch(e => console.warn('service worker', e));
+}
+
+// start with a friendly example
+loadMolecule(OCL.Molecule.fromSmiles('CC(C)CCO'));
+</script>
+</body>
+</html>
