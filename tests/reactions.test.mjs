@@ -3,8 +3,8 @@
 import { readFileSync } from 'node:fs';
 import * as OCL from '../openchemlib.js';
 import { nameMolecule } from '../namer.js';
-import { predictSequence, rankSN1, rankSN2, PATHWAYS } from '../predict.js';
-import { findReagent, matchMolecule, guessBox, solventType, entryFromMolecule } from '../reagents.js';
+import { predictSequence, runSequence, rankSN1, rankSN2, PATHWAYS } from '../predict.js';
+import { findReagent, parseSequence, matchMolecule, guessBox, solventType, entryFromMolecule } from '../reagents.js';
 
 const here = (p) => new URL(p, import.meta.url).pathname;
 OCL.Resources.registerFromNodejs(here('../resources.json'));
@@ -83,6 +83,51 @@ for (const [i, r] of seed.reagentMatching.entries()){
     if (r.guess){ const g = guessBox(OCL, M.fromSmiles(r.guess)); if (g?.box !== r.box || !g?.estimated) fail(id, `guess ${r.guess}: expected ${r.box}, got ${g?.box}`); }
     if (r.solvent){ const t = solventType(data.cat, r.solvent); if (t !== r.type) fail(id, `solvent ${r.solvent}: expected ${r.type}, got ${t}`); }
   } catch (err){ fail(id, `threw ${String(err && err.message || err).split('\n')[0]}`); }
+}
+
+// ---------- multistep sequences: typed on one line, each step on the chosen product of the step before ----------
+for (const q of seed.sequenceParsing){
+  const p = parseSequence(data.cat, q.text);
+  if (q.error){ if (!p || !p.error) fail('parse', `"${q.text}": expected an error, got ${p && p.steps ? p.steps.length + ' steps' : p}`); continue; }
+  if (q.steps === null){ if (p !== null) fail('parse', `"${q.text}": expected not a sequence, got ${JSON.stringify(p)}`); continue; }
+  const got = p && p.steps ? p.steps.map((s) => `${s.reagent.id}/${s.solvent}/${s.heat}`).join(' ') : `error ${p && p.error}`;
+  if (got !== q.steps.join(' ')) fail('parse', `"${q.text}": expected ${q.steps.join(' ')}, got ${got}`);
+}
+for (const q of seed.sequences){
+  try {
+    const p = parseSequence(data.cat, q.text);
+    if (!p || p.error){ fail(q.id, `parse: ${p && p.error}`); continue; }
+    const picks = (q.picks || []).map((s) => s && idOf(s));
+    const { steps } = runSequence(OCL, M.fromSmiles(q.substrate), p.steps, data, picks);
+    q.expect.forEach((e, k) => {
+      const s = steps[k], tag = `step ${k + 1}`;
+      if (!s){ fail(q.id, `${tag}: missing`); return; }
+      if (e.stop || s.stop){ if (s.stop !== e.stop) fail(q.id, `${tag}: expected stop ${e.stop}, got ${s.stop || 'a product'}`); return; }
+      const c = s.chosen;
+      if (c.pw !== e.pw) fail(q.id, `${tag}: expected ${e.pw}, got ${c.pw}`);
+      if (e.smiles && c.product.idcode !== idOf(e.smiles)) fail(q.id, `${tag}: expected ${e.smiles}, got ${c.product.smiles}`);
+      if (e.name && nameOf(c.product.mol) !== e.name) fail(q.id, `${tag}: expected ${e.name}, got ${nameOf(c.product.mol)}`);
+      if (e.stereo && c.product.stereo !== e.stereo) fail(q.id, `${tag}: expected stereo ${e.stereo}, got ${c.product.stereo}`);
+    });
+  } catch (err){ fail(q.id, `threw ${String(err && err.message || err).split('\n')[0]}`); }
+}
+
+// ---------- "Which pathway wins?" grid: every cell (all conditions) = what predict() gives for its example ----------
+{
+  const { buildGrid, SOLVENT_MODES } = await import('../pathway-grid.js');
+  const { predict } = await import('../predict.js');
+  for (const solvent of SOLVENT_MODES) for (const heat of [false, true]){
+    for (const { row, cells } of buildGrid({ solvent, heat }, data)) for (const c of cells){
+      const tag = `${row.id}×${c.col} ${solvent}${heat ? '+heat' : ''}`;
+      try {
+        const e = c.example;
+        const res = predict(OCL, M.fromSmiles(e.smiles), e.reagent, { solvent: e.solvent, heat: e.heat }, data);
+        const got = res.notCovered ? 'nc:' + res.notCovered : PATHWAYS.map((p) => res.lamps[p] || 'none').join();
+        if (got !== c.key) fail('grid', `${tag}: grid says ${c.key}, predict() on ${e.smiles} + ${e.reagent} says ${got}`);
+        if (c.noReaction && !res.notCovered && PATHWAYS.some((p) => res.lamps[p] && res.lamps[p] !== 'none')) fail('grid', `${tag}: grid says no reaction`);
+      } catch (err){ fail('grid', `${tag}: threw ${String(err && err.message || err).split('\n')[0]}`); }
+    }
+  }
 }
 
 // every reason key the table uses has text

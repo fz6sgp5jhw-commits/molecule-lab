@@ -97,3 +97,40 @@ export function entryFromMolecule(OCL, mol, box){
   if (at >= 0){ m.setAtomCharge(at, 0); m.ensureHelperArrays(OCL.Molecule.cHelperNeighbours); nu = { mol: m, atom: at }; }
   return { id: 'custom', label: 'drawn reagent', formula, names: [], smiles, box, nu, estimated: !!g && g.box === box };
 }
+
+// A worksheet-style sequence typed on one line: "1) TsCl, py 2) NaCN, DMF", "1. PBr3 2. KOtBu",
+// "1) HBr 2) NaOEt, EtOH, heat". → { steps: [{ text, reagent, solvent, heat }] } or { error }.
+// Within a step, pieces are split on , / ; and each must be a known reagent, a solvent, or heat
+// ("heat", "Δ", "reflux", or a temperature of 50 °C or more). No solvent → the reagent's usual one.
+// Returns null when the text isn't numbered (then it's an ordinary single reagent).
+const HEAT = /^(heat|Δ|delta|reflux|hot|warm|heated)$/i;
+export function parseSequence(cat, text){
+  const t = String(text).trim();
+  const parts = t.split(/(?:^|[\s;,])\(?([1-9])\s*[).:]\s*/).slice(1);
+  if (parts.length < 4) return null; // fewer than two numbered steps
+  const steps = [];
+  for (let i = 0; i < parts.length; i += 2){
+    const n = Number(parts[i]), body = (parts[i + 1] || '').trim().replace(/[;,]+$/, '');
+    if (n !== steps.length + 1) return { error: `steps must be numbered 1), 2), 3) in order (found ${n}) after ${steps.length})` };
+    if (!body) return { error: `step ${n} is empty` };
+    const step = { text: body, reagent: findReagent(cat, body), solvent: null, heat: false };
+    if (!step.reagent){
+      for (const raw of body.split(/[,/;+]|\s+in\s+|\s+(?=\d+\s*°)/)){
+        const piece = raw.trim().replace(/^(and|with)\s+/i, '');
+        if (!piece) continue;
+        const temp = piece.match(/^(\d+)\s*°?\s*C$/i);
+        if (HEAT.test(piece) || (temp && Number(temp[1]) >= 50)){ step.heat = true; continue; }
+        if (temp) continue;
+        const r = findReagent(cat, piece), s = findSolvent(cat, piece);
+        if (r && !step.reagent) step.reagent = r; // the first reagent named is the reagent ("EtOH, heat")
+        else if (s && !step.solvent) step.solvent = s.id; // later ones are the solvent ("NaOEt, EtOH")
+        else return { error: `step ${n}: “${piece}” isn’t in the reagent or solvent list` };
+      }
+    }
+    if (!step.reagent) return { error: `step ${n}: no reagent found in “${body}”` };
+    if (!step.solvent) step.solvent = step.reagent.solvent || null;
+    steps.push(step);
+  }
+  if (steps.length > 3) return { error: 'at most 3 steps' };
+  return { steps };
+}

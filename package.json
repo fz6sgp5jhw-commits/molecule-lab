@@ -9,6 +9,7 @@
     "test:reactions": "node tests/reactions.test.mjs",
     "test:mech": "node tests/mech-logic.test.mjs",
     "test:reactions-ui": "node tests/run-all.mjs reactions-ui",
+    "test:sequence-ui": "node tests/run-all.mjs sequence-ui",
     "test:chair-report": "node tests/chair.test.mjs",
     "serve": "python3 -m http.server 8765"
   },

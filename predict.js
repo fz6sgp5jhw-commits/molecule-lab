@@ -18,6 +18,16 @@ export function lookupRule(rules, facts){
   return rules.rows.find((r) => Object.entries(r.when).every(([k, v]) => matches(v, facts[k]))) || null;
 }
 
+// Substrate flags that decide before the table is read (shared with the "Which pathway wins?" grid):
+// { reason } = no reaction, with that reason; { notCovered } = out of scope; null = read the table.
+export function flagStop(flags){
+  if (flags.includes('aryl') || flags.includes('vinyl')) return { reason: 'vinyl_aryl' };
+  if (flags.includes('neopentyl')) return { notCovered: 'neopentyl' };
+  if (flags.includes('poorLG')) return { notCovered: 'poor_lg' };
+  if (flags.includes('alphaHetero') || flags.includes('alphaCarbonyl')) return { notCovered: 'alpha_group' };
+  return null;
+}
+
 function resolveReagent(cat, reagent){ return typeof reagent === 'string' ? findReagent(cat, reagent) : reagent; }
 
 // predict(OCL, mol, reagent, { solvent, heat, site }, { rules, cat })
@@ -43,10 +53,9 @@ export function predict(OCL, mol, reagent, opts = {}, data){
     { step: 'conditions', text: `${solvent ? solvent.label + ' (polar ' + solvent.type + ')' : 'solvent unknown'}${opts.heat ? ', heat' : ''}` },
   ];
   // flags that stop the analysis before the table
-  if (site.flags.includes('aryl') || site.flags.includes('vinyl')){ res.reasons.push('vinyl_aryl'); return res; }
-  if (site.flags.includes('neopentyl')) return { ...res, notCovered: 'neopentyl' };
-  if (site.flags.includes('poorLG')) return { ...res, notCovered: 'poor_lg' };
-  if (site.flags.includes('alphaHetero') || site.flags.includes('alphaCarbonyl')) return { ...res, notCovered: 'alpha_group' };
+  const stop = flagStop(site.flags);
+  if (stop && stop.reason){ res.reasons.push(stop.reason); return res; }
+  if (stop) return { ...res, notCovered: stop.notCovered };
   if (!facts.solvent) return { ...res, notCovered: 'unknown_solvent' };
 
   const row = lookupRule(rules, facts);
@@ -157,16 +166,39 @@ function cationic(OCL, m, site, r, pw, out){
 // Several steps in a row (e.g. 1) TsCl, pyridine 2) NaCN, DMSO). Each step works on the major
 // product of the step before. steps: [{ reagent, solvent, heat, site }]
 export function predictSequence(OCL, mol, steps, data){
+  return runSequence(OCL, mol, steps, data).steps.filter((s) => s.res).map((s) => s.res);
+}
+
+// The same, with everything the chain view needs. picks[k] (an ID code) continues from a different
+// (minor) product of step k instead of the major one. A step that is out of scope, gives no reaction
+// or needs a site choice stops the chain there: { stop: reasonKey }, and the later steps aren't run.
+// → { steps: [{ input, res, options: [{ pw, product }], chosen, stop }], stopped: index | null }
+export function runSequence(OCL, mol, steps, data, picks = []){
   const out = [];
-  let cur = mol;
-  for (const s of steps){
+  let cur = mol, stopped = null;
+  for (let k = 0; k < steps.length; k++){
+    const s = steps[k];
+    if (stopped !== null){ out.push({ input: null, res: null, options: [], chosen: null, stop: 'sequence_not_run' }); continue; }
     const res = predict(OCL, cur, s.reagent, s, data);
-    out.push(res);
-    const next = res.activation ? res.activation.product : majorProduct(res);
-    if (!next) break;
-    cur = next.mol;
+    const options = stepOptions(res);
+    const chosen = options.find((o) => picks[k] && o.product.idcode === picks[k]) || options[0] || null;
+    let stop = null;
+    if (res.notCovered) stop = res.notCovered;
+    else if (res.needSite) stop = 'sequence_site';
+    else if (!chosen) stop = res.reasons.includes('vinyl_aryl') ? 'vinyl_aryl' : 'sequence_no_reaction';
+    out.push({ input: cur, res, options, chosen, stop });
+    if (stop){ stopped = k; continue; }
+    cur = chosen.product.mol;
   }
-  return out;
+  return { steps: out, stopped };
+}
+// every product a step can continue from: the activation product, else the lit pathways' products,
+// major pathway first (so options[0] is the major product)
+export function stepOptions(res){
+  if (res.activation) return [{ pw: 'activation', product: res.activation.product }];
+  const order = { major: 0, competing: 1, minor: 2 };
+  const pws = PATHWAYS.filter((p) => res.lamps && res.lamps[p] && res.lamps[p] !== 'none' && res.pathways[p]).sort((a, b) => order[res.lamps[a]] - order[res.lamps[b]]);
+  return pws.flatMap((pw) => res.pathways[pw].products.map((product) => ({ pw, product })));
 }
 export function majorProduct(res){
   const pw = PATHWAYS.find((p) => res.lamps[p] === 'major');

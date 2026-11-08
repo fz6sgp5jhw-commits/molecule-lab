@@ -331,6 +331,58 @@
   .mv-step{flex:1;font-size:14px;text-align:center}
   @media (max-width:420px){.mv-side{grid-template-columns:1fr 1fr}.mv-dialog{font-size:19px}.rx-ranklist li{grid-template-columns:28px 80px minmax(0,1fr)}.rx-thumb svg{width:80px}}
   @media (prefers-reduced-motion:reduce){.mv-arrow{animation:none;stroke-dashoffset:0}.mv-ball{transition:none}}
+  /* multistep sequences */
+  .rx-steps{margin-top:8px}
+  .rx-chain{margin-top:12px;background:#fff;box-shadow:var(--sunken);padding:6px}
+  .rx-chead{font-weight:600;font-size:14px}
+  .rx-clist{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+  .rx-clist li{display:flex;flex-direction:column;align-items:center;min-width:0}
+  .rx-clist small{font-size:12px;color:var(--muted)}
+  .rx-carrow{font:20px/1 var(--crt)}
+  .rx-cstep{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px;font-size:13px;max-width:170px}
+  .rx-cstep b{font:17px/1 var(--crt);white-space:normal;text-align:center}
+  .rx-cstep[aria-pressed="true"]{box-shadow:var(--sunken);background:#d4d0c8}
+  .rx-cthumb{display:block;width:130px;height:78px}
+  .rx-cthumb svg{width:100%;height:100%}
+  .rx-cstop{display:flex;align-items:center;justify-content:center;background:#ffe0e0;color:var(--bad);font-size:14px}
+  .rx-card.rx-chosen{outline:2px solid var(--sel)}
+  .rx-carry{font-size:13px;color:var(--sel);align-self:center}
+  @media (max-width:600px){.rx-clist{flex-direction:column;align-items:stretch}.rx-clist li{align-items:stretch}.rx-carrow{transform:rotate(90deg);align-self:center}.rx-cstep{max-width:none;flex-direction:row;justify-content:space-between}.rx-cstart{flex-direction:row !important;justify-content:center;gap:8px}}
+  /* Which pathway wins? */
+  .pw-tablewrap{margin-top:8px}
+  .pw-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px;background:#fff;box-shadow:var(--sunken)}
+  .pw-table th,.pw-table td{border:1px solid #808080;padding:0;vertical-align:middle}
+  .pw-table thead th{background:var(--face);font-weight:600;padding:3px 2px;text-align:center}
+  .pw-table thead .pw-short{display:block;font-size:12px;line-height:1.1}
+  .pw-table thead small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
+  .pw-table thead .pw-solv{color:var(--sel)}
+  .pw-table tbody th{background:var(--face);text-align:left;padding:2px 4px;font-size:12px;font-weight:600}
+  .pw-table .pw-corner{font-size:11px;font-weight:400;color:var(--muted)}
+  .pw-cell{display:block;width:100%;min-height:38px;padding:3px 2px;box-shadow:none;background:transparent;font:16px/1.05 var(--crt);text-align:center;color:#000}
+  .pw-cell[aria-pressed="true"]{outline:2px dotted var(--sel);outline-offset:-3px;background:#ffffe1}
+  .pw-cell.pw-SN2{background:#e3ecff}.pw-cell.pw-SN1{background:#fff1d6}.pw-cell.pw-E2{background:#e2f5e2}.pw-cell.pw-E1{background:#f5e2f5}
+  .pw-cell.pw-nc,.pw-cell.pw-none{background:#eee;color:var(--muted)}
+  .pw-min{color:#555}
+  .pw-m{font-style:normal;font-size:11px;color:var(--sel);margin-left:2px;vertical-align:super}
+  .pw-rows,.pw-list{display:none}
+  .pw-list{list-style:none;margin:8px 0 0;padding:0;flex-direction:column;gap:4px}
+  .pw-list .pw-cell{display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left;box-shadow:var(--raised)}
+  .pw-colname{font:600 14px/1.15 var(--ui)}
+  .pw-colname small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+  .pw-res{white-space:nowrap}
+  @media (max-width:760px){.pw-tablewrap{display:none}.pw-rows{display:flex}.pw-list{display:flex}}
+  .pw-detail{margin-top:10px;background:var(--face);box-shadow:var(--raised);padding:6px}
+  .pw-dh{background:linear-gradient(90deg,var(--title),var(--title2));color:#fff;padding:3px 6px;font-size:14px}
+  .pw-dh small{display:block;font-size:12px;opacity:.9}
+  .pw-why{margin:4px 0 0;padding-left:18px;font-size:14px}
+  .pw-why li{margin-top:3px}
+  .pw-course{background:#ffffe1}
+  .pw-var{border-collapse:collapse;font-size:13px;margin-top:4px}
+  .pw-var th{text-align:left;font-weight:400;padding:1px 8px 1px 0}
+  .pw-var td{font:16px/1.1 var(--crt)}
+  .pw-ex{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px;font-size:14px}
+  .pw-exdraw svg{width:140px;height:80px;background:#fff;box-shadow:var(--sunken)}
+  .chem-name{font:18px/1 var(--crt)}
 </style>
 </head>
 <body>
@@ -468,8 +520,10 @@
           </div>
           <div class="rx-lab">Substrate: the molecule in the Draw window. For a reagent, type it, tap a chip, or draw it.</div>
           <div class="chips" id="rxSites" hidden></div>
+          <div class="chips rx-steps" id="rxSteps"></div>
+          <div class="note" id="rxStepNote" hidden></div>
           <form class="search" id="rxReagentForm">
-            <input id="rxReagentInput" type="text" autocomplete="off" spellcheck="false" placeholder="Reagent, e.g. NaI, sodium ethoxide, KOtBu">
+            <input id="rxReagentInput" type="text" autocomplete="off" spellcheck="false" placeholder="Reagent, e.g. NaI, KOtBu, or 1) TsCl, py 2) NaCN, DMF">
             <button type="submit">Set</button>
           </form>
           <div class="chips" id="rxReagentChips"></div>
@@ -482,6 +536,7 @@
           <div class="msg" id="rxMsg" hidden></div>
           <div id="rxOut" hidden>
             <div class="msg warn" id="rxStale" hidden></div>
+            <div class="rx-chain" id="rxChain" hidden></div>
             <div class="rx-path" id="rxPath"></div>
             <div class="rx-pathinfo" id="rxPathInfo" hidden></div>
             <div class="rx-lamps" id="rxLamps"></div>
@@ -497,7 +552,7 @@
             <li>Type the reagent (NaCN, sodium ethoxide, KOtBu…) or tap a chip. The usual solvent is filled in; change it to match the problem, and press 🔥 Heat if the problem says heat or a temperature.</li>
             <li>Press Predict. Tap each box of the decision path to see the rule, then read the lamps: bright = major, dim = minor or competing, off = doesn’t happen.</li>
             <li>Each result card gives the product, its name, R/S or E/Z and “Stereospecific Y/N”. Tap a lit lamp to step through the mechanism and press WHY? for the reasons.</li>
-            <li>Two steps (e.g. 1) TsCl, pyridine 2) NaCN): predict step 1, press “Load into editor” on its product, then set the step 2 reagent and predict again.</li>
+            <li>Sequences (e.g. 1) TsCl, pyridine 2) NaCN, DMF): type the whole line into the reagent box and press Set, or press “+ Add step 2” and set each step’s reagent, solvent and heat. Predict runs every step on the product of the step before; tap a step in the strip to see it, “Continue from this” to carry on from a minor product instead, and “▶ Watch all steps” for the mechanisms one after another.</li>
             <li>Ranking problems: draw all the molecules side by side in the Draw window, then press “Rank by SN1 rate” or “Rank by SN2 rate”.</li>
           </ol>
         </details>
@@ -507,6 +562,20 @@
     <section class="card rx-only" id="mechWin" hidden>
       <div class="card-h"><h2 id="mechTitle">Mechanism</h2><span class="wbtns"><button type="button" id="mechClose" aria-label="Close mechanism">×</button></span></div>
       <div class="card-b"><div id="mechMount"></div></div>
+    </section>
+
+    <section class="card rx-only" id="pwWin">
+      <div class="card-h"><h2>Which pathway wins?</h2><span class="wbtns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span></div>
+      <div class="card-b">
+        <p class="note" id="pwIntro"></p>
+        <div class="chips" id="pwConds"></div>
+        <div class="chips pw-rows" id="pwRows"></div>
+        <div class="pw-tablewrap"><table class="pw-table" id="pwTable"></table></div>
+        <ul class="pw-list" id="pwList"></ul>
+        <div class="note" id="pwLegend"></div>
+        <div class="pw-detail" id="pwDetail" hidden></div>
+        <div class="note" id="pwFixed"></div>
+      </div>
     </section>
   </div>
 </main>

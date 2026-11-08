@@ -1,8 +1,8 @@
 {
-  "_about": "Decision table for SN1/SN2/E1/E2. Rows are checked in order and the first match wins. when: lg (halide | sulfonate | OH), cls (methyl | 1 | 2 | 3), ab (allylic/benzylic), box (nuc | nucbase | bulky | weak | activator), act (HX | PBr3 | SOCl2 | TsCl | MsCl | acid), solvent (protic | aprotic), heat (true | false). A missing key matches anything; a list matches any of its values. lamps: major | minor | competing (missing = doesn't happen). notCovered: a reason key instead of a prediction. activate: the step only turns OH into a leaving group.",
+  "_about": "Decision table for SN1/SN2/E1/E2. Rows are checked in order and the first match wins. when: lg (halide | sulfonate | OH), cls (methyl | 1 | 2 | 3), ab (allylic/benzylic), box (nuc | nucbase | bulky | weak | activator), act (HX | PBr3 | SOCl2 | TsCl | MsCl | acid), solvent (protic | aprotic), heat (true | false). A missing key matches anything; a list matches any of its values. lamps: major | minor | competing (missing = doesn't happen). notCovered: a reason key instead of a prediction. activate: the step only turns OH into a leaving group. tags: course (follows Peter's course answer key) and/or disagree (textbooks give different answers); shown as marks in the 'Which pathway wins?' grid (pathway-grid.js), which is generated from this table.",
   "rows": [
     { "when": { "lg": "OH", "act": "HX", "cls": ["methyl", "1"] }, "lamps": { "SN2": "major" }, "reasons": ["oh_protonated", "hx_primary"] },
-    { "when": { "lg": "OH", "act": "HX", "cls": ["2", "3"] }, "lamps": { "SN1": "major" }, "reasons": ["oh_protonated", "hx_secondary_tertiary", "hx_why_not_sn2", "hx_evidence", "hx_no_e1"] },
+    { "when": { "lg": "OH", "act": "HX", "cls": ["2", "3"] }, "lamps": { "SN1": "major" }, "reasons": ["oh_protonated", "hx_secondary_tertiary", "hx_why_not_sn2", "hx_evidence", "hx_no_e1"], "tags": ["course"] },
     { "when": { "lg": "OH", "act": ["PBr3", "SOCl2"], "cls": ["methyl", "1", "2"] }, "lamps": { "SN2": "major" }, "reasons": ["pbr3_socl2"] },
     { "when": { "lg": "OH", "act": ["PBr3", "SOCl2"], "cls": "3" }, "notCovered": "pbr3_tertiary" },
     { "when": { "lg": "OH", "act": ["TsCl", "MsCl"] }, "activate": true, "reasons": ["sulfonate_ester"] },
@@ -16,29 +16,32 @@
     { "when": { "cls": "methyl", "box": "weak" }, "lamps": {}, "reasons": ["methyl_weak"] },
 
     { "when": { "cls": "1", "box": "nuc" }, "lamps": { "SN2": "major" }, "reasons": ["primary_sn2"] },
-    { "when": { "cls": "1", "box": "nucbase" }, "lamps": { "SN2": "major", "E2": "minor" }, "reasons": ["primary_sn2", "strong_base_some_e2"] },
+    { "when": { "cls": "1", "ab": true, "box": ["nucbase", "bulky"] }, "lamps": { "SN2": "major" }, "reasons": ["primary_sn2", "ab1_no_beta_h"] },
+    { "when": { "cls": "1", "box": "nucbase" }, "lamps": { "SN2": "major", "E2": "minor" }, "reasons": ["primary_sn2", "strong_base_some_e2"], "tags": ["disagree"] },
     { "when": { "cls": "1", "box": "bulky" }, "lamps": { "E2": "major", "SN2": "minor" }, "reasons": ["bulky_base"] },
-    { "when": { "cls": "1", "ab": true, "box": "weak", "solvent": "protic" }, "lamps": { "SN1": "major", "E1": "minor" }, "reasons": ["ab_cation", "weak_protic_sn1"] },
+    { "when": { "cls": "1", "ab": true, "box": "weak", "solvent": "protic" }, "lamps": { "SN1": "major" }, "reasons": ["ab_cation", "weak_protic_sn1", "ab1_no_beta_h"] },
     { "when": { "cls": "1", "box": "weak" }, "lamps": {}, "reasons": ["primary_weak"] },
 
     { "when": { "cls": "2", "box": "nuc" }, "lamps": { "SN2": "major" }, "reasons": ["secondary_good_nuc"] },
-    { "when": { "cls": "2", "ab": true, "box": "nucbase", "solvent": "aprotic" }, "lamps": { "SN2": "major", "E2": "competing" }, "reasons": ["course_ab_aprotic_sn2"] },
-    { "when": { "cls": "2", "box": "nucbase" }, "lamps": { "E2": "major", "SN2": "minor" }, "reasons": ["secondary_strong_base", "books_disagree_2"] },
-    { "when": { "cls": "2", "box": "bulky" }, "lamps": { "E2": "major" }, "reasons": ["bulky_base", "hofmann_2_varies"] },
-    { "when": { "cls": ["2", "3"], "box": "weak", "solvent": "protic", "heat": true }, "lamps": { "SN1": "major", "E1": "competing" }, "reasons": ["course_weak_protic_heat"] },
+    { "when": { "cls": "2", "ab": true, "box": "nucbase", "solvent": "aprotic" }, "lamps": { "SN2": "major", "E2": "competing" }, "reasons": ["course_ab_aprotic_sn2"], "tags": ["course"] },
+    { "when": { "cls": "2", "box": "nucbase" }, "lamps": { "E2": "major", "SN2": "minor" }, "reasons": ["secondary_strong_base", "books_disagree_2"], "tags": ["disagree"] },
+    { "when": { "cls": "2", "box": "bulky" }, "lamps": { "E2": "major" }, "reasons": ["bulky_base", "hofmann_2_varies"], "tags": ["disagree"] },
+    { "when": { "cls": ["2", "3"], "box": "weak", "solvent": "protic", "heat": true }, "lamps": { "SN1": "major", "E1": "competing" }, "reasons": ["course_weak_protic_heat", "books_heat_e1"], "tags": ["course", "disagree"] },
     { "when": { "cls": ["2", "3"], "box": "weak", "solvent": "protic" }, "lamps": { "SN1": "major", "E1": "minor" }, "reasons": ["weak_protic_sn1"] },
     { "when": { "cls": ["2", "3"], "box": "weak" }, "notCovered": "weak_aprotic" },
 
     { "when": { "cls": "3", "box": "nuc", "solvent": "protic" }, "lamps": { "SN1": "major", "E1": "minor" }, "reasons": ["tertiary_no_sn2", "weak_protic_sn1"] },
-    { "when": { "cls": "3", "ab": true, "box": "nuc", "solvent": "aprotic" }, "lamps": { "SN1": "major", "E1": "minor" }, "reasons": ["tertiary_no_sn2", "course_3_ab_aprotic_sn1"] },
-    { "when": { "cls": "3", "box": "nuc" }, "notCovered": "tertiary_nuc_aprotic" },
+    { "when": { "cls": "3", "ab": true, "box": "nuc", "solvent": "aprotic" }, "lamps": { "SN1": "major", "E1": "minor" }, "reasons": ["tertiary_no_sn2", "course_3_ab_aprotic_sn1"], "tags": ["course"] },
+    { "when": { "cls": "3", "box": "nuc" }, "notCovered": "tertiary_nuc_aprotic", "tags": ["disagree"] },
     { "when": { "cls": "3", "box": ["nucbase", "bulky"] }, "lamps": { "E2": "major" }, "reasons": ["tertiary_no_sn2", "tertiary_strong_base"] }
   ],
   "reasons": {
     "methyl_sn2": "A methyl carbon is completely open to backside attack and has no β-hydrogens, so SN2 is the only path.",
     "methyl_weak": "A weak nucleophile is too slow for SN2, and a methyl cation is far too unstable for SN1, so no useful reaction happens.",
     "primary_sn2": "A 1° carbon is easy to reach from the back, and this nucleophile is a weak base, so SN2 wins.",
-    "strong_base_some_e2": "The reagent is also a strong base, so a little E2 competes, but on an unhindered 1° carbon substitution still wins.",
+    "strong_base_some_e2": "The reagent is also a strong base, so a little E2 competes, but on an unhindered 1° carbon substitution still wins. (Textbooks differ on how much E2 a 1° halide gives with an alkoxide; all agree SN2 is major.)",
+    "ab1_no_beta_h": "On a 1° allylic or benzylic carbon the only β-carbon is part of the C=C or the ring, so there is no usable β-hydrogen: no E1 or E2, even with a strong or bulky base.",
+    "books_heat_e1": "Many textbooks say heat tips a weak nucleophile in a protic solvent towards E1; your course's answer key gives SN1 as the major answer, so the app follows the course.",
     "bulky_base": "A bulky base is too crowded to reach the carbon from the back, so it pulls off a β-hydrogen instead (E2), taking the most reachable one (Hofmann).",
     "ab_cation": "Next to a C=C or benzene ring the carbocation is stabilised by resonance, so even this 1° carbon can ionise.",
     "primary_weak": "A weak nucleophile is too slow for SN2, and a 1° carbocation is too unstable for SN1, so no useful reaction happens.",
@@ -64,7 +67,7 @@
     "pbr3_tertiary": "PBr₃ and SOCl₂ work by SN2, which a 3° alcohol can't do; this case isn't covered.",
     "sulfonate_ester": "TsCl/MsCl with pyridine turn the OH into a sulfonate ester (OTs/OMs), an excellent leaving group. Only the O–H bond reacts, so the carbon keeps its configuration (retention).",
     "acid_dehydration": "With a non-nucleophilic acid and heat, water leaves to give a carbocation and a β-hydrogen is lost (E1, Zaitsev). The conjugate base (HSO₄⁻ / H₂PO₄⁻) is too weak a nucleophile to substitute.",
-    "acid_primary": "Acid dehydration of a 1° alcohol goes by a different (E2-like) path at high temperature; not covered yet.",
+    "acid_primary": "A methyl or 1° alcohol doesn't dehydrate by E1 (the cation would be far too unstable). 1° alcohols go by a different (E2-like) path at high temperature, and methanol can't eliminate at all; not covered yet.",
     "acid_no_heat": "Without heat, H₂SO₄/H₃PO₄ with an alcohol doesn't give a clean elimination; not covered yet.",
     "oh_poor_lg": "OH⁻ is a poor leaving group, so nothing happens until the OH is activated (HX, PBr₃, SOCl₂, TsCl, or acid + heat).",
     "activator_not_alcohol": "This reagent is used to activate alcohols; using it on this substrate isn't covered.",
@@ -83,6 +86,9 @@
     "ring_contraction_not_covered": "This shift would shrink the ring. Ring contraction isn't covered yet.",
     "unknown_reagent": "The reagent isn't in the list. Draw it so the rules can estimate its role.",
     "unknown_solvent": "Pick a solvent, so the rules know whether it is polar protic or polar aprotic.",
+    "sequence_site": "This product has more than one leaving group, so the next step would need you to pick the site. Load it into the editor and run that step on its own.",
+    "sequence_no_reaction": "Nothing reacts in this step, so there is no product to carry on with.",
+    "sequence_not_run": "Not run: an earlier step stopped the sequence.",
     "no_rule": "No row of the decision table covers this combination yet, so the app doesn't guess."
   }
 }

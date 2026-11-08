@@ -11,7 +11,8 @@
 //           labels { lg: 'OH₂', … }  label overrides for every frame
 //           template { humps, show, pull, frames }, texts (data/mech-text.json),
 //           vars { Nu, LG, … }, productName (Promise<string>), resultCard () → Element,
-//           offer { text, label, open() } | null   competing pathway offered at the end,
+//           offer { text, label, open() } | [them] | null   offered at the end (competing pathway, next step of a sequence),
+//           intro [page text] | undefined   dialog pages before the first frame (a sequence: what changed),
 //           onResult (bool) → called on every page: is the last (result) step showing? }
 //
 // Roles used in frames: substrate roles above, plus virtual ones: nu, base, hb (the β-H that is removed),
@@ -817,28 +818,32 @@ export function openMechanism(host, opts){
     tw.start(richText(fill(t, vars), texts.glossary));
     gloss.hidden = true;
     const why = st.pages.length > 1 && st.page > 0 && st.whyShown && st.page >= st.pages.length - (frameText().why || []).length;
+    const intro = st.page < st.intro;
     dialog.classList.toggle('mv-whypage', why);
-    host.querySelector('.mv-step').textContent = `Step ${st.frame + 1}/${frames.length}` + (f.proton ? ` · ${texts.ui.protonTag}` : '') + (why ? ' · WHY' : '');
-    host.querySelector('.mv-why').disabled = st.whyShown || !(frameText().why || []).length;
+    dialog.classList.toggle('mv-intropage', intro);
+    host.querySelector('.mv-step').textContent = intro ? texts.ui.introTag : `Step ${st.frame + 1}/${frames.length}` + (f.proton ? ` · ${texts.ui.protonTag}` : '') + (why ? ' · WHY' : '');
+    host.querySelector('.mv-why').disabled = st.whyShown || intro || !(frameText().why || []).length;
     host.querySelector('.mv-back').disabled = st.frame === 0 && st.page === 0;
     host.querySelector('.mv-next').disabled = st.frame === frames.length - 1 && st.page === st.pages.length - 1;
     result.replaceChildren();
     if (opts.onResult) opts.onResult(!!f.result);
     if (f.result && opts.resultCard) result.appendChild(opts.resultCard());
-    if (f.result && opts.offer && st.frame === frames.length - 1){
+    if (f.result && st.frame === frames.length - 1) for (const o of [].concat(opts.offer || [])){
       const d = document.createElement('div'); d.className = 'mv-offer';
-      d.innerHTML = `<p>${esc(opts.offer.text)}</p>`;
-      const b = document.createElement('button'); b.type = 'button'; b.textContent = opts.offer.label; b.onclick = () => opts.offer.open();
+      d.innerHTML = `<p>${esc(o.text)}</p>`;
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = o.label; b.onclick = () => o.open();
       d.appendChild(b); result.appendChild(d);
     }
   }
   function showFrame(i){
-    st.frame = i; st.pages = [frameText().text]; st.page = 0; st.whyShown = false; st.pending = null;
+    // intro: pages before the first frame (in a sequence: what changed since the step before)
+    st.intro = i === 0 && opts.intro ? opts.intro.length : 0;
+    st.frame = i; st.pages = [...(st.intro ? opts.intro : []), frameText().text]; st.page = 0; st.whyShown = false; st.pending = null;
     const f = frames[i];
     setGauges(side, f, ctx.humps, tok);
     qbtns.hidden = true;
     delete host.dataset.quiz;
-    const q = quizOf(f);
+    const q = !st.intro && quizOf(f);
     if (q){ showQuiz(f, q); return; }
     draw(f);
     showPage();

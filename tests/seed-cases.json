@@ -1143,5 +1143,198 @@
    "solvent": "ethanol",
    "type": "protic"
   }
+ ],
+ "sequences": [
+  {
+   "id": "Q17",
+   "about": "seed 17 typed on one line: tosylation keeps the configuration, SN2 inverts it",
+   "substrate": "C[C@@H](O)CC",
+   "text": "1) TsCl, pyridine 2) NaCN, DMSO",
+   "expect": [
+    {
+     "pw": "activation",
+     "smiles": "C[C@@H](OS(=O)(=O)c1ccc(C)cc1)CC",
+     "stereo": "retention"
+    },
+    {
+     "pw": "SN2",
+     "smiles": "C[C@H](C#N)CC",
+     "name": "(2S)-2-methylbutanenitrile",
+     "stereo": "inversion"
+    }
+   ]
+  },
+  {
+   "id": "QW3f",
+   "about": "worksheet 3f style: a 2° alcohol + 1) TsCl/pyridine 2) NaCN/DMF",
+   "substrate": "C[C@H](O)CCC",
+   "text": "1) TsCl/pyridine 2) NaCN/DMF",
+   "expect": [
+    {
+     "pw": "activation",
+     "stereo": "retention"
+    },
+    {
+     "pw": "SN2",
+     "smiles": "C[C@@H](C#N)CCC",
+     "name": "(2R)-2-methylpentanenitrile",
+     "stereo": "inversion"
+    }
+   ]
+  },
+  {
+   "id": "Q-PBr3-KOtBu",
+   "about": "PBr3 (SN2, inversion) then a bulky base (E2, Hofmann)",
+   "substrate": "C[C@@H](O)CC",
+   "text": "1. PBr3 2. KOtBu",
+   "expect": [
+    {
+     "pw": "SN2",
+     "smiles": "C[C@H](Br)CC",
+     "name": "(2S)-2-bromobutane",
+     "stereo": "inversion"
+    },
+    {
+     "pw": "E2",
+     "smiles": "C=CCC",
+     "name": "but-1-ene"
+    }
+   ]
+  },
+  {
+   "id": "Q-HBr-NaOEt",
+   "about": "HBr on a 2° alcohol (SN1 with a hydride shift), then NaOEt + heat (E2, Zaitsev)",
+   "substrate": "CC(C)C(C)O",
+   "text": "1) HBr 2) NaOEt, EtOH, heat",
+   "expect": [
+    {
+     "pw": "SN1",
+     "smiles": "CCC(C)(C)Br",
+     "name": "2-bromo-2-methylbutane"
+    },
+    {
+     "pw": "E2",
+     "smiles": "CC=C(C)C",
+     "name": "2-methylbut-2-ene"
+    }
+   ]
+  },
+  {
+   "id": "Q-pick-minor",
+   "about": "continue from the minor (unshifted) SN1 product of step 1 instead",
+   "substrate": "CC(C)C(C)O",
+   "text": "1) HBr 2) NaOEt, EtOH, heat",
+   "picks": [
+    "CC(C)C(C)Br"
+   ],
+   "expect": [
+    {
+     "pw": "SN1",
+     "smiles": "CC(C)C(C)Br",
+     "name": "2-bromo-3-methylbutane"
+    },
+    {
+     "pw": "E2",
+     "smiles": "CC=C(C)C",
+     "name": "2-methylbut-2-ene"
+    }
+   ]
+  },
+  {
+   "id": "Q-stop",
+   "about": "step 3 has no leaving group: the chain stops there, with the reason",
+   "substrate": "CCCCO",
+   "text": "1) HBr 2) NaOEt, heat 3) H2O",
+   "expect": [
+    {
+     "pw": "SN2",
+     "name": "1-bromobutane"
+    },
+    {
+     "pw": "SN2",
+     "name": "1-ethoxybutane"
+    },
+    {
+     "stop": "no_site"
+    }
+   ]
+  },
+  {
+   "id": "Q-stop-oos",
+   "about": "an out-of-scope step stops the chain; later steps are not run",
+   "substrate": "CC(C)(C)O",
+   "text": "1) PBr3 2) NaI, acetone",
+   "expect": [
+    {
+     "stop": "pbr3_tertiary"
+    },
+    {
+     "stop": "sequence_not_run"
+    }
+   ]
+  }
+ ],
+ "sequenceParsing": [
+  {
+   "text": "1) TsCl, py 2) NaCN, DMF",
+   "steps": [
+    "tscl/pyridine/false",
+    "cyanide/DMF/false"
+   ]
+  },
+  {
+   "text": "1) PBr3 2) KOtBu",
+   "steps": [
+    "pbr3/Et2O/false",
+    "tert-butoxide/tBuOH/false"
+   ]
+  },
+  {
+   "text": "1) HBr 2) NaOEt, heat",
+   "steps": [
+    "hbr/H2O/false",
+    "ethoxide/EtOH/true"
+   ]
+  },
+  {
+   "text": "1. SOCl2, pyridine 2. KOtBu, THF",
+   "steps": [
+    "socl2/pyridine/false",
+    "tert-butoxide/THF/false"
+   ]
+  },
+  {
+   "text": "1) H2SO4, Δ 2) HBr",
+   "steps": [
+    "h2so4/H2O/true",
+    "hbr/H2O/false"
+   ]
+  },
+  {
+   "text": "1) CH3OH 80 °C 2) NaI",
+   "steps": [
+    "methanol/MeOH/true",
+    "iodide/acetone/false"
+   ]
+  },
+  {
+   "text": "1) CH3OH, 80 °C 2) NaI",
+   "steps": [
+    "methanol/MeOH/true",
+    "iodide/acetone/false"
+   ]
+  },
+  {
+   "text": "1) TsCl 3) NaCN",
+   "error": true
+  },
+  {
+   "text": "1) TsCl 2) unobtainium",
+   "error": true
+  },
+  {
+   "text": "NaOEt",
+   "steps": null
+  }
  ]
 }

@@ -5,8 +5,9 @@
 // passed in from index.html so there is one implementation.
 
 import { analyse, cationPathways, buildProduct, LG_LABEL } from './reactivity.js';
-import { findReagent, matchMolecule, guessBox, entryFromMolecule, findSolvent } from './reagents.js';
-import { predict, rankSN1, rankSN2, PATHWAYS } from './predict.js';
+import { findReagent, matchMolecule, guessBox, entryFromMolecule, findSolvent, parseSequence } from './reagents.js';
+import { predict, runSequence, rankSN1, rankSN2, PATHWAYS } from './predict.js';
+import { mountGrid } from './pathway-grid-ui.js';
 import { TEMPLATES, PRELUDES, ACTIVATION } from './mech-templates.js';
 import { openMechanism } from './mech-view.js';
 
@@ -37,7 +38,10 @@ export async function mountReactions(app){
   const { OCL } = app;
   const [rules, cat, texts] = await Promise.all(['./data/rules.json', './data/reagents.json', './data/mech-text.json']
     .map((u) => fetch(u).then((r) => r.json())));
-  const st = { scene: [], sceneSig: '', drawnKey: '', hideSub: false, sceneNamesOn: true, sceneNames: {}, key: null, mol: null, sites: [], site: 0, frags: [], reagent: null, drawn: null, guess: null, solvent: null, heat: false, res: null, ed: null, quiet: false, mech: null };
+  const st = { scene: [], sceneSig: '', drawnKey: '', hideSub: false, sceneNamesOn: true, sceneNames: {}, key: null, mol: null, sites: [], site: 0, frags: [], reagent: null, drawn: null, guess: null, solvent: null, heat: false, res: null, rx: null, ed: null, quiet: false, mech: null,
+    // multistep sequences: the steps being entered (the current one is edited by the normal reagent controls),
+    // the chain result, which step's results are shown, and the student's product picks per step
+    steps: [{ reagent: null, drawn: null, guess: null, solvent: null, heat: false, text: '' }], cur: 0, chain: null, chainView: 0, picks: [] };
   const reason = (k) => rules.reasons[k] || k;
 
   // ---------- naming (PubChem → built-in namer → OPSIN check), same order as the main window ----------
@@ -190,6 +194,7 @@ export async function mountReactions(app){
     }
     for (const b of $('rxReagentChips').children) b.setAttribute('aria-pressed', String(!!r && findReagent(cat, b.dataset.q) === r));
     clearOut();
+    touchStep();
   }
   function typedReagent(text){
     st.drawn = null;
@@ -241,6 +246,11 @@ export async function mountReactions(app){
     st.quiet = true; try { st.ed.setMolecule(OCL.Molecule.fromSmiles(smiles)); } catch {} st.quiet = false;
     const m = st.ed.getMolecule(); st.drawnKey = m && m.getAllAtoms() ? m.getIDCode() : '';
   }
+  function showMolInEditor(mol){
+    if (!st.ed) return;
+    st.quiet = true; try { st.ed.setMolecule(mol ? mol.getCompactCopy() : new OCL.Molecule(0, 0)); } catch {} st.quiet = false;
+    const m = st.ed.getMolecule(); st.drawnKey = m && m.getAllAtoms() ? m.getIDCode() : '';
+  }
   function drawnReagent(){
     if (st.quiet || !st.ed) return;
     const m = st.ed.getMolecule();
@@ -274,7 +284,15 @@ export async function mountReactions(app){
     b.onclick = () => { $('rxReagentInput').value = r.label; st.drawn = null; setReagent(r, 'chip'); setMsg(''); };
     $('rxReagentChips').appendChild(b);
   }
-  $('rxReagentForm').onsubmit = (e) => { e.preventDefault(); const t = $('rxReagentInput').value.trim(); if (t) typedReagent(t); };
+  $('rxReagentForm').onsubmit = (e) => {
+    e.preventDefault();
+    const t = $('rxReagentInput').value.trim(); if (!t) return;
+    // "1) TsCl, py 2) NaCN, DMF" fills the steps; anything else is one reagent for the current step
+    const seq = parseSequence(cat, t);
+    if (seq && seq.error){ setMsg(texts.sequence.parseError + ' ' + seq.error); return; }
+    if (seq){ setSequence(seq.steps); setMsg(''); return; }
+    typedReagent(t);
+  };
   $('rxDrawBox').addEventListener('toggle', () => {
     if (!$('rxDrawBox').open || st.ed) return;
     st.ed = new OCL.CanvasEditor($('rxReagentEd'), { initialMode: 'molecule' });
@@ -293,19 +311,20 @@ export async function mountReactions(app){
       const b = document.createElement('button'); b.type = 'button'; b.className = 'chip';
       b.textContent = sv.label; b.title = `polar ${sv.type}`; b.dataset.solvent = sv.id;
       b.setAttribute('aria-pressed', String(sv.id === st.solvent));
-      b.onclick = () => { setSolvent(sv.id); clearOut(); };
+      b.onclick = () => { setSolvent(sv.id); clearOut(); touchStep(); };
       return b;
     }));
     $('rxSolventType').textContent = s ? `polar ${s.type}` : 'pick a solvent';
   }
   setSolvent(null);
-  $('rxHeat').onclick = () => { st.heat = !st.heat; $('rxHeat').setAttribute('aria-pressed', String(st.heat)); clearOut(); };
+  $('rxHeat').onclick = () => { st.heat = !st.heat; $('rxHeat').setAttribute('aria-pressed', String(st.heat)); clearOut(); touchStep(); };
 
   // ---------- predict ----------
   function setMsg(t, kind = 'warn'){ const m = $('rxMsg'); m.hidden = !t; m.className = 'msg ' + kind; m.textContent = t; }
-  function clearOut(){ $('rxOut').hidden = true; $('rxStale').hidden = true; st.res = null; st.resAn = null; closeMech(); st.scene = []; renderScene(); }
+  function clearOut(){ $('rxOut').hidden = true; $('rxStale').hidden = true; $('rxChain').hidden = true; st.chain = null; st.res = null; st.resAn = null; closeMech(); st.scene = []; renderScene(); }
   $('rxPredict').onclick = () => {
     if (!st.mol){ setMsg('Draw a substrate in the editor first.'); return; }
+    if (st.steps.length > 1){ predictChain(); return; }
     if (!st.reagent){ setMsg('Pick a reagent first: type it, tap a chip, or draw it.'); return; }
     if (!st.solvent){ setMsg('Pick a solvent.'); return; }
     let res;
@@ -313,11 +332,174 @@ export async function mountReactions(app){
     catch (e) { console.error(e); setMsg('Something went wrong in the prediction: ' + e.message, 'bad'); return; }
     $('rxStale').hidden = true; closeMech();
     st.res = res;
+    st.rx = { reagent: st.reagent, solvent: st.solvent };
     st.resAn = st.an; // the mechanism viewer keeps using this substrate even after a product is loaded
     st.scene = [];
     renderResult(res);
     renderScene();
   };
+
+  // ---------- multistep sequences (1) TsCl, pyridine 2) NaCN, DMF) ----------
+  // The reagent controls above edit the current step; each step keeps its own reagent, solvent and heat.
+  const blankStep = () => ({ reagent: null, drawn: null, guess: null, solvent: null, heat: false, text: '' });
+  function saveStep(){ st.steps[st.cur] = { reagent: st.reagent, drawn: st.drawn, guess: st.guess, solvent: st.solvent, heat: st.heat, text: $('rxReagentInput').value }; }
+  function loadStep(i){
+    st.cur = i; st.loading = true;
+    const s = st.steps[i];
+    st.drawn = s.drawn; st.guess = s.guess;
+    setReagent(s.reagent, s.drawn ? 'drawn' : 'chip');
+    if (s.drawn){ showMolInEditor(s.drawn); renderRoles(); }
+    else if (!s.reagent) showMolInEditor(null);
+    setSolvent(s.solvent);
+    st.heat = s.heat; $('rxHeat').setAttribute('aria-pressed', String(st.heat));
+    $('rxReagentInput').value = s.text || (s.reagent && s.reagent.id !== 'custom' ? s.reagent.label : '');
+    st.loading = false;
+    renderSteps();
+  }
+  // a reagent/solvent/heat change: keep the current step's tab label up to date
+  function touchStep(){ if (st.loading || st.steps.length < 2) return; saveStepQuiet(); renderSteps(); }
+  function stepLabel(s){
+    if (!s.reagent) return '…';
+    const sv = findSolvent(cat, s.solvent);
+    return [s.reagent.id === 'custom' ? subs(s.reagent.formula || 'drawn') : s.reagent.label, sv ? sv.label : null, s.heat ? 'heat' : null].filter(Boolean).join(', ');
+  }
+  function renderSteps(){
+    const box = $('rxSteps');
+    box.replaceChildren();
+    const multi = st.steps.length > 1;
+    st.steps.forEach((s, i) => {
+      if (!multi) return;
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'chip rx-steptab';
+      b.textContent = `${i + 1}) ${stepLabel(s)}`; b.setAttribute('aria-pressed', String(i === st.cur));
+      b.onclick = () => { if (i === st.cur) return; saveStep(); loadStep(i); };
+      box.appendChild(b);
+    });
+    if (st.steps.length < 3){
+      const a = document.createElement('button'); a.type = 'button'; a.className = 'chip rx-addstep';
+      a.textContent = multi ? `+ Step ${st.steps.length + 1}` : texts.sequence.addStep;
+      a.onclick = () => { saveStep(); st.steps.push(blankStep()); loadStep(st.steps.length - 1); setMsg(''); };
+      box.appendChild(a);
+    }
+    if (multi){
+      const x = document.createElement('button'); x.type = 'button'; x.className = 'chip rx-delstep';
+      x.textContent = `× Remove step ${st.cur + 1}`;
+      x.onclick = () => { st.steps.splice(st.cur, 1); st.picks = []; loadStep(Math.min(st.cur, st.steps.length - 1)); };
+      box.appendChild(x);
+    }
+    $('rxStepNote').hidden = !multi;
+    if (multi) $('rxStepNote').textContent = fill(texts.sequence.editing, { n: st.cur + 1, total: st.steps.length });
+  }
+  // the tab labels show the current step's live choices
+  function saveStepQuiet(){ const s = st.steps[st.cur]; Object.assign(s, { reagent: st.reagent, drawn: st.drawn, guess: st.guess, solvent: st.solvent, heat: st.heat }); }
+  function setSequence(steps){
+    st.steps = steps.map((x) => ({ ...blankStep(), reagent: x.reagent, solvent: x.solvent, heat: x.heat, text: x.reagent.label }));
+    st.picks = [];
+    loadStep(0);
+  }
+  function predictChain(){
+    saveStep();
+    for (const [i, s] of st.steps.entries()){
+      if (!s.reagent){ setMsg(fill(texts.sequence.needReagent, { n: i + 1 })); return; }
+      if (!s.solvent){ setMsg(fill(texts.sequence.needSolvent, { n: i + 1 })); return; }
+    }
+    const steps = st.steps.map((s, k) => ({ reagent: s.reagent, solvent: s.solvent, heat: s.heat, site: k === 0 && st.sites.length > 1 ? st.site : undefined }));
+    let out;
+    try { out = runSequence(OCL, st.mol, steps, { rules, cat }, st.picks); }
+    catch (e) { console.error(e); setMsg('Something went wrong in the prediction: ' + e.message, 'bad'); return; }
+    $('rxStale').hidden = true; closeMech();
+    const keep = st.chain ? st.chainView : null;
+    st.chain = { steps: st.steps.map((s) => ({ ...s })), out };
+    st.scene = [];
+    const last = out.stopped ?? out.steps.length - 1;
+    viewChainStep(keep !== null && keep <= last ? keep : last);
+  }
+  // show step k of the chain in the normal result area (decision path, lamps, cards)
+  function viewChainStep(k){
+    const ch = st.chain, s = ch.out.steps[k];
+    st.chainView = k;
+    renderChain();
+    $('rxOut').hidden = false;
+    if (!s.res){ // not run
+      for (const id of ['rxPath', 'rxLamps', 'rxNotes', 'rxCards']) $(id).replaceChildren();
+      $('rxPathInfo').hidden = true;
+      $('rxNotes').innerHTML = `<div class="badge warn"><span>${esc(reason('sequence_not_run'))}</span></div>`;
+      st.res = null; return;
+    }
+    if (!s.an) s.an = analyse(OCL, s.input);
+    st.res = s.res; st.rx = { reagent: ch.steps[k].reagent, solvent: ch.steps[k].solvent }; st.resAn = s.an;
+    renderResult(s.res);
+    if (s.stop && !s.res.notCovered) $('rxNotes').insertAdjacentHTML('afterbegin', `<div class="badge bad"><span>${esc(texts.sequence.stopped + ' ' + reason(s.stop))}</span></div>`);
+    else if (s.stop) $('rxNotes').insertAdjacentHTML('afterbegin', `<div class="badge bad"><span>${esc(texts.sequence.stopped)}</span></div>`);
+    // which product carries on to the next step; any other can be picked instead
+    const more = k < ch.out.steps.length - 1;
+    for (const c of $('rxCards').querySelectorAll('.rx-card')){
+      const chosen = s.chosen && c.dataset.idcode === s.chosen.product.idcode;
+      c.classList.toggle('rx-chosen', !!chosen && more);
+      if (!more) continue;
+      const row = c.querySelector('.row');
+      if (chosen){ const t = document.createElement('span'); t.className = 'rx-carry'; t.textContent = fill(texts.sequence.carried, { n: k + 2 }); row.prepend(t); }
+      else {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'rx-continue'; b.textContent = fill(texts.sequence.continueFrom, { n: k + 2 });
+        b.onclick = () => { st.picks[k] = c.dataset.idcode; predictChain(); };
+        row.prepend(b);
+      }
+    }
+    renderScene();
+  }
+  // the strip: start → 1) reagent → product → 2) reagent → product …
+  function renderChain(){
+    const ch = st.chain, box = $('rxChain');
+    box.hidden = false;
+    const n = ch.out.steps.length;
+    const node = (m, cls) => `<span class="rx-cthumb ${cls || ''}">${m ? svgOf(m, 150, 90) : ''}</span>`;
+    let h = `<div class="rx-chead">${esc(texts.sequence.title)}</div><ol class="rx-clist"><li class="rx-cstart">${node(ch.out.steps[0].input || st.mol)}<small>${esc(texts.sequence.start)}</small></li>`;
+    ch.out.steps.forEach((s, k) => {
+      const lab = `${k + 1}) ${stepLabel(ch.steps[k])}`;
+      const body = s.chosen && !s.stop ? `${node(s.chosen.product.mol)}<small>${esc(s.chosen.pw === 'activation' ? 'activated' : s.chosen.pw)}${s.chosen.product.rank && s.chosen.pw !== 'activation' ? ' · ' + esc(s.chosen.product.rank) : ''}${st.picks[k] && s.chosen.product.idcode === st.picks[k] ? ' · ' + esc(texts.sequence.yourPick) : ''}</small>`
+        : `<span class="rx-cthumb rx-cstop">${esc(s.stop === 'sequence_not_run' ? texts.sequence.notRun : texts.sequence.stopShort)}</span><small>${esc(s.stop === 'sequence_not_run' ? '' : texts.sequence.notCovered)}</small>`;
+      h += `<li class="rx-carrow" aria-hidden="true">→</li><li><button type="button" class="rx-cstep" data-k="${k}" aria-pressed="${k === st.chainView}"><b>${esc(lab)}</b>${body}</button></li>`;
+    });
+    h += '</ol>';
+    const playable = ch.out.steps[0].chosen && !ch.out.steps[0].stop;
+    h += `<div class="row">${playable ? `<button type="button" class="primary" id="rxPlayChain">${esc(texts.sequence.watchAll)}</button>` : ''}<span class="rx-lab" id="rxChainView">${esc(fill(texts.sequence.showing, { n: st.chainView + 1, total: n }))}</span></div>`;
+    box.innerHTML = h;
+    for (const b of box.querySelectorAll('.rx-cstep')) b.onclick = () => { closeMech(); viewChainStep(Number(b.dataset.k)); };
+    const play = $('rxPlayChain'); if (play) play.onclick = () => playChain(0);
+  }
+  const STEP_VERB = { TsCl: 'tosylation', MsCl: 'mesylation' };
+  function stepTitle(k){
+    const ch = st.chain, s = ch.out.steps[k], r = ch.steps[k].reagent, n = ch.out.steps.length;
+    const what = s.chosen.pw === 'activation' ? STEP_VERB[r.act] || 'activation' : `${s.chosen.pw} with ${r.id === 'custom' ? 'the drawn reagent' : r.label}`;
+    return fill(texts.sequence.stepTitle, { n: k + 1, total: n, what });
+  }
+  // what changed between step k-1 and step k (a dialog page before step k's mechanism)
+  function bridgeText(k){
+    const ch = st.chain, prev = ch.out.steps[k - 1], cur = ch.out.steps[k], T = texts.sequence.bridge;
+    const site = cur.res && cur.res.site;
+    if (!site) return '';
+    const pr = ch.steps[k - 1].reagent, nx = ch.steps[k].reagent;
+    const v = { k, next: k + 1, LG: LG_LABEL[site.lg] || site.lg, LGion: LG_ION[site.lg] || `${site.lg}⁻`, class: CLS_TEXT[site.cls], prev: pr.label, Reagent: nx.id === 'custom' ? 'the drawn reagent' : nx.label, pw: prev.chosen.pw };
+    const before = prev.res.site;
+    let t = prev.chosen.pw === 'activation' ? T.activated : before && before.lg === 'OH' && site.lg !== 'OH' ? T.newLG : T.generic;
+    t = fill(t, v);
+    if (prev.chosen.product.stereo === 'retention') t += ' ' + T.retention;
+    else if (prev.chosen.product.stereo === 'inversion') t += ' ' + T.inversion;
+    else if (prev.chosen.product.stereo === 'racemic') t += ' ' + T.racemic;
+    return t;
+  }
+  // play step k's mechanism (its chosen product), then offer the next step
+  function playChain(k){
+    const ch = st.chain, s = ch.out.steps[k], n = ch.out.steps.length;
+    if (!s || !s.chosen || s.stop){ viewChainStep(k); return; }
+    viewChainStep(k);
+    const nx = ch.out.steps[k + 1];
+    let offer = null;
+    if (nx && nx.chosen && !nx.stop) offer = { text: fill(texts.sequence.nextText, { n: k + 2, total: n, what: stepLabel(ch.steps[k + 1]) }), label: fill(texts.sequence.nextButton, { n: k + 2 }), open: () => playChain(k + 1) };
+    else if (nx) offer = { text: fill(texts.sequence.nextStops, { n: k + 2 }) + ' ' + reason(nx.stop), label: fill(texts.sequence.seeStep, { n: k + 2 }), open: () => { closeMech(); viewChainStep(k + 1); $('rxWin').scrollIntoView({ behavior: smooth(), block: 'start' }); } };
+    const seq = { title: stepTitle(k), intro: k > 0 ? [bridgeText(k)].filter(Boolean) : [], offer };
+    if (s.chosen.pw === 'activation') openActivation(s.chosen.product, seq);
+    else openPathway(s.chosen.pw, s.chosen.product, seq);
+  }
 
   function renderResult(res){
     setMsg('');
@@ -326,7 +508,7 @@ export async function mountReactions(app){
     const lit = PATHWAYS.filter((p) => res.lamps[p] && res.lamps[p] !== 'none');
     const boxes = [...res.path.map((p) => ({ step: p.step, text: p.text })),
       { step: 'rule', text: res.notCovered ? 'not covered yet' : res.activation ? 'activation step' : lit.length ? lit.map((p) => `${p} ${res.lamps[p]}`).join(', ') : 'no reaction' }];
-    $('rxPath').innerHTML = boxes.map((b, i) => `<button type="button" class="rx-box" data-step="${b.step}"><small>${esc(b.step)}</small>${esc(b.text)}</button>${i < boxes.length - 1 ? '<span class="rx-arrow" aria-hidden="true">→</span>' : ''}`).join('');
+    $('rxPath').innerHTML = boxes.map((b, i) => `<button type="button" class="rx-box" data-step="${b.step}"><small>${esc(b.step)}</small><span>${esc(b.text)}</span></button>${i < boxes.length - 1 ? '<span class="rx-arrow" aria-hidden="true">→</span>' : ''}`).join('');
     $('rxPathInfo').hidden = true;
     for (const b of $('rxPath').querySelectorAll('.rx-box')) b.onclick = () => showStep(b.dataset.step, b);
     // lamps
@@ -338,11 +520,11 @@ export async function mountReactions(app){
     if (res.reasons.includes('vinyl_aryl')) notes.push(['warn', reason('vinyl_aryl')]);
     for (const w of res.warnings) notes.push(['warn', reason(w)]);
     for (const pw of PATHWAYS) for (const n of (res.pathways[pw] && res.pathways[pw].notes) || []) if (!/warning/.test(n)) notes.push(['warn', `${pw}: ${reason(n)}`]);
-    if (st.reagent && st.reagent.estimated) notes.push(['warn', 'The reagent’s role is estimated by the rules, not looked up.']);
+    if (st.rx.reagent && st.rx.reagent.estimated) notes.push(['warn', 'The reagent’s role is estimated by the rules, not looked up.']);
     $('rxNotes').innerHTML = notes.map(([k, t]) => `<div class="badge ${k}"><span>${esc(t)}</span></div>`).join('');
     // result cards
     const cards = $('rxCards'); cards.replaceChildren();
-    if (res.activation) cards.appendChild(card(res.activation.product, 'activation', 'OH → sulfonate ester (a good leaving group). Now pick a nucleophile for step 2.'));
+    if (res.activation) cards.appendChild(card(res.activation.product, 'activation', st.chain ? texts.sequence.activatedNote : 'OH → sulfonate ester (a good leaving group). Now pick a nucleophile for step 2.'));
     for (const pw of PATHWAYS){
       const out = res.pathways[pw];
       if (!out || out.lamp === 'none') continue;
@@ -357,7 +539,7 @@ export async function mountReactions(app){
     const res = st.res, f = res.facts || {}, s = res.site;
     let t = [];
     if (step === 'substrate' && s){ t.push(texts.path.substrate[s.cls] || ''); if (s.ab) t.push(reason('ab_cation')); }
-    if (step === 'reagent' && st.reagent) t.push(texts.path.reagent[st.reagent.box] || '');
+    if (step === 'reagent' && st.rx.reagent) t.push(texts.path.reagent[st.rx.reagent.box] || '');
     if (step === 'conditions'){ if (f.solvent) t.push(texts.path.solvent[f.solvent]); if (f.heat) t.push(texts.path.solvent.heat); }
     if (step === 'rule'){ t = res.notCovered ? [reason(res.notCovered)] : res.reasons.map(reason); if (!t.length) t.push('No rule row matched.'); }
     info.dataset.step = step;
@@ -370,6 +552,7 @@ export async function mountReactions(app){
   function card(p, pw, extra, inMech = false){
     const div = document.createElement('div');
     div.className = 'rx-card';
+    div.dataset.idcode = p.idcode;
     const out = st.res && st.res.pathways[pw];
     const lab = stereoLabels(p.mol);
     const stereoTxt = [];
@@ -448,7 +631,7 @@ export async function mountReactions(app){
   // Shown beside the substrate (the editor's molecule), left to right in the order they were added.
   // Groundwork for a 3D view of the whole reaction.
   function sceneItems(){
-    const res = st.res, r = st.reagent, out = [];
+    const res = st.res, r = st.rx && st.rx.reagent, out = [];
     if (!res || res.notCovered) return out;
     if (r && r.smiles && r.smiles[0]){ try { out.push({ key: 'reagent', label: speciesText(r), mol: OCL.Molecule.fromSmiles(r.smiles[0]) }); } catch {} }
     if (res.site && /^(Cl|Br|I|F)$/.test(res.site.lg)) out.push({ key: 'lg', label: res.site.lg + '⁻', mol: OCL.Molecule.fromSmiles(`[${res.site.lg}-]`) });
@@ -499,12 +682,12 @@ export async function mountReactions(app){
   $('mechClose').onclick = closeMech;
   // pw's mechanism for one product (default: its first, i.e. the major one). Several products of one
   // pathway (SN1 with/without a shift, E2 Zaitsev/Hofmann) each get a Watch button, so each can be followed.
-  function openPathway(pw, chosen){
+  function openPathway(pw, chosen, seq){
     const res = st.res; if (!res) return;
     closeMech();
     const out = res.pathways[pw];
     const win = $('mechWin'), mount = $('mechMount');
-    $('mechTitle').textContent = `${pw} mechanism`;
+    $('mechTitle').textContent = seq ? seq.title : `${pw} mechanism`;
     win.hidden = false;
     if (!out || out.lamp === 'none' || !out.products.length){
       mount.innerHTML = `<div class="msg warn">${esc(pw)} doesn’t happen here (lamp off). Tap a lit lamp.</div>`;
@@ -515,7 +698,9 @@ export async function mountReactions(app){
       win.scrollIntoView({ behavior: smooth(), block: 'start' }); return;
     }
     const p = chosen || out.products[0];
-    st.mech = openMechanism(mount, mechOptions(pw, p, out));
+    const o = mechOptions(pw, p, out);
+    if (seq){ o.intro = seq.intro; o.offer = [seq.offer, o.offer].filter(Boolean); }
+    st.mech = openMechanism(mount, o);
     win.scrollIntoView({ behavior: smooth(), block: 'start' });
   }
 
@@ -525,7 +710,7 @@ export async function mountReactions(app){
   // Everything the viewer needs to follow this product: roles (atom indices), flags (which optional
   // frames apply), tokens (charges/labels that depend on the reagent) and the text variables.
   function mechOptions(pw, p, out){
-    const res = st.res, site = res.site, r = st.reagent;
+    const res = st.res, site = res.site, r = st.rx.reagent;
     const m = subMol();
     const S = texts.stereo;
     const prelude = site.lg === 'OH' ? PRELUDE_OF[r.act] : null;
@@ -541,7 +726,7 @@ export async function mountReactions(app){
     const R0 = r.id === 'water' ? 'H' : r.id === 'custom' ? 'R' : (r.label.replace(/OH$/, '') || r.label);
     // base: E2 → the reagent; E1 → the solvent (a weak base; water for acid dehydration). An aprotic
     // solvent (DMSO…) isn't a base, so there the reagent's anion takes the β-H (course rule for 3° benzylic + CN⁻)
-    const solv = findSolvent(cat, st.solvent) || { label: 'solvent' };
+    const solv = findSolvent(cat, st.rx.solvent) || { label: 'solvent' };
     const reagentBase = pw === 'E2' || (pw === 'E1' && solv.type === 'aprotic' && r.nu && r.box !== 'activator');
     const Base = reagentBase ? speciesText(r) : r.act === 'acid' ? 'H₂O' : solv.label;
     const baseCharged = reagentBase && Base.endsWith('⁻');
@@ -609,7 +794,7 @@ export async function mountReactions(app){
     if (!other) return null;
     const otherMajor = res.lamps[other] === 'major';
     const [maj, min] = otherMajor ? [other, pw] : [pw, other];
-    const v = { other, Nu: speciesText(st.reagent), class: CLS_TEXT[res.site.cls] };
+    const v = { other, Nu: speciesText(st.rx.reagent), class: CLS_TEXT[res.site.cls] };
     const why = texts.compete[`${maj}>${min}`] || texts.compete.generic;
     return {
       text: fill(otherMajor ? texts.ui.offerMajor : texts.ui.offerMinor, v) + ' ' + fill(why, v),
@@ -618,10 +803,10 @@ export async function mountReactions(app){
     };
   }
   // Step 1 of a two-step sequence (TsCl/MsCl): the activation on its own; the C–O bond is kept
-  function openActivation(p){
-    const res = st.res, site = res.site, r = st.reagent;
+  function openActivation(p, seq){
+    const res = st.res, site = res.site, r = st.rx.reagent;
     closeMech();
-    $('mechTitle').textContent = 'Activation (step 1)';
+    $('mechTitle').textContent = seq ? seq.title : 'Activation (step 1)';
     $('mechWin').hidden = false;
     const [actA, axA] = ACT_ATOMS[r.act] || ACT_ATOMS.TsCl;
     st.mech = openMechanism($('mechMount'), {
@@ -630,6 +815,7 @@ export async function mountReactions(app){
       vars: { Nu: '', LG: 'OH', class: CLS_TEXT[site.cls], stereo: '', rank: '' },
       productName: nameOf(p.mol).then((n) => String(n.name || n.why || '').replace(/\.$/, '')),
       ...finalHooks(finalView(p, 'activation')),
+      intro: seq ? seq.intro : undefined, offer: seq && seq.offer ? [seq.offer] : undefined,
     });
     $('mechWin').scrollIntoView({ behavior: smooth(), block: 'start' });
   }
@@ -672,8 +858,25 @@ export async function mountReactions(app){
   let saved = null; try { saved = localStorage.getItem('ml-app-tab'); } catch {}
   setApp(location.hash === '#reactions' ? 'rx' : saved === 'rx' ? 'rx' : 'mol', false);
 
+  // ---------- "Which pathway wins?" grid: Try it loads the cell's example as a one-step reaction ----------
+  function tryExample(e){
+    st.steps = [blankStep()]; st.cur = 0; st.picks = [];
+    app.loadMolecule(OCL.Molecule.fromSmiles(e.smiles));
+    const r = findReagent(cat, e.reagent);
+    st.drawn = null; st.guess = null;
+    setReagent(r, 'chip');
+    $('rxReagentInput').value = r.label;
+    setSolvent(e.solvent);
+    st.heat = !!e.heat; $('rxHeat').setAttribute('aria-pressed', String(st.heat));
+    renderSteps(); setMsg('');
+    $('rxPredict').click();
+    $('rxWin').scrollIntoView({ behavior: smooth(), block: 'start' });
+  }
+  mountGrid({ rules, cat, texts, tryIt: tryExample, svgOf, nameLocal: (m) => { try { return app.naming.nameMolecule(OCL, m).name || null; } catch { return null; } }, OCL });
+
   document.addEventListener('ml:molecule', (e) => onMolecule(e.detail));
   onMolecule(app.getMol());
+  renderSteps();
   // drawnReagent: re-read the reagent editor (tests set a molecule there, which fires no change event)
-  return { st, drawnReagent };
+  return { st, drawnReagent, tryExample };
 }

@@ -408,6 +408,7 @@
     }
   },
   "ui": {
+    "introTag": "Between steps",
     "comingSoon": "The {pw} animation for this case isn't available yet. The prediction and products above are already from the rules.",
     "estimated": "estimated",
     "rankingMode": "{n} molecules in the editor: ranking mode. Draw one molecule to predict a reaction.",
@@ -530,5 +531,64 @@
     "antiCH": "σ C–H, anti to σ*",
     "piForm": "π forming",
     "pi": "π bond"
+  },
+
+  "sequence": {
+    "addStep": "+ Add step 2 (multistep sequence)",
+    "editing": "Editing step {n} of {total}. Each step has its own reagent, solvent and heat. Step 2 runs on the major product of step 1 (or the one you pick).",
+    "needReagent": "Step {n}: pick a reagent first.",
+    "needSolvent": "Step {n}: pick a solvent.",
+    "parseError": "Couldn’t read that sequence:",
+    "title": "Sequence",
+    "start": "start",
+    "yourPick": "your pick",
+    "notRun": "not run",
+    "stopShort": "stopped",
+    "notCovered": "not covered yet",
+    "stopped": "The sequence stops at this step.",
+    "watchAll": "▶ Watch all steps",
+    "showing": "Showing step {n} of {total}. Tap a step to see its decision path and products.",
+    "carried": "→ goes on to step {n}",
+    "continueFrom": "Continue step {n} from this",
+    "activatedNote": "OH → sulfonate ester (a good leaving group). The next step works on this.",
+    "stepTitle": "Step {n} of {total}: {what}",
+    "nextText": "Next: step {n} of {total} ({what}) works on this product.",
+    "nextButton": "▶ Step {n}",
+    "nextStops": "Step {n} stops here, so the sequence ends.",
+    "seeStep": "See step {n}",
+    "bridge": {
+      "activated": "What changed in step {k}: the OH became {LG}. Why is that a better [[leaving group]]? When it leaves, it takes the bonding electrons away as {LGion}, a very weak base: the negative charge is spread over three oxygens by resonance. OH⁻ is a strong base, so it holds on to carbon. Now {Reagent} can push it out.",
+      "newLG": "What changed in step {k}: {prev} swapped the OH for {LG}. {LGion} is a weak base (the conjugate base of a strong acid), so it is a good [[leaving group]]. The {class} carbon is now ready for {Reagent}.",
+      "generic": "Step {k}'s product is now the substrate: a {class} carbon with {LG} as the [[leaving group]]. Step {next} uses {Reagent} on it.",
+      "retention": "The C–O bond wasn't broken, so the carbon kept its configuration ([[retention]]).",
+      "inversion": "Step {k} inverted the configuration at that carbon (backside attack), and the product carries that forward.",
+      "racemic": "Step {k} went through a flat carbocation, so that carbon is now a mix of both configurations."
+    }
+  },
+  "grid": {
+    "title": "Which pathway wins?",
+    "intro": "Substrate class × reagent type, read straight from the app's decision table, so it always matches what Predict says. Bold = major, “>” = then minor, “≈” = competing. Tap a cell for why, an example and Try it.",
+    "solvent": "Solvent:",
+    "usual": "usual for the reagent",
+    "protic": "polar protic",
+    "aprotic": "polar aprotic",
+    "heat": "🔥 Heat",
+    "fixedNote": "The three alcohol columns use their usual conditions (HBr in water; PBr₃ in ether; H₂SO₄ with heat).",
+    "pickRow": "Substrate:",
+    "legend": "★ course rule (from your answer key) · ⚑ textbooks disagree · ⇄ changes with solvent or heat",
+    "major": "Major",
+    "minor": "Minor",
+    "competing": "Competing",
+    "noReaction": "No reaction",
+    "notCovered": "Not covered yet",
+    "why": "Why",
+    "course": "★ Course rule",
+    "disagree": "⚑ Textbooks disagree here. The app follows the rule shown; check what your instructor expects.",
+    "example": "Example",
+    "tryIt": "Try it",
+    "variants": "With other conditions",
+    "heatOn": "heat",
+    "heatOff": "no heat",
+    "tsNote": "TsCl / MsCl + pyridine only turn an alcohol's OH into a leaving group (no change at carbon); use them as step 1 of a sequence."
   }
 }
