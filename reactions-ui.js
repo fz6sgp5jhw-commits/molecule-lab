@@ -194,11 +194,20 @@ export async function mountReactions(app){
     const r = findReagent(cat, text);
     if (r){ setReagent(r, 'typed'); setMsg(''); return; }
     setReagent(null);
-    setMsg(`“${text}” isn’t in the reagent list. Draw it under “Draw the reagent” and the rules will estimate its role.`, 'warn');
+    setMsg('');
+    $('rxReagentInfo').innerHTML = `<div class="msg warn">${esc(fill(texts.reagentTypes.typed, { text }))}</div>${typeGuide(null)}`;
+  }
+  // The four reagent types: how to spot each one and what it does (shown for unrecognised reagents).
+  // `pick` highlights the type currently chosen for a drawn reagent.
+  function typeGuide(pick){
+    const T = texts.reagentTypes;
+    return `<div class="rx-types"><div class="rx-lab">${esc(T.intro)}</div><dl>${ROLES.map((r) => `
+      <dt class="${r === pick ? 'on' : ''}" data-type="${r}">${esc(T[r].name)}${r === pick ? ' ◀' : ''}</dt>
+      <dd><b>Spot it:</b> ${esc(T[r].spot)}<br><b>Does:</b> ${esc(T[r].does)}</dd>`).join('')}</dl></div>`;
   }
   function renderRoles(){
     const box = $('rxRoles');
-    box.innerHTML = `<div class="rx-lab">${esc(texts.ui.unknownReagent)}</div>`;
+    box.innerHTML = `<div class="rx-lab">${esc(st.guess ? texts.reagentTypes.guessed : texts.reagentTypes.noRule)}</div>`;
     for (const role of ROLES){
       const b = document.createElement('button'); b.type = 'button'; b.className = 'chip';
       const isGuess = st.guess && st.guess.box === role;
@@ -208,6 +217,7 @@ export async function mountReactions(app){
       box.appendChild(b);
     }
     if (st.guess) { const w = document.createElement('div'); w.className = 'note'; w.textContent = 'Rule used: ' + st.guess.why; box.appendChild(w); }
+    const g = document.createElement('div'); g.innerHTML = typeGuide(st.reagent ? st.reagent.box : null); box.appendChild(g.firstElementChild);
   }
   function drawnReagent(){
     if (st.quiet) return;

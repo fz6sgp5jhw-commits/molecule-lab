@@ -123,6 +123,14 @@ try {
     return seen.join(' ¦ ');
   }
 
+  // an unrecognised typed reagent: say so, and explain the four reagent types instead of guessing
+  await page.fill('#rxReagentInput', 'sodium unobtainium'); await page.press('#rxReagentInput', 'Enter');
+  const info = await text('#rxReagentInfo');
+  ok(/isn’t in the reagent list/.test(info) && (info.match(/Spot it:/g) || []).length === 4 && /Bulky strong base/.test(info), 'unknown typed reagent: explains the four reagent types');
+  await page.setViewportSize({ width: 390, height: 844 });
+  ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'reagent type guide: no sideways scroll at 390 px');
+  await page.setViewportSize({ width: 1280, height: 900 });
+
   // SN1 on worksheet 3d: (1-bromoethyl)benzene + CH₃OH, heat → benzylic cation, oxonium, proton transfer, racemic
   await setup('C[C@@H](Br)c1ccccc1', 'CH3OH', true);
   ok(await page.getAttribute('.lamp[data-pw="SN1"]', 'class') === 'lamp major', 'W3d: SN1 lamp major');
