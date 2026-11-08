@@ -35,7 +35,7 @@ Every one of these problems comes down to the same four questions.
    - **Heat favours elimination.**
 
 **Self-check:** for any alkyl halide, say its class and rank three leaving groups. Sort ten reagents into the four reagent boxes above.
-**App support (Phase 1):** a *Reactivity facts* panel that shows the class, leaving group, β-hydrogens and the carbocation that would form.
+**App support (Sessions 1–2):** a *Reactivity facts* panel that shows the class, leaving group, β-hydrogens and the carbocation that would form.
 
 ### Stage 2: SN2 (about 1–2 sessions)
 - **How it happens:** one step. The nucleophile attacks from the back, opposite the leaving group (backside attack).
@@ -49,7 +49,7 @@ Every one of these problems comes down to the same four questions.
 - draw the product of (R)-2-bromobutane + NaI in acetone and give its R/S label;
 - explain why 2-bromo-2-methylpropane doesn't do SN2.
 
-**App support (Phases 2 and 4):** a predicted product with the inverted stereocentre, and a 3D animation of backside attack (the umbrella flip).
+**App support (Sessions 2 and 4):** a predicted product with the inverted stereocentre, and a 3D animation of backside attack (the umbrella flip).
 
 ### Stage 3: SN1 (about 1–2 sessions)
 - **How it happens:** two steps. The leaving group leaves first, giving a carbocation, which the nucleophile then captures.
@@ -63,7 +63,7 @@ Every one of these problems comes down to the same four questions.
 - product(s) of 2-bromo-2-methylpropane in water;
 - product of 3-methylbutan-2-ol + HBr (a hydride shift gives 2-bromo-2-methylbutane).
 
-**App support:** a carbocation explorer (Phase 1) and an energy diagram with the intermediate (Phase 3).
+**App support:** carbocation facts (Session 1) and the energy hill with the intermediate (Session 3).
 
 ### Stage 4: E2 (about 2 sessions; the most stereo-heavy stage)
 - **How it happens:** one step. The base removes a β-H while the leaving group leaves, forming the C=C.
@@ -81,7 +81,7 @@ Every one of these problems comes down to the same four questions.
 - 2-bromobutane + NaOEt versus + KOtBu: which alkene is major in each?
 - Why does menthyl chloride give a different alkene from neomenthyl chloride? (Use the Chair tab.)
 
-**App support (Phase 4):**
+**App support (Session 4):**
 - a Newman projection along Cα–Cβ that highlights anti-periplanar H's;
 - the Chair tab marking which chair has the leaving group axial, and which axial β-H's are anti to it.
 
@@ -128,116 +128,128 @@ For each substrate class:
 - **Mix the problem types.** After each stage, do 10 mixed problems rather than 10 of one kind; mixing is what builds the decision skill.
 - **Explain every answer.** For each problem, say: substrate class → reagent type → conditions → mechanism → product, with stereo. Then check.
 - **Keep a mistakes list.** Each time, note which rule you got wrong, and redo those problems 2 days later and again a week later.
-- **App support (Phase 5):** a practice mode that generates problems, checks your drawn product, explains the rule you missed, and tracks your weak spots.
+- **App support (Session 5):** a practice mode that generates problems, checks your drawn product, explains the rule you missed, and tracks your weak spots.
 
 ---
 
 ## Part B: App design (for the Claude Code agent)
 
+Agreed with Peter on 2026-11-07. This is a **visual learning tool**: every step is animated *and* explained, including *why* it happens.
+
 ### Principles (non-negotiable, consistent with `CLAUDE.md`)
-1. **The rules engine is deterministic.**
-   - Predictions come from explicit textbook rules stored as data (a rules table plus a reagent catalogue), never from a model.
-   - Products are made by editing the molecule graph in OpenChemLib.
-   - Names come from the existing naming flow (PubChem, then `namer.js`, then the OPSIN check).
-2. **Show the reasoning.** Every prediction lists the chain of rules it used, like "How this name was built" does. The aim is to teach the decision, not just give the answer.
-3. **Be honest about uncertainty.**
-   - Say "major", "minor" or "competing". Never give made-up percentages.
-   - When textbooks disagree (2° substrates, 1° with alkoxides), say so.
-   - If a case is outside the rules' scope, say "not covered" and give the reason.
-4. **Stereo comes from OpenChemLib**, never from swapping letters by hand:
-   - SN2: make the inverted geometry, then let OpenChemLib work out R/S.
-   - SN1: show both enantiomers (racemic).
-   - E2: work out E/Z from the anti-periplanar geometry.
-   - E1: give the more stable alkene, usually trans.
-5. **Keep the house style:** Windows 95 look, works on a phone, works offline, no build step.
+1. **The rules engine is deterministic.** Predictions come from textbook rules stored as data (`data/reagents.json`, `data/rules.json`), never from a model. Products are made by editing the molecule graph in OpenChemLib. Names come from the existing naming flow (PubChem → `namer.js` → OPSIN check).
+2. **Show the reasoning.** Every prediction shows the decision path and the rules used.
+3. **Be honest about uncertainty.** Say "major", "minor" or "competing", never percentages. Say so where textbooks disagree (2° substrates, 1° + alkoxide). Out of scope → "not covered yet, because …".
+4. **Stereo comes from OpenChemLib**, never from swapping R/S letters by hand.
+5. **Visual cues are qualitative and rule-based.** Clouds, δ labels, the energy hill and the stability meter come from textbook rules (electronegativity, lone pairs, formal charge, cation class). No made-up numbers. Computed values (e.g. MMFF) only appear where they are real, and are labelled as computed.
+6. **House style:** Windows 95 look, phone (390 px) and laptop layouts, offline, no build step.
 
-### Proposed UI
-- A new **"Reactions"** window under the editor, with four parts:
-  - a reagent picker (catalogue chips plus a search box);
-  - solvent and heat toggles;
-  - a **Predict** button;
-  - results cards: one per pathway (SN1/SN2/E1/E2), each with a verdict (major / minor / doesn't happen), the product(s) as line drawings with names, and a "Why" list.
-- A **Mechanism** viewer tab with:
-  - step-by-step curved arrows on the 2D drawing, with a step slider;
-  - an energy diagram (one step versus two steps with an intermediate);
-  - a 3D animation (SN2 umbrella flip; E2 anti-periplanar).
-- A **Practice** tab: a generated problem, you draw the answer in the editor, then Check → feedback.
+### Simplifications (decided to keep the code small)
+- **Roles, not compounds.** A mechanism only touches the reaction centre: Nu/base, Cα, LG, Cβ, Hβ (plus the shifting group). The analyser finds these roles; the rest of the molecule is a grey spectator. So the visual cues are **one template per mechanism**, not one per compound, and no list of approved compounds is needed.
+- **Four reagent boxes instead of a 3-axis grid.** Each reagent is in exactly one box: `nuc` (strong Nu, weak base: I⁻, Br⁻, CN⁻, N₃⁻, RS⁻, AcO⁻), `nucbase` (HO⁻, MeO⁻, EtO⁻), `bulky` (KOtBu, DBU), `weak` (H₂O, ROH). Plus a fifth kind, `activator` (HX, PBr₃, SOCl₂, TsCl, MsCl, H₂SO₄/H₃PO₄), each with its own fixed sequence.
+- **Conditions are two switches:** solvent = protic / aprotic (the chips map to one of these) and heat on/off.
+- **The decision table is about 15 rows**, keyed by (substrate class, reagent box, solvent type, heat) → lamps (major/minor/none) + reason keys. Data, not code.
+- **Carbocation stability is an integer:** the number of carbons on C⁺, +1 if allylic/benzylic, +1 if the shift relieves ring strain (3-, 4- or 5-ring opening to a bigger ring).
+- **Shifts (core, needed by worksheet problems 4 and 5):** list every 1,2-shift of H, CH₃/alkyl or a ring bond (ring expansion) from a neighbour of C⁺. Each shift that gives a score ≥ the start is its own pathway; at most one shift per pathway. All products are shown, ranked: highest final cation score = major, others = minor, equal = competing.
+- **Ranking mode (worksheet problems 6 and 7):** each separate molecule in the editor is a candidate. SN1 order: cation score, then leaving group (I > Br > Cl). SN2 order: steric class (methyl > 1° > 2°; 3° = none), allylic/benzylic boost, minus graded β-branching (each extra carbon on Cβ slows it; neopentyl slowest of the 1°), then leaving group. Ties shown as ties, each place with its reason.
+- **Stereospecific? Y/N** on every result card (SN2 and E2: yes; SN1 at the reacting centre: no, racemic), as worksheet problem 3 asks.
+- **Products from fragments:** each reagent stores its nucleophile fragment (SMILES + attaching atom), so one `attachFragment()` handles every substitution.
+- **E2 stereo, v1:** acyclic substrates with *no* defined stereocentre at Cβ → report E (trans) major, Z minor (Zaitsev/trans preference). Cases where the anti-periplanar geometry decides E vs Z (both Cα and Cβ defined) say "not covered yet" until Session 4.
+- **Ring E2, v1:** simple cases (all β-H's give the same alkene) are normal. When trans-diaxial geometry would decide *which* alkene forms, give the Zaitsev alkene **with a visible warning**: "may differ: the trans-diaxial requirement isn't checked yet; see the Chair tab". (Peter's choice, 2026-11-07.)
+- **One elimination function:** `alkenesFrom(mol, centre)` lists the alkenes from removing a β-H next to `centre`. E2 calls it on the substrate (centre = Cα), E1 on the cation (centre = C⁺, after any shift).
+- **Zaitsev score:** number of carbons on the C=C, +2 if conjugated with an aromatic ring or another C=C. A tie → "competing", never a guess. Bulky base → lowest score wins (Hofmann; note that textbooks vary for 2° substrates).
+- **E/Z must be set explicitly** on every new double bond (OpenChemLib would otherwise read it from arbitrary 2D positions), and only where OpenChemLib says the bond can be stereo (no label on but-1-ene). See spike S4.
+- **SN2 stereo trick:** the nucleophile's attaching atom takes the leaving group's atom index, so the stored parity means retention; flipping it gives inversion, and OpenChemLib then computes R/S. Substrate drawn without wedges → "no stereocentre defined", no stereo claimed.
+- **Allylic cations (SN1/E1):** the + is shared between both ends. Show the two resonance forms in one frame, explain the sharing, and give **both** products. Allylic SN2 is normal (no SN2′ in v1).
+- **Two or more leaving groups:** show site chips ("Which site? [C1–Br] [C3–Br]") and analyse the one picked. Don't claim which site reacts faster.
+- **No MMFF in this feature (v1).** Product stability is ranked by the rules above only.
+- **Typed reagent names** match an alias list per catalogue entry ("NaOEt", "sodium ethoxide", "EtONa"). No OPSIN lookup for reagents.
+- **Names offline:** if neither PubChem (offline) nor `namer.js` can name a product, say "name unavailable offline"; never guess.
+- **2D frames don't move atoms** except a shifting H/CH₃ along an arc. The SN2 transition state is shown with dashed partial bonds; the actual umbrella flip is only in the 3D view.
+- **Unknown reagents:** three rules (negative charge on O/S/N/halide → Nu; tertiary carbon next to the charge → bulky; neutral O–H → weak) make a guess, shown pre-selected among the four box buttons, marked "estimated". The student confirms or changes it.
+- **Drawn reagents:** strip metal counter-ions (Na⁺, K⁺, Li⁺) before matching by ID code, so drawn "Na⁺ ⁻OEt" and typed "NaOEt" both match ethoxide.
+- **Explanations are template text** with placeholders (`{LG}`, `{class}`, `{Nu}`), written once per mechanism step and reviewed once, not generated per compound.
+- **The renderer reuses OpenChemLib 2D coordinates.** Coordinates are computed once for substrate + reagent and kept in every frame, so atoms never jump. The nucleophile is placed at the mirror point of LG across Cα. Only the Hβ that gets removed is drawn as an explicit H.
 
-### Phases
+### UI (agreed)
+**Reactions window** (new grey window under the editor):
+- **Reagent editor:** a second small editor. Draw it, type a name or formula (NaOEt, "sodium iodide"), or tap a quick chip.
+- **Conditions:** choosing a reagent auto-fills its usual solvent. Chips change it (H₂O, MeOH, EtOH, DMSO, DMF, acetone). A 🔥 Heat toggle.
+- **Predict** → decision path (substrate → reagent → conditions, each box tappable for its rule) ending in **four lamps** SN1 / SN2 / E1 / E2: bright = major, dim = minor, off = doesn't happen. Tap a lamp to open its mechanism.
 
-#### Phase 1: Substrate analyser (small; build it first)
-`reactivity.js` with `analyse(OCL, mol)`, returning for each leaving-group site:
-- **Leaving group:**
-  - C–I, C–Br, C–Cl (C–F counts as "won't leave");
-  - C–OH, flagged "needs activation";
-  - C–OTs and C–OMs (supporting S needs its own perception, since the namer rejects S=O);
-  - also protonated alcohols, C–OH₂⁺.
-- **Carbon class:** methyl / 1° / 2° / 3°, plus allylic, benzylic, vinyl, aryl and neopentyl flags.
-- **β-carbons and their hydrogens**, with the alkene each one would give: built as a product molecule, named, and ranked by substitution (number of carbons on the C=C) and E/Z.
-- **The carbocation that would form**, scored (methyl < 1° < 2° < 3°; allylic/benzylic +1). Also any **1,2-H or 1,2-alkyl shift** to a strictly more stable cation (one shift only in v1; no ring expansions).
-- **Display:** a "Reactivity facts" panel under the existing facts.
+**Mechanism screen** (one pathway at a time; stacked on a phone, two columns on a laptop):
+- **Frames:** 2D drawing, arrows that draw themselves, bonds fading out or in, charges appearing. Short transitions between frames.
+- **Electron density layer:** red clouds where electrons are rich (Nu lone pair, LG), pale where poor (Cα), plus δ+/δ− labels. Updated every frame. A **pull line** from the Nu lone pair to Cα tightens over the frames into the new bond.
+- **Energy:** a small **hill with a ball** (one hump for SN2/E2; two humps with a dip for the carbocation in SN1/E1) that moves with the frames, plus a **stability meter** for "how happy is the molecule now" (explains cation class and shifts). Qualitative, no numbers.
+- **Dialog box** in retro RPG style (pixel font, typewriter text, blinking ▼): tap to finish the text, tap again for the next step. **WHY?** adds 1–3 extra pages to the same box (e.g. "the 2° cation shifts a hydride because the 3° cation is stabilised by three neighbouring carbons (hyperconjugation)"). Plain wording, with exam terms highlighted; tap a term for its definition (glossary).
+- **Alcohol activation** (protonation, tosylate, PBr₃, SOCl₂) gets full frames of its own.
+- **Quiz me toggle:** at key moments, pause and ask ("Tap the atom the nucleophile attacks", "Will this cation shift? Yes/No"), then reveal and explain.
+- **Ending:** a result card shows the product drawing, its name, R/S or E/Z, and major/minor, with **Load into editor** to chain steps (tosylate → + NaCN). If a pathway competes, the dialog offers "E1 also competes here. See it?" and explains why it's minor.
+- **3D button:** opens a short 3D animation only for the stereo moments (SN2 umbrella flip, the flat cation attacked from both faces, E2 anti-periplanar).
 
-Acceptance:
-- 2-bromobutane → 2°, Br; β-carbons C1 and C3; alkenes but-1-ene, (E)- and (Z)-but-2-ene.
-- 3-methylbutan-2-ol → 2°, OH needs activation; the cation shifts by a hydride to the 3° cation.
-- Bromobenzene and vinyl bromide → "vinyl/aryl: no SN1/SN2/E1/E2".
-- Neopentyl bromide → 1°, neopentyl flag.
+### Files (keep new code out of `index.html`)
+| File | Contents |
+|---|---|
+| `reactivity.js` | `analyse(OCL, mol)` → sites with roles, class, flags, β-H's, cation score, shift |
+| `reagents.js` | catalogue loader, counter-ion stripping, matching by ID code / name, unknown-reagent guess |
+| `predict.js` | decision table lookup + product building |
+| `data/reagents.json`, `data/rules.json` | the catalogue and the decision table |
+| `mech-templates.js` | frames per mechanism as data (roles, bond changes, charges, arrows, cloud levels, hill position, meter, dialog text, why pages, quiz points) |
+| `mech-view.js` | SVG renderer, frame transitions, dialog box, hill, meter |
+| `index.html` | only a mount point, the Reactions window markup and CSS |
 
-#### Phase 2: Reaction predictor
-- **`data/reagents.json`** fields: `id, name, formula, smiles, nucleophile: strong|moderate|weak|none, base: strong|weak|none, bulky: bool, defaultSolvent, notes`.
-  - Seed list: NaI, NaBr, NaCl, NaCN, NaN₃, NaSH/NaSR, NaOAc, NaOH, NaOMe, NaOEt, KOtBu, DBU, H₂O, MeOH, EtOH, HBr, HCl, HI, PBr₃, SOCl₂/pyridine, TsCl/pyridine, MsCl/Et₃N, H₂SO₄ + heat, H₃PO₄ + heat.
-- **`data/rules.json`:** the Stage 7 decision table as data, so it can be checked and edited, with a citation note for each rule (for example "standard intro textbook rule").
-- **`predict(OCL, mol, site, reagentId, {solvent, heat})`** returns a list of pathways, each with: `{ mechanism, verdict: 'major'|'minor'|'competing'|'none', products: [mol], why: [string] }`. How to build the products:
-  - **Substitution:** replace the leaving group with the nucleophile atom (for CN⁻, attach through C; for N₃⁻, the azide; for RO⁻, an ether).
-  - **SN2 stereo:** see Spike S1 below.
-  - **SN1:** both configurations (use the rearranged cation when there is a shift).
-  - **E2:**
-    - Zaitsev or Hofmann depending on `bulky`.
-    - Only anti-periplanar β-H's count. In rings, the leaving group must be axial in one of the chairs; reuse `chair.js`.
-    - Work out E/Z from the anti conformation.
-  - **E1:** the most substituted alkene from the cation (after any shift), with trans preferred.
-  - **Alcohol reagents** follow the Stage 6 table. TsCl gives the tosylate with retention, and the user can then apply a second reagent ("chain the next step").
+All new files go in `ASSETS` in `sw.js`, with `VERSION` bumped.
 
-Acceptance: every seed problem below gives the stated major pathway and product.
+### Phases: 3 core sessions + 2 optional
+Grouped so each session ends with something usable, and so all the chemistry logic is done (and tested cheaply in Node) before any UI work. Templates, rules, reagents and explanation text are **data files**, so later mechanisms add data, not code.
 
-#### Phase 3: Mechanism viewer
-- **Step templates per mechanism, as data:**
-  - each step lists its arrows, from a lone pair or bond to an atom or bond, written in terms of roles (Nu, Cα, Cβ, Hβ, LG);
-  - the roles are mapped onto the real atoms from Phase 1.
-- **Rendering:**
-  - draw OpenChemLib's `toSVG` with atom coordinates, then overlay curved SVG arrows;
-  - show charges and lone pairs on intermediates;
-  - add a step slider.
-- **Energy diagram:** SVG, qualitative only, with no fake numbers. Two humps with an intermediate for SN1/E1; one hump for SN2/E2.
+#### Session 1: All the logic, no UI (Opus, high effort)
+- Spikes first (each a few lines in a Node script, kept only if useful):
+  - **S1 SN2 inversion:** copy the molecule, swap LG for Nu, invert the parity at Cα, let OpenChemLib give R/S. Prove it on (R)-2-bromobutane + I⁻ → (2S)-2-iodobutane, and on a case where the label does *not* flip.
+  - **S2 Counter-ions:** drawn Na⁺/K⁺ salts match the catalogue entries.
+  - **S3 Tosylates:** OS(=O)(=O)Ar recognised as a leaving group; tosylate names come from PubChem (don't extend `namer.js`).
+  - **S1 must also pass a ring cis/trans case with no R/S centre** (worksheet 3e: 1-iodo-4-isopropylcyclohexane + NaN₃ → the other diastereomer).
+  - **S4 E/Z on a new double bond:** from 2-bromobutane, build (2E)- and (2Z)-but-2-ene on purpose and get the right names, and confirm but-1-ene gets no E/Z. If this fails, stop and report: E2/E1 stereo depends on it.
+- `reactivity.js` (analyser), `reagents.js` + `data/reagents.json`, `predict.js` + `data/rules.json`.
+- `tests/seed-cases.json` (the seed table as data) + `tests/reactions.test.mjs` (Node only).
+- Acceptance: every in-scope seed row gives the stated pathway, product ID code (incl. stereo) and name; vinyl/aryl and neopentyl rows give their flags.
 
-#### Phase 4: 3D and conformations
-- **SN2:**
-  - frames that interpolate from the substrate with the nucleophile approaching from the back, to a trigonal-bipyramidal transition state, to the inverted product;
-  - reuse the 3Dmol frame approach from the Chair tab.
-- **Newman projection** (also on the main roadmap):
-  - choose the Cα–Cβ bond, rotate the back carbon, and label staggered / eclipsed / gauche / anti;
-  - highlight H–C–C–LG at 180°.
-- **Chair tab:** when the ring carries a leaving group, mark "LG axial in this chair" and highlight the axial β-H's that are anti to it.
-  - Classic test: menthyl versus neomenthyl chloride.
+#### Session 2: Reactions window + mechanism viewer with SN2 (Opus, medium effort)
+- "Reactivity facts" panel under the existing facts (class, LG, β-H's, cation + any shift), and site chips when there are two or more leaving groups.
+- Reactions window: reagent editor, chips, solvent auto-fill, heat toggle, Predict, decision path, four lamps, result card with "Load into editor".
+- `mech-view.js`: renderer, density layer, pull line, hill + ball, meter, RPG dialog with WHY pages and glossary.
+- `mech-templates.js` with **SN2 only**, and `data/mech-text.json` for all dialog/why/glossary text.
+- Built straight into the app (no separate prototype page): `mech-view.js` is its own file, so changing the look later doesn't touch `index.html`.
+- One Playwright test: predict on 2-bromobutane + NaI, open SN2, step through, check dialog text and final product name.
+- **Then Peter reviews the look once, with all changes in one message.**
 
-#### Phase 5: Practice mode
-- **Problem generator:** substrate templates (1°/2°/3°/allylic/benzylic halides, alcohols, ring cases, cases with stereocentres) × reagent catalogue × conditions. Only generate problems the rules engine covers.
-- **The student's answer:** they choose the mechanism and **draw the major product** in the editor. Check by comparing ID codes, with and without stereo, so the feedback can say "right product, wrong stereo".
-- **Feedback:** name the specific rule that was missed, and link to the matching stage in Part A.
-- **Progress:** stored in localStorage per topic (SN2 stereo, Zaitsev/Hofmann, rearrangements, alcohol activation…). Show weak areas and schedule re-tries (2 days, then 1 week).
-- **Flashcards:** reagent → its nucleophile/base type.
+#### Session 3: The other mechanisms + quiz (Opus, high effort)
+- Apply Peter's review changes first.
+- Templates for SN1 (shift as an inserted sub-step; allylic resonance frame with two products), E1, E2 (Zaitsev/Hofmann), alcohol activation preludes (protonation, PBr₃, SOCl₂, TsCl).
+- Quiz points (they are template data) + the Quiz me toggle; competing-path offer at the end.
+- Extend the one Playwright test to open each mechanism once.
 
-#### Phase 6 (stretch)
-- Rearrangement explorer with several shifts and ring expansion.
-- SN2′ (allylic), neighbouring-group participation, E1cB: each only when it comes up in the course.
+#### Session 4 (optional): 3D + geometry-decided E2 (Opus, high effort)
+- 3D button for stereo moments (reuse the Chair tab's 3Dmol frame approach).
+- E2 where anti-periplanar geometry decides E/Z; ring E2 via `chair.js`; menthyl vs neomenthyl (verify against a textbook first). Newman projection.
 
-### Spikes to do before building (time-boxed)
-- **S1: SN2 inversion in OpenChemLib.**
-  - Option A: copy the molecule, swap the leaving-group atom for the nucleophile, then invert the atom's parity.
-  - Option B: build 3D, put the nucleophile opposite the leaving group, delete the leaving group, then let OpenChemLib work out the parities from 3D coordinates.
-  - Prove it on (R)-2-bromobutane + I⁻ → (S)-2-iodobutane, and on a case where the R/S label does *not* flip.
-- **S2: Kekulé/aromatic handling** when making alkenes next to a benzene ring (conjugation counts as stability).
-- **S3: Tosylate perception:** OS(=O)(=O)Ar as a leaving group without breaking `namer.js`. The namer currently refuses sulfonyl groups; either extend it (alkyl 4-methylbenzenesulfonate) or let PubChem name these.
+#### Session 5 (optional): Practice mode (Sonnet, medium; Opus if checking logic gets tricky)
+- Generated problems (only cases the engine covers); draw the product; check by ID code with and without stereo; feedback names the missed rule; weak spots in localStorage with re-tries; reagent flashcards.
+
+#### Stretch
+Several consecutive shifts, SN2′, neighbouring-group participation, E1cB: only when the course needs them. Drawing your own curved arrows in practice.
+
+### Saving tokens (rules for every session)
+**Tests are the biggest repeat cost, because each failing run is re-read in full.** So:
+- **Logic is tested in Node, not the browser.** Node tests run in a second and print little. Playwright is only for checking that the UI is wired up, run once near the end of a session.
+- **Table-driven tests with one-line failures.** One test loops over `tests/seed-cases.json` and prints only failures, e.g. `#6 E2: expected (2E)-but-2-ene, got but-1-ene`. Never print molecules, stacks or passing cases.
+- **Run only the suite you're working on:** `npm run test:reactions` (add the script in Session 1). Run `npm test` (everything) once, before committing.
+- **Fail fast and short:** `--max-failures=1` and the `line` reporter for Playwright; pipe output through `tail -n 30`.
+- **No screenshot comparisons.** Check DOM text (names, lamp states, dialog text) instead. Screenshots only when Peter asks to see something.
+- **Fix the cause, then rerun once.** Don't rerun unchanged code hoping it passes.
+- Read only the files a session names; never read `index.html` whole (use `grep -n` to find the anchor, then read that range).
+- One commit at the end of each session; the next session starts fresh, not continuing a long chat.
+- One `/code-review medium` after Session 3, not after each session.
 
 ### Seed test set (expected textbook answers)
 | # | Substrate | Reagent / conditions | Major pathway | Major product |
@@ -268,11 +280,30 @@ Acceptance: every seed problem below gives the stated major pathway and product.
 Each case needs a test that checks the pathway verdict, the product by ID code (including stereo), and the product's name.
 All product names and R/S labels above were checked with this repo's OpenChemLib and `namer.js` on 2026-11-07. Note that the namer writes stereo in 2013 style, e.g. `(2S)-2-iodobutane` and `(2E)-but-2-ene`, so tests should compare against that form.
 
-### Open questions for Peter (ask before Phase 2)
-1. **Textbook:** which one does the course use (Klein, Wade, McMurry, Clayden…)? The 2° cases and "1° + alkoxide" should follow its conventions.
-2. **Entering reagents:** pick from a list only, or also draw them?
-3. **Arrows:** should practice include *drawing* the curved arrows yourself (harder to build), or only predicting products?
-4. **Exam style:** do exams ask for minor products and ratios, or just the major product?
+
+### Course worksheet (Chemistry 2310, Ch 6), the target problems
+Photos shared 2026-11-07. The app must handle these; add them to `tests/seed-cases.json` **only with answers confirmed from the answer key** (don't encode guesses):
+- **3a–f** products with wedges + stereospecific Y/N: 2-iodobutane (Fischer drawing) + NaCN/DMSO; a 2° alcohol + SOCl₂/pyridine; a 2° allylic chloride + NaOCH₃/THF 40 °C; (1-bromoethyl)benzene + CH₃OH 80 °C; 1-iodo-4-isopropylcyclohexane + NaN₃/DMF; a 2° alcohol + 1) TsCl/pyridine 2) NaCN/DMF.
+- **4a–c** 1-(1-bromoethyl)-1-methylcyclopentane in EtOH + heat: three ethers via no shift, methyl shift, ring expansion.
+- **5** a cyclohexyl/cyclopentyl bromide in EtOH + heat: two ethers, major vs minor (rearrangement).
+- **6, 7** rank five halides by SN1 rate and by SN2 rate.
+- **8** (S)-2-chloropentane + CH₃SNa/DMSO: SN2 mechanism with curly arrows.
+Notes: the editor can't take Fischer projections, so the student redraws with wedges (say so in the help). Add THF to the aprotic solvent chips and CH₃SNa/"sodium methanethiolate" to the aliases. Proton-transfer frames are marked so they can be skipped ("neglect proton transfer steps").
+
+**Confirmed from Peter's annotated solutions (2026-11-07)**, so encode these as rules and test cases:
+- **Weak nucleophile in a polar protic solvent (EtOH/MeOH), with heat → SN1 substitution is the major answer** (3d: (1-bromoethyl)benzene + CH₃OH, 80 °C → racemic ether, stereospecific N; "polar protic attenuates the Nu"). E1 is shown as *competing* and explained, not as major. Heat makes E1 major only with a non-nucleophilic acid (H₂SO₄/H₃PO₄ dehydration, Stage 5).
+- **2° allylic halide + NaOCH₃ in THF (polar aprotic) → SN2 major, with inversion, stereospecific Y** (3c). E2 shown as competing.
+- **4a–c:** all three pathways happen and give products: no shift (2° cation → ether), methyl shift (→ 3° cation on the ring → ether), ring expansion (cyclopentyl → 3° cyclohexyl cation → ether). So the unshifted pathway is always listed alongside the shifted ones. Proton-transfer steps are neglected in the answer.
+
+### Answers from Peter (2026-11-07)
+1. **Textbook:** not known yet. Use standard intro-textbook conventions and flag where books disagree.
+2. **Entering reagents:** draw, type or pick (second editor).
+3. **Arrows:** practice predicts products; drawing your own arrows is a stretch goal.
+4. **Exam style:** major/minor only, no ratios.
+5. **Reagents:** the seed list is enough for now; more are added later as data.
+6. **Checking the teaching text:** all dialog/WHY/glossary text lives in `data/mech-text.json`. After Session 3, a separate AI review compares it with standard textbook explanations and flags doubtful pages; then Peter skims the flagged parts against his notes.
+7. **Release:** push to `main` at the end of every session (Session 1's logic stays hidden until Session 2 adds the UI).
+8. **Where to work:** the git clone of `fz6sgp5jhw-commits/molecule-lab` (`~/Desktop/molecule-lab-repo`), not the old non-git copy.
 
 ### Suggested first prompt for the agent
-> Read CLAUDE.md and docs/mechanisms-plan.md. Do Spike S1 and Phase 1 (substrate analyser) only. Write tests first from the seed table rows that Phase 1 covers. Ask me the open questions before starting Phase 2.
+> Read CLAUDE.md and docs/mechanisms-plan.md (Part B only). Do Session 1: spikes S1–S3, then reactivity.js, reagents.js, predict.js and their data files. Write tests/seed-cases.json and a Node test first. Follow "Saving tokens". No UI work.

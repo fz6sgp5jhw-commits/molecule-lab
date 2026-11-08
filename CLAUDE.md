@@ -53,4 +53,6 @@ npm run serve            # look at the app at http://localhost:8765
 ```
 Pushing to `main` deploys to GitHub Pages in about a minute.
 
+For the mechanisms feature, follow the "Saving tokens" rules in `docs/mechanisms-plan.md`: logic tested in Node with one-line failures, run only the suite you're working on, `npm test` once before committing, never read `index.html` whole.
+
 Write commit messages that explain *why*, not just what.
