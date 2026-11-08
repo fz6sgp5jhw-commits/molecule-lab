@@ -1,0 +1,93 @@
+{
+  "_about": "All teaching text for the mechanism viewer and the Reactions window. Placeholders: {Nu} nucleophile, {LG} leaving group, {class} substrate class (1°, 2°…), {product} product name, {stereo} stereo sentence. [[term]] marks a glossary term (tap for its definition). Reviewed against standard intro textbooks after Session 3 (plan, Answers from Peter, 6).",
+  "speaker": "LAB",
+  "frames": {
+    "sn2_meet": {
+      "text": "Meet the players. {Nu} is the [[nucleophile]]: it is rich in electrons (red cloud). The C–{LG} bond is polar, so the carbon is [[electrophile|electron-poor]] (δ+) and {LG} is δ−.",
+      "why": [
+        "{LG} is more [[electronegativity|electronegative]] than carbon, so it pulls the shared electrons of the C–{LG} bond towards itself. That leaves the carbon slightly positive (δ+).",
+        "Opposite charges attract: the electron-rich {Nu} is drawn to the δ+ carbon. That pull is the dashed line."
+      ]
+    },
+    "sn2_attack": {
+      "text": "{Nu} attacks the δ+ carbon from the side directly opposite {LG}: a [[backside attack]]. Curved arrows show the electrons moving.",
+      "why": [
+        "The empty orbital that accepts the new electrons (the C–{LG} [[antibonding orbital]], σ*) points out of the back of the carbon, away from {LG}. So the only way in is from behind.",
+        "{LG} also blocks the front: it is big and electron-rich, and it would push {Nu} away. Bulky groups on the carbon block the back too, which is why SN2 is fast for methyl and 1°, slower for {class}, and does not happen at 3°."
+      ]
+    },
+    "sn2_ts": {
+      "text": "The [[transition state]]: {Nu} is half-bonded and {LG} is half-gone, at the same time. This is the top of the energy hill. Only one step, so one hump: the rate depends on both {Nu} and the substrate ([[bimolecular]]).",
+      "why": [
+        "Five groups crowd around one carbon here, so this arrangement is unstable: that is why it sits at the top of the hill and can't be isolated.",
+        "Because bond-making and bond-breaking happen in one step, the reaction goes faster with more {Nu} AND with more substrate. The 2 in SN2 means two species in the slow step."
+      ]
+    },
+    "sn2_product": {
+      "text": "{LG} leaves with the bonding electrons as {LG}⁻ (a stable [[leaving group]]). The new C–{Nu} bond is made. The other three groups flipped over like an umbrella in the wind: [[Walden inversion|inversion]].",
+      "why": [
+        "{LG}⁻ is a good leaving group because it is a weak base: it is happy carrying the extra negative charge.",
+        "{Nu} came in from the back, so it ends up on the opposite side from where {LG} was. The three other groups get pushed through to the other side. Watch it in 3D later: the 2D drawing keeps the atoms still."
+      ]
+    },
+    "sn2_result": {
+      "text": "Product: {product}. {stereo} SN2 is [[stereospecific]]: one starting stereoisomer gives one product stereoisomer.",
+      "why": [
+        "Because every molecule is attacked from the back, every molecule inverts. No mixture is made, so the reaction is stereospecific.",
+        "R/S letters come from priority rules, so inversion does not always swap R and S. The app lets OpenChemLib work out the letters from the 3D arrangement, never by swapping them by hand."
+      ]
+    }
+  },
+  "stereo": {
+    "inversion": "The carbon was {from}; after inversion it is {to}.",
+    "inversion_same": "The groups inverted. The letter stays {to} here because the new group changes the priorities.",
+    "inversion_cistrans": "The ring carbon inverted, so cis becomes trans (or trans becomes cis).",
+    "undefined": "The starting carbon was drawn without wedges, so no stereo is claimed. With wedges you'd see inversion.",
+    "none": "The reacting carbon is not a stereocentre, so there's nothing to invert visibly."
+  },
+  "glossary": {
+    "nucleophile": "Nucleophile (Nu): an electron-rich species that donates an electron pair to form a new bond with an electron-poor atom. 'Nucleus-loving'.",
+    "electrophile": "Electrophile: an electron-poor atom or molecule that accepts an electron pair. Here, the δ+ carbon bonded to the leaving group.",
+    "electronegativity": "Electronegativity: how strongly an atom pulls shared bonding electrons towards itself. F > O > Cl > N > Br > I > C > H.",
+    "backside attack": "Backside attack: the nucleophile approaches the carbon from the side opposite the leaving group (180°). Required for SN2.",
+    "antibonding orbital": "Antibonding orbital (σ*): an empty orbital of the C–LG bond. Filling it with the nucleophile's electrons breaks the C–LG bond.",
+    "transition state": "Transition state (‡): the highest-energy arrangement along the path, with bonds partly made and partly broken. It lasts for one vibration and can't be isolated.",
+    "bimolecular": "Bimolecular: two species (nucleophile and substrate) take part in the slow step, so rate = k[substrate][Nu].",
+    "leaving group": "Leaving group (LG): the atom or group that leaves with the bonding electron pair. Good LGs are weak bases: I⁻ > Br⁻ > Cl⁻, and sulfonates (OTs, OMs). OH⁻ and F⁻ are poor.",
+    "Walden inversion": "Walden inversion: the three groups on the attacked carbon flip to the other side, like an umbrella turning inside out. Every SN2 does this.",
+    "stereospecific": "Stereospecific: each stereoisomer of the starting material gives a specific stereoisomer of the product (SN2, E2). SN1 is not: it gives both."
+  },
+  "path": {
+    "substrate": {
+      "methyl": "Methyl: no carbons on the reacting carbon, so the back is wide open. SN2 only; a methyl cation is far too unstable for SN1.",
+      "1": "1° (primary): one carbon on the reacting carbon. The back is open, so SN2 is fast; a 1° cation is too unstable for SN1 (unless allylic/benzylic).",
+      "2": "2° (secondary): two carbons on the reacting carbon. Every path is possible, so the reagent and solvent decide.",
+      "3": "3° (tertiary): three carbons block the back, so no SN2. The 3° cation is stable, so SN1/E1, or E2 with a strong base.",
+      "vinyl": "The leaving group is on a C=C carbon (vinyl). No SN1, SN2, E1 or E2 here.",
+      "aryl": "The leaving group is on a benzene ring carbon (aryl). No SN1, SN2, E1 or E2 here."
+    },
+    "reagent": {
+      "nuc": "Strong nucleophile, weak base: it prefers to attack carbon (substitution) rather than pull off a proton.",
+      "nucbase": "Strong nucleophile and strong base: substitution and elimination compete; the substrate class decides.",
+      "bulky": "Strong but bulky base: too crowded to reach carbon, so it pulls off the most reachable β-H (elimination).",
+      "weak": "Weak nucleophile, weak base (neutral): it waits for a carbocation to form first (SN1/E1).",
+      "activator": "Turns the poor OH leaving group into a good one first."
+    },
+    "solvent": {
+      "protic": "Polar protic solvent (has O–H): stabilises ions and the carbocation, and 'cages' the nucleophile with hydrogen bonds. Favours SN1/E1.",
+      "aprotic": "Polar aprotic solvent (no O–H): dissolves salts but leaves the anion 'naked' and reactive. Favours SN2/E2.",
+      "heat": "Heat favours elimination, because it makes more molecules (entropy)."
+    }
+  },
+  "ui": {
+    "comingSoon": "The {pw} animation comes in the next update. The prediction and products above are already from the rules.",
+    "estimated": "estimated",
+    "unknownReagent": "Not in the catalogue. The rules guessed its role (marked estimated). Check it, or pick another.",
+    "rankingMode": "{n} molecules in the editor: ranking mode. Draw one molecule to predict a reaction.",
+    "nameOffline": "name unavailable offline",
+    "noName": "No name: PubChem has no record and the built-in namer can't name it.",
+    "hillCaption": "Energy (schematic, not to scale)",
+    "meterCaption": "How stable is it now?",
+    "pullCaption": "Nu pull"
+  }
+}

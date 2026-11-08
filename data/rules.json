@@ -74,6 +74,11 @@
     "ring_e2_warning": "May differ: the trans-diaxial requirement isn't checked yet; see the Chair tab.",
     "e2_beta_stereo": "Here the anti-periplanar geometry decides E vs Z (the β-carbon is a defined stereocentre); not covered yet.",
     "allylic_e1": "E1 from an allylic cation (dienes) isn't covered yet.",
-    "promoted": "The pathway above can't happen here, so the next one becomes the major path."
+    "promoted": "The pathway above can't happen here, so the next one becomes the major path.",
+    "ez_tie": "The E and Z alkenes can't be told apart by bulk here, so neither is favoured: shown as competing.",
+    "ring_contraction_not_covered": "This shift would shrink the ring. Ring contraction isn't covered yet.",
+    "unknown_reagent": "The reagent isn't in the list. Draw it so the rules can estimate its role.",
+    "unknown_solvent": "Pick a solvent, so the rules know whether it is polar protic or polar aprotic.",
+    "no_rule": "No row of the decision table covers this combination yet, so the app doesn't guess."
   }
 }
