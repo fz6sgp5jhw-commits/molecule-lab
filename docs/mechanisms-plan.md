@@ -233,6 +233,11 @@ Grouped so each session ends with something usable, and so all the chemistry log
 - Quiz points (they are template data) + the Quiz me toggle; competing-path offer at the end.
 - Extend the one Playwright test to open each mechanism once.
 
+- **Done 2026-11-07.** Templates SN1/E1/E2 + preludes (protonate, PBr₃, SOCl₂, TsCl) in `mech-templates.js`; text in `data/mech-text.json`. Products now carry `centre`/`group`/`beta` (predict.js), so each ▶ Watch follows its own cation and β-H. Renderer fields are general (`if`/`unless`/`when` flags, role-pair bonds incl. `pdouble`, `@token` charges/labels, `pOrbital`, `move`/`moved`, `resonance`, named hill stops; a shift adds a third hump). Notes:
+  - A ring expansion is drawn as the migrating ring bond reaching Cα (a long bond); ring atoms don't move. Only a shifting H or an acyclic alkyl branch travels along the arc.
+  - After activation, the step-2 nucleophile (Br⁻/Cl⁻) appears at its attack position rather than travelling from where step 1 left it.
+  - E1 shows the solvent as the base (water for H₂SO₄/H₃PO₄). Chemistry worth a textbook check: PBr₃ shown without a separate deprotonation (leaving group HOPBr₂), SOCl₂/pyridine via the chlorosulfite with inversion (SNi without pyridine: not covered).
+
 #### Session 4 (optional): 3D + geometry-decided E2 (Opus, high effort)
 - 3D button for stereo moments (reuse the Chair tab's 3Dmol frame approach).
 - E2 where anti-periplanar geometry decides E/Z; ring E2 via `chair.js`; menthyl vs neomenthyl (verify against a textbook first). Newman projection.

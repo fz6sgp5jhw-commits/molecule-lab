@@ -1,5 +1,5 @@
 {
-  "_about": "All teaching text for the mechanism viewer and the Reactions window. Placeholders: {Nu} nucleophile, {LG} leaving group, {class} substrate class (1°, 2°…), {product} product name, {stereo} stereo sentence. [[term]] marks a glossary term (tap for its definition). Reviewed against standard intro textbooks after Session 3 (plan, Answers from Peter, 6).",
+  "_about": "All teaching text for the mechanism viewer and the Reactions window. Placeholders: {Nu} nucleophile, {Base} base, {LG} leaving group as drawn, {LGion} what leaves, {X} acid counter-ion, {class} substrate class (1°, 2°…), {cation}/{cation2} carbocation class before/after a shift, {via} how the chosen product formed, {product} product name, {stereo} stereo sentence, {rank} major/minor. [[term]] marks a glossary term (tap for its definition). Reviewed against standard intro textbooks after Session 3 (plan, Answers from Peter, 6).",
   "speaker": "LAB",
   "frames": {
     "sn2_meet": {
@@ -13,7 +13,7 @@
       "text": "{Nu} attacks the δ+ carbon from the side directly opposite {LG}: a [[backside attack]]. Curved arrows show the electrons moving.",
       "why": [
         "The empty orbital that accepts the new electrons (the C–{LG} [[antibonding orbital]], σ*) points out of the back of the carbon, away from {LG}. So the only way in is from behind.",
-        "{LG} also blocks the front: it is big and electron-rich, and it would push {Nu} away. Bulky groups on the carbon block the back too, which is why SN2 is fast for methyl and 1°, slower for {class}, and does not happen at 3°."
+        "{LG} also blocks the front side, so {Nu} can't come in there. Bulky groups on the carbon block the back too, which is why SN2 is fast for methyl and 1°, slower for {class}, and does not happen at 3°."
       ]
     },
     "sn2_ts": {
@@ -24,9 +24,9 @@
       ]
     },
     "sn2_product": {
-      "text": "{LG} leaves with the bonding electrons as {LG}⁻ (a stable [[leaving group]]). The new C–{Nu} bond is made. The other three groups flipped over like an umbrella in the wind: [[Walden inversion|inversion]].",
+      "text": "{LG} leaves with the bonding electrons as {LGion}, a stable [[leaving group]]. The new C–{NuAtom} bond is made. The other three groups flipped over like an umbrella in the wind: [[Walden inversion|inversion]].",
       "why": [
-        "{LG}⁻ is a good leaving group because it is a weak base: it is happy carrying the extra negative charge.",
+        "{LGion} is a good leaving group because it is a weak base: it is happy carrying the bonding electrons away.",
         "{Nu} came in from the back, so it ends up on the opposite side from where {LG} was. The three other groups get pushed through to the other side. Watch it in 3D later: the 2D drawing keeps the atoms still."
       ]
     },
@@ -36,6 +36,292 @@
         "Because every molecule is attacked from the back, every molecule inverts. No mixture is made, so the reaction is stereospecific.",
         "R/S letters come from priority rules, so inversion does not always swap R and S. The app lets OpenChemLib work out the letters from the 3D arrangement, never by swapping them by hand."
       ]
+    },
+    "sn2_meet_act": {
+      "text": "Step 2: the OH is now {LG}, a good [[leaving group]]. {Nu} is the [[nucleophile]] (red cloud). The C–O bond is very polar, so the carbon is [[electrophile|electron-poor]] (δ+).",
+      "why": [
+        "OH⁻ is a strong base, so it is a poor leaving group. After activation the group that leaves is {LGion}, a weak base, so the C–O bond can break."
+      ]
+    },
+    "cat_meet": {
+      "text": "SN1 and E1 start the same way: no attack yet. The C–{LG} bond is polar: the carbon is δ+ and {LG} is δ−. A {class} carbon can hold a + charge well enough to let {LG} leave on its own.",
+      "why": [
+        "Backside attack is blocked (3°) or too slow with a weak nucleophile, so the molecule waits until {LG} leaves by itself.",
+        "A polar [[protic solvent]] helps: its O–H groups surround and stabilise both ions as they separate."
+      ]
+    },
+    "cat_meet_act": {
+      "text": "Step 2: the OH is now {LG}, a good [[leaving group]]. The carbon is {class}, so it can hold a + charge: the leaving group goes first and a [[carbocation]] forms.",
+      "why": [
+        "OH⁻ is a strong base, so it is a poor leaving group. Water (H₂O) is a weak base, so it leaves easily."
+      ]
+    },
+    "cat_ionise": {
+      "text": "{LG} leaves, taking both bonding electrons (one curved arrow, from the bond to {LG}). This is the slow step.",
+      "why": [
+        "Breaking a bond into two ions costs a lot of energy, so this is the highest hump: the [[rate-determining step]].",
+        "Only the substrate is in this slow step, so the rate doesn't depend on the nucleophile or base: [[unimolecular]] (the 1 in SN1 and E1)."
+      ]
+    },
+    "cat_ts1": {
+      "text": "[[transition state|Transition state]] 1: the C–{LG} bond is half broken. The carbon is becoming positive and {LG} is becoming {LGion}.",
+      "why": [
+        "The better the carbon can hold a + charge, the lower this hump. That is why 3° > 2°, and 1°/methyl cations essentially don't form (unless allylic or benzylic)."
+      ]
+    },
+    "cat_cation": {
+      "text": "A {cation} [[carbocation]]: the carbon has only six electrons and an empty p orbital (the two open lobes). It is flat (sp², 120°), so it can be attacked from either face.",
+      "why": [
+        "The neighbouring C–H and C–C bonds feed a little electron density into the empty p orbital: [[hyperconjugation]]. More carbons on C⁺ means more of this, so 3° > 2° > 1°.",
+        "This dip in the energy hill is a real [[intermediate]], not a transition state: it lives long enough to rearrange or be trapped."
+      ]
+    },
+    "allyl_resonance": {
+      "text": "This cation is allylic: the + is shared between both ends of the old C=C. Two [[resonance]] forms, one real ion. A nucleophile can bond at either end, so two products form.",
+      "why": [
+        "The C=C's π electrons can slide over to the C⁺. That moves the + to the far carbon. Neither drawing is the real ion: it is a blend of both.",
+        "Spreading the charge over two carbons stabilises the cation, which is why allylic (and benzylic) cations form easily.",
+        "Which end reacts more is not decided here: the app shows both products and does not rank them by end."
+      ]
+    },
+    "shift_h": {
+      "text": "A [[1,2-shift|hydride shift]]: an H on the next carbon moves over with its two bonding electrons (the arrow starts at the C–H bond).",
+      "why": [
+        "The H moves as H⁻ (a hydride: H plus two electrons), so the carbon it leaves becomes the new C⁺.",
+        "It only happens because the new cation is more stable ({cation} → {cation2}). The app ranks products by cation stability, so the shifted product is listed as major; your answer key may list all products without ranking."
+      ]
+    },
+    "shift_alkyl": {
+      "text": "A [[1,2-shift|methyl (alkyl) shift]]: the group on the next carbon moves over with its two bonding electrons (the arrow starts at that C–C bond).",
+      "why": [
+        "The group moves together with its bonding pair, so the carbon it leaves becomes the new C⁺.",
+        "It only happens because the new cation is more stable ({cation} → {cation2}). Only one shift per pathway is shown; several in a row are not covered yet."
+      ]
+    },
+    "shift_ring": {
+      "text": "A [[ring expansion]]: a ring C–C bond next to C⁺ moves over to the C⁺ (the arrow starts at that ring bond). The ring grows by one carbon.",
+      "why": [
+        "The ring bond moves with its two electrons. The ring carbon it left becomes the new C⁺, now inside a bigger ring.",
+        "Two things improve: the new cation is {cation2} instead of {cation}, and a 5-membered (or smaller) ring becomes a less strained bigger ring ([[ring strain]]).",
+        "In the drawing the atoms stay put, so the new bond looks long. In the real molecule the ring relaxes into a normal six-membered shape."
+      ]
+    },
+    "shift_h_done": {
+      "text": "Done: the H now sits on the first carbon, and the + has moved next door. New cation: {cation2}, more stable than the {cation} one (the meter rose).",
+      "why": [
+        "A shift is fast: much faster than the first step. That is why the cation can rearrange before the nucleophile or base finds it."
+      ]
+    },
+    "shift_alkyl_done": {
+      "text": "Done: the group has swung across, and the + has moved next door. New cation: {cation2}, more stable than the {cation} one (the meter rose).",
+      "why": [
+        "A shift is fast: much faster than the first step. That is why the cation can rearrange before the nucleophile or base finds it."
+      ]
+    },
+    "shift_ring_done": {
+      "text": "Done: the ring is one carbon bigger and the + now sits on a ring carbon. New cation: {cation2} (the meter rose). Path: {via}.",
+      "why": [
+        "Bigger, less strained ring + a more substituted cation: both help, so this is the most stable cation the app finds here."
+      ]
+    },
+    "sn1_meet_nu": {
+      "text": "{Nu} arrives. It is a weak [[nucleophile]], but the C⁺ is so electron-poor that even a neutral lone pair is enough.",
+      "why": [
+        "The [[protic solvent]] cages anionic nucleophiles with hydrogen bonds, but here the solvent itself is the nucleophile ([[solvolysis]])."
+      ]
+    },
+    "sn1_attack": {
+      "text": "{Nu} donates a lone pair to the empty p orbital of C⁺. The ion is flat, so it can attack from the top or the bottom face equally.",
+      "why": [
+        "Two faces, equal chance: that is why SN1 at a stereocentre gives both configurations ([[racemic]] mixture at that carbon)."
+      ]
+    },
+    "sn1_ts2": {
+      "text": "Transition state 2: the new bond between {Nu} and the carbon is half made. This hump is lower than the first one: cations react fast.",
+      "why": [
+        "Two humps with a dip between them: a two-step mechanism with an intermediate. SN2 has only one hump."
+      ]
+    },
+    "sn1_product": {
+      "text": "The new C–{NuAtom} bond is made, and the charge is gone. {LGion} is left in solution.",
+      "why": [
+        "The product is neutral because {Nu} brought a negative charge to the positive carbon."
+      ]
+    },
+    "sn1_oxonium": {
+      "text": "The new C–O bond is made. The oxygen now has three bonds and a + charge (an [[oxonium ion]]). One more step: it has to lose an H⁺.",
+      "why": [
+        "A neutral O with two bonds uses one lone pair to make a third bond, so it becomes positive."
+      ]
+    },
+    "sn1_deprotonate": {
+      "text": "[[proton transfer|Proton transfer]]: a solvent molecule pulls the extra H⁺ off the O. The product is neutral. (Worksheets often say \"neglect proton transfer steps\": tick the box to skip these.)",
+      "why": [
+        "This is a fast acid–base step; it doesn't change the carbon skeleton or the stereo."
+      ]
+    },
+    "sn1_result": {
+      "text": "Product ({rank}): {product}. {stereo} SN1 is not [[stereospecific]] at the reacting carbon. Path: {via}.",
+      "why": [
+        "Carbocation reactions can give several products (from shifts or resonance). The app lists each one with its own ▶ Watch button.",
+        "Major/minor comes from the cation score (more carbons on C⁺, allylic/benzylic, relieved ring strain). No percentages are claimed."
+      ]
+    },
+    "e1_base": {
+      "text": "A weak base ({Base}) comes close to a β-hydrogen: an H on a carbon next to C⁺. That C–H bond lines up with the empty p orbital.",
+      "why": [
+        "In E1 the base doesn't need to be strong: the cation is already there, so pulling off a nearby H is easy.",
+        "Heat favours this elimination over substitution, because one molecule becomes two (more [[entropy]])."
+      ]
+    },
+    "e1_arrows": {
+      "text": "Two curved arrows: {Base}'s lone pair takes the H⁺, and the C–H bond's electrons swing over to make the new C=C π bond.",
+      "why": [
+        "The electrons from the C–H bond fill the empty p orbital: that is the new π bond."
+      ]
+    },
+    "e1_ts2": {
+      "text": "Transition state 2: the C–H bond is half broken and the π bond half formed.",
+      "why": [
+        "This hump is lower than the first: the slow step was losing the leaving group."
+      ]
+    },
+    "e1_product": {
+      "text": "The alkene is made. {Base} carries the H⁺ away (as its conjugate acid), and the charge is gone.",
+      "why": [
+        "With an acid catalyst, the H⁺ given back here is the one the acid lent at the start: the acid is a [[catalyst]]."
+      ]
+    },
+    "e1_result": {
+      "text": "Product ({rank}): {product}. {stereo} Path: {via}. E1 is not [[stereospecific]].",
+      "why": [
+        "[[Zaitsev's rule]]: the more substituted alkene is more stable, so it is usually the major E1 product.",
+        "If the C=C can be E or Z, the trans (E) isomer is usually major (less crowded), but both form: the flat cation has no memory of the starting stereo."
+      ]
+    },
+    "e2_meet": {
+      "text": "Meet the players: {Base} is a strong [[base]]. It will not attack carbon; it will pull off a β-hydrogen (an H on a carbon next to the C–{LG} carbon). The C–{LG} bond is polar.",
+      "why": [
+        "Strong, negatively charged bases (and bulky ones) favour E2. Heat helps too (two molecules become three: more [[entropy]])."
+      ]
+    },
+    "e2_anti": {
+      "text": "The H that leaves is drawn opposite {LG}: E2 needs the C–H and C–{LG} bonds [[anti-periplanar]] (in one plane, 180° apart).",
+      "why": [
+        "Only then do the C–H bonding electrons line up with the back lobe of the C–{LG} σ* orbital, so they can flow straight into the new π bond.",
+        "In the 2D drawing the H is simply placed opposite {LG} to show the idea. Checking real 3D geometry (chairs, which H is axial, E/Z decided by geometry) is not covered yet."
+      ]
+    },
+    "e2_arrows": {
+      "text": "Three curved arrows, all at once: {Base} takes the H, the C–H electrons form the C=C, and {LG} leaves with its bonding pair.",
+      "why": [
+        "Everything happens in one step, so there is one hump. Rate depends on both the base and the substrate ([[bimolecular]]: the 2 in E2)."
+      ]
+    },
+    "e2_ts": {
+      "text": "The [[transition state]]: H half-transferred, π bond half-formed, C–{LG} half-broken. Top of the single hump.",
+      "why": [
+        "No carbocation forms, so there are no shifts in E2."
+      ]
+    },
+    "e2_product": {
+      "text": "The alkene is made. {Base} now carries the H, and {LG} has left as {LGion}.",
+      "why": [
+        "The leaving group must be good (a weak base) for this to be fast: I > Br > Cl, sulfonates best."
+      ]
+    },
+    "e2_result": {
+      "text": "Product ({rank}): {product}. {stereo} Path: {via}. E2 is [[stereospecific]].",
+      "why": [
+        "[[Zaitsev's rule]]: a small strong base gives mostly the more substituted (more stable) alkene. Other β-H's give minor products (each has its own ▶ Watch).",
+        "When the C=C can be E or Z, the app gives the trans (E-type) arrangement as major. Cases where the anti-periplanar geometry forces one isomer are not covered yet."
+      ]
+    },
+    "e2_result_hofmann": {
+      "text": "Product ({rank}): {product}. {stereo} Path: {via}: a bulky base takes the most reachable H, so the less substituted alkene is major ([[Hofmann product]]).",
+      "why": [
+        "A bulky base like t-BuO⁻ can't reach the crowded inner H's easily, so it pulls off an H from the end CH₃.",
+        "Textbooks differ on how strongly this applies to 2° substrates; the app follows the common course rule (bulky base → Hofmann)."
+      ]
+    },
+    "pro_meet": {
+      "text": "Step 1 (alcohol activation): OH is a poor [[leaving group]], so it can't leave as it is. The acid ({Acid}) offers an H⁺, and the O has lone pairs to grab it.",
+      "why": [
+        "OH⁻ is a strong base, so it holds onto carbon. Water is a weak base, so turning OH into OH₂⁺ makes it leave easily."
+      ]
+    },
+    "pro_attack": {
+      "text": "[[proton transfer|Proton transfer]]: the O's lone pair takes the H⁺ from the acid; the H–{X} bond's electrons go to {X}.",
+      "why": [
+        "Acid–base steps like this are very fast. Worksheets often say \"neglect proton transfer steps\": tick the box to skip them."
+      ]
+    },
+    "pro_done": {
+      "text": "The O now carries a + (OH₂⁺, an [[oxonium ion]]). The leaving group will be neutral water, a good leaving group.",
+      "why": [
+        "{X}⁻ is left over. With HBr/HCl/HI it becomes the nucleophile; with H₂SO₄/H₃PO₄ the counter-ion is a very poor nucleophile, so elimination wins with heat."
+      ]
+    },
+    "pbr3_attack": {
+      "text": "Step 1 (alcohol activation): the O's lone pair attacks phosphorus, and one Br leaves as Br⁻.",
+      "why": [
+        "P is δ+ (bonded to three electronegative Br atoms), so it's a good [[electrophile]] for the O lone pair.",
+        "One PBr₃ can activate up to three alcohol molecules; the app shows one."
+      ]
+    },
+    "pbr3_done": {
+      "text": "The O is now bonded to P: O(H)–PBr₂ with a + on O. That is a very good leaving group. The Br⁻ made here is the nucleophile for step 2.",
+      "why": [
+        "Textbooks draw this with small differences (some remove the H⁺ first); either way the C–O bond breaks in step 2 by SN2, so the carbon is inverted. 3° alcohols are not covered (SN2 is blocked)."
+      ]
+    },
+    "socl2_attack": {
+      "text": "Step 1 (alcohol activation): the O's lone pair attacks sulfur of SOCl₂, and a Cl leaves as Cl⁻.",
+      "why": [
+        "S is δ+ (bonded to O and two Cl), so it's a good [[electrophile]]. Some books show this as attack at S=O first; the result is the same."
+      ]
+    },
+    "socl2_done": {
+      "text": "The O is bonded to S and carries a + (it has three bonds).",
+      "why": [
+        "The next step is just removing the extra H⁺."
+      ]
+    },
+    "socl2_deprot": {
+      "text": "[[proton transfer|Proton transfer]]: pyridine takes the H⁺. The result is an alkyl chlorosulfite, R–O–S(O)Cl: a good leaving group. Cl⁻ is the nucleophile for step 2.",
+      "why": [
+        "With pyridine the next step is SN2 (inversion). Without pyridine some books describe retention (an SNi mechanism); that case is not covered here."
+      ]
+    },
+    "tscl_attack": {
+      "text": "Step 1 of 2: the O's lone pair attacks sulfur of tosyl chloride (TsCl), and Cl⁻ leaves.",
+      "why": [
+        "The S is δ+ (two S=O and a Cl pull electrons away), so the O lone pair attacks it."
+      ]
+    },
+    "tscl_done": {
+      "text": "The O is bonded to the tosyl group and carries a + (three bonds). Pyridine is there to take the extra H⁺.",
+      "why": [
+        "Pyridine is a weak base that mops up the H⁺ (as pyridinium chloride)."
+      ]
+    },
+    "tscl_deprot": {
+      "text": "[[proton transfer|Proton transfer]]: pyridine removes the H⁺. The alcohol is now a [[tosylate]] (R–OTs).",
+      "why": [
+        "This is a fast acid–base step."
+      ]
+    },
+    "tscl_result": {
+      "text": "Product: {product}. The C–O bond was never broken, so the carbon keeps its configuration ([[retention]]). TsO⁻ is an excellent leaving group: now pick a nucleophile for step 2 (that step will invert the carbon).",
+      "why": [
+        "OTs is as good a leaving group as I⁻ (or better), because TsO⁻ is a very weak base (its charge is spread over three O's)."
+      ]
+    },
+    "sn1_meet_ion": {
+      "text": "{Nu} arrives. The C⁺ is so electron-poor that it grabs almost any lone pair, so the nucleophile that bumps into it first wins.",
+      "why": [
+        "Because the cation is so reactive, SN1 doesn't need a strong nucleophile: the slow step was the leaving group going."
+      ]
     }
   },
   "stereo": {
@@ -43,7 +329,13 @@
     "inversion_same": "The groups inverted. The letter stays {to} here because the new group changes the priorities.",
     "inversion_cistrans": "The ring carbon inverted, so cis becomes trans (or trans becomes cis).",
     "undefined": "The starting carbon was drawn without wedges, so no stereo is claimed. With wedges you'd see inversion.",
-    "none": "The reacting carbon is not a stereocentre, so there's nothing to invert visibly."
+    "none": "The reacting carbon is not a stereocentre, so there's nothing to invert visibly.",
+    "racemic": "The flat C⁺ was attacked from both faces, so both configurations at that carbon form (racemic there; with another stereocentre present, a mixture of diastereomers).",
+    "sn1_none": "The carbon that was attacked is not a stereocentre in the product, so there's no stereo to report.",
+    "ez": "This is the {ez} isomer.",
+    "ez_none": "This C=C can't be E/Z.",
+    "ez_unknown": "The E/Z geometry here depends on the 3D arrangement, which isn't covered yet, so no E/Z is claimed.",
+    "retention": "The carbon keeps its configuration (retention)."
   },
   "glossary": {
     "nucleophile": "Nucleophile (Nu): an electron-rich species that donates an electron pair to form a new bond with an electron-poor atom. 'Nucleus-loving'.",
@@ -55,7 +347,29 @@
     "bimolecular": "Bimolecular: two species (nucleophile and substrate) take part in the slow step, so rate = k[substrate][Nu].",
     "leaving group": "Leaving group (LG): the atom or group that leaves with the bonding electron pair. Good LGs are weak bases: I⁻ > Br⁻ > Cl⁻, and sulfonates (OTs, OMs). OH⁻ and F⁻ are poor.",
     "Walden inversion": "Walden inversion: the three groups on the attacked carbon flip to the other side, like an umbrella turning inside out. Every SN2 does this.",
-    "stereospecific": "Stereospecific: each stereoisomer of the starting material gives a specific stereoisomer of the product (SN2, E2). SN1 is not: it gives both."
+    "stereospecific": "Stereospecific: each stereoisomer of the starting material gives a specific stereoisomer of the product (SN2, E2). SN1 is not: it gives both.",
+    "carbocation": "Carbocation: a carbon with only three bonds, six electrons and a + charge. Flat (sp²) with an empty p orbital. Stability: 3° > 2° > 1° > methyl; allylic/benzylic are extra stable.",
+    "hyperconjugation": "Hyperconjugation: neighbouring C–H and C–C bonds share a little of their electron density with an empty p orbital, stabilising a carbocation. More neighbouring carbons → more stabilisation.",
+    "intermediate": "Intermediate: a real species in a dip of the energy diagram (e.g. a carbocation). Unlike a transition state, it can live long enough to react in different ways.",
+    "rate-determining step": "Rate-determining step: the slowest step (the highest hump). Its reactants set the rate law.",
+    "unimolecular": "Unimolecular: only one species takes part in the slow step, so rate = k[substrate]. The 1 in SN1 and E1.",
+    "resonance": "Resonance: when one structure can be drawn in two or more ways that differ only in where electrons are. The real species is a blend; spreading charge stabilises it.",
+    "1,2-shift": "1,2-shift: an H (as hydride), alkyl group or ring bond moves with its electron pair from a carbon to the neighbouring C⁺, making a more stable cation.",
+    "ring expansion": "Ring expansion: a 1,2-shift of a ring bond to a C⁺ just outside the ring. The ring grows by one carbon (e.g. 5 → 6), relieving ring strain.",
+    "ring strain": "Ring strain: extra energy in small rings from squeezed bond angles and eclipsed bonds. Cyclopropane > cyclobutane > cyclopentane > cyclohexane (almost none).",
+    "protic solvent": "Polar protic solvent: has O–H or N–H (water, alcohols). Stabilises ions and carbocations, and cages anionic nucleophiles with hydrogen bonds.",
+    "solvolysis": "Solvolysis: a reaction where the solvent (water, an alcohol) is the nucleophile.",
+    "racemic": "Racemic: a 50:50 mixture of two enantiomers. Optically inactive; drawn with plain lines on worksheets.",
+    "oxonium ion": "Oxonium ion: an oxygen with three bonds and a + charge (e.g. R–OH₂⁺).",
+    "proton transfer": "Proton transfer: an H⁺ moves from one atom to another (an acid–base step). Fast; many worksheets say to neglect these steps.",
+    "base": "Base: a species that removes a proton (H⁺) with its lone pair. Strong bases (HO⁻, RO⁻, t-BuO⁻) favour E2.",
+    "anti-periplanar": "Anti-periplanar: the H and the leaving group are in one plane, 180° apart (on opposite sides of the C–C bond). Required for E2.",
+    "Zaitsev's rule": "Zaitsev's rule: in elimination the more substituted alkene (more carbons on the C=C) is usually major, because it is more stable.",
+    "Hofmann product": "Hofmann product: the less substituted alkene, which becomes major with a bulky base (t-BuO⁻) that takes the most reachable H.",
+    "entropy": "Entropy: disorder. Elimination makes more molecules than it uses, so higher temperature (heat) favours it.",
+    "catalyst": "Catalyst: speeds up a reaction and is given back at the end (like H⁺ in acid-catalysed dehydration).",
+    "tosylate": "Tosylate (OTs): a p-toluenesulfonate ester, R–O–SO₂–C₆H₄–CH₃. An excellent leaving group made from an alcohol and TsCl without touching the C–O bond.",
+    "retention": "Retention: the carbon keeps its original 3D arrangement (no bonds to it were broken)."
   },
   "path": {
     "substrate": {
@@ -80,7 +394,7 @@
     }
   },
   "ui": {
-    "comingSoon": "The {pw} animation comes in the next update. The prediction and products above are already from the rules.",
+    "comingSoon": "The {pw} animation for this case isn't available yet. The prediction and products above are already from the rules.",
     "estimated": "estimated",
     "unknownReagent": "Not in the catalogue. The rules guessed its role (marked estimated). Check it, or pick another.",
     "rankingMode": "{n} molecules in the editor: ranking mode. Draw one molecule to predict a reaction.",
@@ -88,6 +402,55 @@
     "noName": "No name: PubChem has no record and the built-in namer can't name it.",
     "hillCaption": "Energy (schematic, not to scale)",
     "meterCaption": "How stable is it now?",
-    "pullCaption": "Nu pull"
+    "pullCaption": "Nu pull",
+    "quizToggle": "Quiz me",
+    "skipProton": "Skip proton transfers",
+    "quizRight": "Right!",
+    "quizWrong": "Not quite.",
+    "quizSkipped": "Answer:",
+    "quizTag": "QUIZ",
+    "protonTag": "proton transfer",
+    "yes": "Yes",
+    "no": "No",
+    "offerMinor": "{other} also competes here. See it?",
+    "offerMajor": "{other} is the major path here. See it?",
+    "offerButton": "▶ See {other}",
+    "activationWatch": "▶ Watch step 1"
+  },
+  "quiz": {
+    "attack": {
+      "q": "Quiz: tap the atom {Nu} attacks.",
+      "explain": "{Nu} attacks the δ+ carbon that holds {LG} (Cα), from the back side."
+    },
+    "attack_cation": {
+      "q": "Quiz: which carbon will {Nu} bond to? Tap it.",
+      "explain": "The nucleophile bonds to the carbon that carries the + (the empty p orbital)."
+    },
+    "shift": {
+      "q": "Quiz: will this {cation} cation rearrange (shift)? Yes or No.",
+      "explainYes": "Yes: a neighbouring H, CH₃ or ring bond can move over and give a more stable cation, so it shifts.",
+      "explainYesNotTaken": "Yes, it can: a shift gives a more stable cation, and that is the major path. This card follows the other path, where {Nu} traps the cation before it shifts (minor product).",
+      "explainNo": "No: no neighbouring H, CH₃ or ring bond can move to make a more stable cation, so it stays put."
+    },
+    "beta_e1": {
+      "q": "Quiz: which carbon loses an H to give the major alkene? Tap it.",
+      "explain": "The H comes from the β-carbon that gives the more substituted, more stable alkene (Zaitsev)."
+    },
+    "beta_e2": {
+      "q": "Quiz: which carbon loses an H to give the major alkene? Tap it.",
+      "explain": "Small strong base: the β-carbon giving the more substituted alkene (Zaitsev). Bulky base: the most reachable β-H, usually on the end CH₃ (Hofmann)."
+    },
+    "activate_o": {
+      "q": "Quiz: which atom of the alcohol does the reagent react with first? Tap it.",
+      "explain": "The O: its lone pairs attack the reagent. The C–O bond is not touched in this step."
+    }
+  },
+  "compete": {
+    "_about": "Key 'major>minor': why the minor pathway is minor here. Shown after the offer line.",
+    "SN1>E1": "Same carbocation, different ending: the solvent can pull off a β-H instead of bonding to C⁺. Your course counts substitution as the major answer for a weak nucleophile in a protic solvent; heat makes E1 more important.",
+    "E1>SN1": "Same carbocation: with heat and a poor nucleophile, losing a β-H wins over being trapped.",
+    "SN2>E2": "{Nu} is a base as well as a nucleophile, but this {class} carbon's back side is open enough that substitution wins.",
+    "E2>SN2": "{Nu} can also attack carbon, but the {class} carbon is crowded and/or the base is strong or bulky, so taking a β-H is easier.",
+    "generic": "Both pathways happen with these conditions; the lamps show which one is major."
   }
 }

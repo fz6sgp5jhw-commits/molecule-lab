@@ -11,7 +11,7 @@ const cors = { 'access-control-allow-origin': '*' };
 async function mockServices(ctx){
   // PubChem knows nothing → products are named by namer.js and checked by OPSIN
   await ctx.route(/pubchem\.ncbi\.nlm\.nih\.gov/, (route) => route.fulfill({ status: 404, contentType: 'application/json', headers: cors, body: '{"Fault":{"Code":"PUGREST.NotFound"}}' }));
-  const opsin = { '2-iodobutane': 'CCC(C)I' };
+  const opsin = { '2-iodobutane': 'CCC(C)I', '(2E)-but-2-ene': 'C/C=C/C', '2-methylbut-2-ene': 'CC=C(C)C' };
   await ctx.route(/(ebi\.ac\.uk\/opsin|opsin\.ch\.cam\.ac\.uk)/, (route) => {
     const name = decodeURIComponent(route.request().url().split('/').pop().replace(/\.json$/, ''));
     const smi = opsin[name];
@@ -96,6 +96,110 @@ try {
     await page.locator('#rxWin').screenshot({ path: `${dir}/reactions-phone.png` });
     await page.locator('#mechWin').screenshot({ path: `${dir}/sn2-frame-phone.png` });
   }
+
+  // ---------- Session 3: SN1 (+ shift), E1, E2, activation, quiz, competing offer ----------
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const dir = new URL('../docs/screens', import.meta.url).pathname;
+  async function setup(smiles, reagent, heat){
+    const prev = await text('#rxFactList');
+    await page.fill('#nameInput', smiles); await page.click('#nameBtn');
+    await page.waitForFunction((p) => document.querySelector('#rxFactList').textContent !== p, prev, { timeout: 10000 }).catch(() => {});
+    await page.fill('#rxReagentInput', reagent); await page.press('#rxReagentInput', 'Enter');
+    if ((await page.getAttribute('#rxHeat', 'aria-pressed')) !== String(heat)) await page.click('#rxHeat');
+    await page.click('#rxPredict');
+    await page.waitForSelector('#rxOut:not([hidden])');
+  }
+  const dialog = () => text('#mechDialog .mv-text');
+  const steps = async () => Number((await text('.mv-step')).match(/\/(\d+)/)[1]);
+  // step to the end, collecting each frame's dialog text
+  async function walk(onFrame){
+    const seen = [];
+    for (let i = 0; i < 30; i++){
+      seen.push(await dialog());
+      if (onFrame) await onFrame(i, seen[i]);
+      if (await page.isDisabled('.mv-next')) break;
+      await page.click('.mv-next');
+    }
+    return seen.join(' ¦ ');
+  }
+
+  // SN1 on worksheet 3d: (1-bromoethyl)benzene + CH₃OH, heat → benzylic cation, oxonium, proton transfer, racemic
+  await setup('C[C@@H](Br)c1ccccc1', 'CH3OH', true);
+  ok(await page.getAttribute('.lamp[data-pw="SN1"]', 'class') === 'lamp major', 'W3d: SN1 lamp major');
+  await page.click('.lamp[data-pw="SN1"]');
+  await page.waitForSelector('#mechDialog');
+  const n3d = await steps();
+  let all = await walk(async (i, t) => { if (/benzylic carbocation/.test(t)) ok(await page.locator('.mv-porb').count() === 2, 'SN1: cation drawn with an empty p orbital'); });
+  ok(/benzylic carbocation/.test(all) && /oxonium/.test(all) && !/shift:/.test(all), 'SN1 (W3d): ionise → benzylic C⁺ → oxonium, no shift step');
+  ok(/both configurations/.test(all) && /not stereospecific/.test(all), 'SN1 result: racemic, not stereospecific');
+  ok((await text('.mv-offer')).includes('E1 also competes'), 'SN1 end: offers the competing E1');
+  await page.check('.mv-skipbox');
+  ok(await steps() === n3d - 1, 'Skip proton transfers removes the oxonium deprotonation');
+  await page.uncheck('.mv-skipbox');
+  await page.click('.mv-offer button');
+  await page.waitForFunction(() => /E1 mechanism/.test(document.querySelector('#mechTitle').textContent));
+  all = await walk();
+  ok(/start the same way/.test(all) && /weak base/.test(all) && /E1 is not/.test(all), 'E1 (from the offer): ionise → base takes β-H → alkene');
+
+  // Worksheet 4: the ring-expansion ether, opened from its own ▶ Watch button, with the quiz on
+  await setup('CC(Br)C1(C)CCCC1', 'EtOH', true);
+  const ringCard = page.locator('#rxCards .rx-card', { hasText: 'ring expansion' }).filter({ hasText: 'SN1' }).first();
+  await ringCard.locator('.rx-watch').click();
+  await page.waitForSelector('#mechDialog');
+  await page.check('.mv-quizbox');
+  let quizzed = 0, shot = false;
+  all = await walk(async (i, t) => {
+    if (await page.locator('.mv-qbtn').count()){
+      ok(/rearrange/.test(t), 'quiz: "will this cation shift?"');
+      await page.click('.mv-qbtn >> text=Yes');
+      ok(/Right!/.test(await dialog()), 'quiz: Yes is right for W4 (it shifts)'); quizzed++;
+    } else if (await page.locator('.mv-hit').count()){
+      ok(/which carbon/i.test(t), 'quiz: tap the carbon the Nu bonds to');
+      await page.locator('.mv-hit').first().click();
+      ok(/Right!|Not quite/.test(await dialog()) && await page.locator('.mv-correct').count() === 1, 'quiz: tap answered and the right atom is ringed'); quizzed++;
+    }
+    if (/^Done: the ring/.test(await dialog())){
+      ok(await page.locator('.mv-svg [data-bond="ca-g"]').count() > 0, 'ring expansion: the migrated ring bond is drawn to Cα');
+      if (process.env.SHOTS && !shot){ shot = true; await page.locator('#mechWin').screenshot({ path: `${dir}/sn1-shift-frame-desktop.png` }); }
+    }
+  });
+  ok(quizzed === 2, `W4 SN1 asks two quiz questions (got ${quizzed})`);
+  ok(/ring expansion/.test(all) && /New cation: 3°/.test(all), 'W4: ring expansion step, 2° → 3° cation');
+  ok((await text('.mv-result')).includes('cyclohexane'), 'W4: product card is the cyclohexane ether');
+  await page.uncheck('.mv-quizbox');
+
+  // E2: 2-bromobutane + NaOEt, heat → Zaitsev, anti-periplanar H drawn, three arrows
+  await setup('CCC(C)Br', 'NaOEt', true);
+  await page.click('.lamp[data-pw="E2"]');
+  await page.waitForSelector('#mechDialog');
+  all = await walk(async (i, t) => {
+    if (/anti-periplanar/.test(t)) ok(await page.locator('.mv-svg [data-atom="hb"]').count() === 1, 'E2: the β-H is drawn');
+    if (/Three curved arrows/.test(t)){
+      ok(await page.locator('.mv-arrow').count() === 3, 'E2: three curved arrows');
+      if (process.env.SHOTS) await page.locator('#mechWin').screenshot({ path: `${dir}/e2-frame-desktop.png` });
+    }
+  });
+  ok(/strong \[?base/.test(all) && /anti-periplanar/.test(all) && /Zaitsev/.test(all), 'E2: base, anti-periplanar, Zaitsev');
+  ok((await text('.mv-result')).includes('but-2-ene'), 'E2: product card but-2-ene');
+  ok((await text('.mv-offer')).includes('SN2 also competes'), 'E2 end: offers the competing SN2');
+
+  // E1 with an activation prelude: 2-methylbutan-2-ol + H₂SO₄, heat
+  await setup('CCC(C)(C)O', 'H2SO4', true);
+  await page.click('.lamp[data-pw="E1"]');
+  await page.waitForSelector('#mechDialog');
+  ok(/alcohol activation/.test(await dialog()) && /proton transfer/.test(await text('.mv-step')), 'acid: protonation prelude, marked as a proton transfer');
+  await page.check('.mv-skipbox');
+  ok(/OH₂⁺/.test(await dialog()), 'skipping proton transfers starts at the loss of water');
+  all = await walk();
+  ok(/E1 is not/.test(all) && (await text('.mv-result')).includes('2-methylbut-2-ene'), 'E1 (acid): Zaitsev alkene 2-methylbut-2-ene');
+  await page.uncheck('.mv-skipbox');
+
+  // TsCl: step 1 on its own (retention)
+  await setup('CC[C@@H](C)O', 'TsCl', false);
+  await page.click('#rxCards .rx-watch');
+  await page.waitForSelector('#mechDialog');
+  all = await walk();
+  ok(/tosyl chloride/.test(all) && /retention/.test(all), 'TsCl activation: O attacks S, C–O kept (retention)');
 
   // ranking mode: two molecules in the editor
   await page.fill('#nameInput', 'CCBr.CC(C)(C)Br');

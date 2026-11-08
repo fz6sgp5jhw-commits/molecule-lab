@@ -82,6 +82,9 @@ function product(mol, extra){
   return { mol, idcode: mol.getIDCode(), smiles: mol.toIsomericSmiles(), ...extra };
 }
 
+// Products also carry the atoms the mechanism viewer needs to follow them (substrate indices):
+// centre (the C⁺ the Nu attacks or loses its β-H next to), group (the shifting atom, alkyl/ring
+// shifts) and beta (the carbon that loses H in E1/E2).
 // Ranks products by key (descending, compared element by element): first = major,
 // an exact tie at the top = competing, everything else = minor. Duplicates (same ID code) are dropped.
 function rankProducts(list){
@@ -114,7 +117,7 @@ function e2(OCL, m, site, r, out){
       isomers = [alkeneProducts(OCL, m, al, true)[0]];
       out.notes.push('e2_beta_stereo');
     }
-    for (const iso of isomers) list.push(product(iso.mol, { key: [hofmann ? -al.zaitsev : al.zaitsev, iso.trans ? 1 : 0], ez: iso.ez, trans: iso.trans, zaitsev: al.zaitsev, conj: al.conj, via: hofmann ? 'Hofmann (bulky base)' : 'Zaitsev', ezNotCovered: isomers.length === 1 && betaDefined || undefined }));
+    for (const iso of isomers) list.push(product(iso.mol, { key: [hofmann ? -al.zaitsev : al.zaitsev, iso.trans ? 1 : 0], ez: iso.ez, trans: iso.trans, zaitsev: al.zaitsev, conj: al.conj, beta: al.beta, via: hofmann ? 'Hofmann (bulky base)' : 'Zaitsev', ezNotCovered: isomers.length === 1 && betaDefined || undefined }));
   }
   out.products = rankProducts(list);
   if (site.inRing){
@@ -136,14 +139,14 @@ function cationic(OCL, m, site, r, pw, out){
       const p = buildProduct(OCL, m, { del: site.lgAtoms, ...c.ops, attach: [{ to: c.centre, frag: r.nu }] });
       const nc = p.map[c.centre];
       const racemic = p.mol.isAtomStereoCenter(nc);
-      list.push(product(p.mol, { key: [c.score], via: c.label, cationScore: c.score, shift: c.shift, stereo: racemic ? 'racemic' : null }));
+      list.push(product(p.mol, { key: [c.score], via: c.label, cationScore: c.score, shift: c.shift, centre: c.centre, group: c.group, stereo: racemic ? 'racemic' : null }));
     }
   } else {
     if (site.allylic){ out.notes.push('allylic_e1'); return; }
     for (const c of pathways){
       for (const al of alkenesFrom(OCL, m, c.centre, { del: site.lgAtoms, ...c.ops })){
         for (const iso of alkeneProducts(OCL, m, al))
-          list.push(product(iso.mol, { key: [c.score, al.zaitsev, iso.trans ? 1 : 0], ez: iso.ez, trans: iso.trans, zaitsev: al.zaitsev, via: c.label, cationScore: c.score, shift: c.shift }));
+          list.push(product(iso.mol, { key: [c.score, al.zaitsev, iso.trans ? 1 : 0], ez: iso.ez, trans: iso.trans, zaitsev: al.zaitsev, beta: al.beta, via: c.label, cationScore: c.score, shift: c.shift, centre: c.centre, group: c.group }));
       }
     }
     if (!list.length) out.notes.push('no_beta_h');

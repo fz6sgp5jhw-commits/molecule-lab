@@ -88,4 +88,26 @@ for (const [i, r] of seed.reagentMatching.entries()){
 // every reason key the table uses has text
 for (const row of data.rules.rows) for (const k of [...(row.reasons || []), row.notCovered].filter(Boolean)) if (!data.rules.reasons[k]) fail('rules', `missing reason text for ${k}`);
 
+// ---------- mechanism templates (Session 3): data integrity + the atoms the viewer follows ----------
+{
+  const { TEMPLATES, PRELUDES } = await import('../mech-templates.js');
+  const T = JSON.parse(readFileSync(here('../data/mech-text.json')));
+  const all = [...Object.entries(TEMPLATES).flatMap(([k, t]) => t.frames.map((f) => [k, f])), ...Object.entries(PRELUDES).flatMap(([k, fs]) => fs.map((f) => [k, f]))];
+  for (const [k, f] of all){
+    for (const key of typeof f.text === 'object' ? Object.values(f.text) : [f.text]) if (!T.frames[key]) fail('mech', `${k}: missing frame text ${key}`);
+    if (f.quiz && !T.quiz[f.quiz.q]) fail('mech', `${k}: missing quiz text ${f.quiz.q}`);
+  }
+  const strings = JSON.stringify([T.frames, T.quiz]);
+  for (const [, term] of strings.matchAll(/\[\[([^\]|]+)/g)) if (!T.glossary[term]) fail('mech', `glossary term missing: ${term}`);
+  for (const pw of ['SN1', 'E1', 'E2']) if (!TEMPLATES[pw].frames.some((f) => f.result)) fail('mech', `${pw}: no result frame`);
+  if (!TEMPLATES.SN1.frames.some((f) => f.if === 'shift') || !TEMPLATES.SN1.frames.some((f) => f.if === 'allylic')) fail('mech', 'SN1: shift / allylic sub-steps missing');
+  if (!Object.values(PRELUDES).flat().some((f) => f.proton) || !TEMPLATES.SN1.frames.some((f) => f.proton)) fail('mech', 'proton-transfer frames not marked');
+  // W4: each SN1 product knows which cation it came from (no shift / methyl shift / ring expansion)
+  const w4 = seed.cases.find((c) => c.id === 'W4');
+  const [res] = predictSequence(OCL, M.fromSmiles(w4.substrate), w4.steps, data);
+  const got = res.pathways.SN1.products.map((p) => `${p.shift || 'none'}:${p.centre !== res.site.ca}:${p.group != null}`).sort().join(' ');
+  if (got !== 'alkyl:true:true none:false:false ring:true:true') fail('W4', `SN1 products' shift atoms: got ${got}`);
+  for (const p of res.pathways.E1.products) if (p.beta == null || p.centre == null) fail('W4', 'E1 product without beta/centre');
+}
+
 if (fails.length){ console.log(fails.join('\n')); process.exit(1); }

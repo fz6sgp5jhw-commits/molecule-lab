@@ -7,7 +7,7 @@
 import { analyse, cationPathways, buildProduct, LG_LABEL } from './reactivity.js';
 import { findReagent, matchMolecule, guessBox, entryFromMolecule, findSolvent } from './reagents.js';
 import { predict, rankSN1, rankSN2, PATHWAYS } from './predict.js';
-import { TEMPLATES } from './mech-templates.js';
+import { TEMPLATES, PRELUDES, ACTIVATION } from './mech-templates.js';
 import { openMechanism } from './mech-view.js';
 
 const $ = (id) => document.getElementById(id);
@@ -22,6 +22,16 @@ const ROLES = ['nuc', 'nucbase', 'bulky', 'weak'];
 const ROLE_TEXT = { nuc: 'Strong Nu, weak base', nucbase: 'Strong Nu + strong base', bulky: 'Bulky strong base', weak: 'Weak Nu / weak base' };
 const smooth = () => (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
 const LAMP_TEXT = { major: 'major', minor: 'minor', competing: 'competing', none: 'off' };
+// Alcohol activation before the main mechanism: which prelude, and how the activated leaving group is drawn
+const PRELUDE_OF = { HX: 'protonate', acid: 'protonate', PBr3: 'pbr3', SOCl2: 'socl2' };
+const ACTIVATED = {
+  protonate: { label: 'OH₂', LG: 'OH₂⁺', LGion: 'H₂O (neutral water)', bound: '+', free: '' },
+  pbr3: { label: 'O(H)PBr₂', LG: 'O(H)PBr₂⁺', LGion: 'HOPBr₂ (neutral)', bound: '+', free: '' },
+  socl2: { label: 'OS(O)Cl', LG: 'OS(O)Cl', LGion: '⁻OS(O)Cl (it falls apart into SO₂ + Cl⁻)', bound: '', free: '−' },
+};
+const ACT_ATOMS = { PBr3: [{ atom: 'P', rest: 'Br₂' }, { atom: 'Br' }], SOCl2: [{ atom: 'S', rest: '(O)Cl' }, { atom: 'Cl' }], TsCl: [{ atom: 'Ts' }, { atom: 'Cl' }], MsCl: [{ atom: 'Ms' }, { atom: 'Cl' }] };
+const LG_ION = { OTs: 'TsO⁻', OMs: 'MsO⁻', OSO2R: 'a sulfonate anion' };
+const PARTNER = { SN1: 'E1', E1: 'SN1', SN2: 'E2', E2: 'SN2' };
 
 export async function mountReactions(app){
   const { OCL } = app;
@@ -330,9 +340,9 @@ export async function mountReactions(app){
         ${p.via ? `<dt>Via</dt><dd>${esc(p.via)}</dd>` : ''}
       </dl>
       ${extra ? `<div class="note">${esc(extra)}</div>` : ''}
-      <div class="row"><button type="button" class="rx-load">Load into editor</button>${out && !inMech ? '<button type="button" class="rx-watch">▶ Watch</button>' : ''}</div>`;
+      <div class="row"><button type="button" class="rx-load">Load into editor</button>${(out || pw === 'activation') && !inMech ? '<button type="button" class="rx-watch">▶ Watch</button>' : ''}</div>`;
     nameLine(p.mol, div.querySelector('.rx-nameline'));
-    const w = div.querySelector('.rx-watch'); if (w) w.onclick = () => openPathway(pw, p);
+    const w = div.querySelector('.rx-watch'); if (w) w.onclick = () => (pw === 'activation' ? openActivation(p) : openPathway(pw, p));
     div.querySelector('.rx-load').onclick = () => { app.loadMolecule(p.mol.getCompactCopy()); $('editor').scrollIntoView({ behavior: smooth(), block: 'center' }); };
     return div;
   }
@@ -357,18 +367,119 @@ export async function mountReactions(app){
       mount.innerHTML = `<div class="msg warn">${esc(fill(texts.ui.comingSoon, { pw }))}</div>`;
       win.scrollIntoView({ behavior: smooth(), block: 'start' }); return;
     }
-    const p = chosen || out.products[0], site = res.site, r = st.reagent;
-    const nuMol = r.nu.mol || OCL.Molecule.fromSmiles(r.nu.smiles);
-    const Nu = speciesText(r);
-    const nuAtom = nuMol.getAtomLabel(r.nu.atom);
-    st.mech = openMechanism(mount, {
-      OCL, mol: analyse(OCL, st.mol).mol, site, template: TEMPLATES[pw], texts,
-      nu: { atom: nuAtom, rest: nuMol.getAtoms() > 1 ? `(${Nu})` : '', charged: Nu.endsWith('⁻') },
-      vars: { Nu, LG: site.lg, class: CLS_TEXT[site.cls], stereo: sn2Stereo(site, r, p) },
-      productName: nameOf(p.mol).then((n) => n.name || n.why),
-      resultCard: () => card(p, pw, undefined, true),
-    });
+    const p = chosen || out.products[0];
+    st.mech = openMechanism(mount, mechOptions(pw, p, out));
     win.scrollIntoView({ behavior: smooth(), block: 'start' });
+  }
+
+  // Everything the viewer needs to follow this product: roles (atom indices), flags (which optional
+  // frames apply), tokens (charges/labels that depend on the reagent) and the text variables.
+  function mechOptions(pw, p, out){
+    const res = st.res, site = res.site, r = st.reagent;
+    const m = analyse(OCL, st.mol).mol;
+    const S = texts.stereo;
+    const prelude = site.lg === 'OH' ? PRELUDE_OF[r.act] : null;
+    const act = prelude && ACTIVATED[prelude];
+    // nucleophile: the reagent's attaching atom; an activator's halide comes as X⁻
+    const nuMol = r.nu ? (r.nu.mol || OCL.Molecule.fromSmiles(r.nu.smiles)) : null;
+    const nuAtom = nuMol ? nuMol.getAtomLabel(r.nu.atom) : '';
+    const Nu = r.box === 'activator' ? (nuAtom ? nuAtom + '⁻' : '') : speciesText(r);
+    const nuCharged = Nu.endsWith('⁻');
+    const R0 = r.id === 'water' ? 'H' : (r.label.replace(/OH$/, '') || r.label);
+    // base: E2 → the reagent; E1 → the solvent (a weak base), which is water for acid dehydration
+    const solv = findSolvent(cat, st.solvent) || { label: 'solvent' };
+    const e1Base = r.act === 'acid' ? 'H₂O' : solv.label;
+    const Base = pw === 'E2' ? speciesText(r) : e1Base;
+    const baseCharged = pw === 'E2' && Base.endsWith('⁻');
+    const baseAtom = pw === 'E2' ? (nuAtom || 'N') : 'O';
+    // roles and flags
+    const roles = { ca: site.ca, lg: site.lgAtom, c: site.ca, cb: null, n: null, g: null, ab: null, y: null };
+    const flags = { major: p.rank === 'major', activated: !!act, nuNeutral: !nuCharged, e1: pw === 'E1', hofmann: pw === 'E2' && /Hofmann/.test(p.via || '') };
+    const cations = (out && out.cations) || [];
+    if (pw === 'SN1' || pw === 'E1'){
+      roles.c = p.centre ?? site.ca;
+      if (['H', 'alkyl', 'ring'].includes(p.shift)){
+        flags.shift = true; flags['shift' + { H: 'H', alkyl: 'Alkyl', ring: 'Ring' }[p.shift]] = true;
+        roles.n = p.centre; roles.g = p.group ?? null;
+      }
+      flags.canShift = cations.some((c) => ['H', 'alkyl', 'ring'].includes(c.shift));
+      const al = cations.find((c) => c.shift === 'allylic');
+      if (site.allylic && al){
+        flags.allylic = true; roles.y = al.centre;
+        for (let i = 0; i < m.getConnAtoms(site.ca); i++){ const b = m.getConnAtom(site.ca, i); for (let j = 0; j < m.getConnAtoms(al.centre); j++) if (m.getConnAtom(al.centre, j) === b) roles.ab = b; }
+        flags.allylicFar = p.shift === 'allylic';
+      }
+    }
+    if (pw === 'E1' || pw === 'E2') roles.cb = p.beta ?? null;
+    // cation classes and the stability meter (from the rule-based cation score, not a calculation)
+    const carbonsOn = (a) => { let k = 0; for (let i = 0; i < m.getConnAtoms(a); i++) if (m.getAtomicNo(m.getConnAtom(a, i)) === 6) k++; return k; };
+    const clsName = (k) => ({ 1: '1°', 2: '2°', 3: '3°' }[k] || `${k}°`);
+    const cation = CLS_TEXT[site.cls] + (site.allylic ? ' allylic' : site.benzylic ? ' benzylic' : '');
+    const cation2 = flags.shift ? clsName(carbonsOn(roles.n) - (p.shift === 'H' ? 0 : 1)) : cation;
+    const meterOf = (sc) => Math.max(1, Math.min(4, (sc ?? 2) - 1));
+    // leaving group as drawn, and what leaves
+    const LG = act ? act.LG : site.lg;
+    const LGion = act ? act.LGion : LG_ION[site.lg] || `${site.lg}⁻`;
+    const tokens = {
+      nu: nuCharged ? '−' : '', nuAfter: nuCharged ? '' : '+', nuDelta: nuCharged ? 'δ−' : 'δ+',
+      nuRestOx: R0 === 'H' ? 'H₂' : `(H)(${R0})`, nuRestR: R0 === 'H' ? 'H' : `(${R0})`,
+      base: baseCharged ? '−' : '', baseH: baseCharged ? '' : '+',
+      baseRestH: baseCharged ? `(${Base.replace('⁻', '')}H)` : Base === 'H₂O' ? '(H₃O⁺)' : /OH$/.test(Base) ? `(${Base}₂⁺)` : `(${Base}–H⁺)`,
+      lgBound: act ? act.bound : '', lgFree: act ? act.free : '−',
+      c0: meterOf(site.cationScore), c1: meterOf(p.cationScore ?? site.cationScore),
+    };
+    const virt = {
+      nu: { atom: nuAtom || '?', rest: nuCharged ? (nuMol && nuMol.getAtoms() > 1 ? `(${Nu})` : '') : `(${r.label})` },
+      base: { atom: baseAtom, rest: `(${Base})` },
+      hx: { atom: r.act === 'acid' ? (r.id === 'h3po4' ? 'OPO₃H₂' : 'OSO₃H') : nuAtom },
+    };
+    if (ACT_ATOMS[r.act]){ virt.act = ACT_ATOMS[r.act][0]; virt.ax = ACT_ATOMS[r.act][1]; }
+    // stereo sentence
+    let stereo = '';
+    if (pw === 'SN2') stereo = sn2Stereo(site, r, p);
+    else if (pw === 'SN1') stereo = p.stereo === 'racemic' ? S.racemic : S.sn1_none;
+    else stereo = p.ez ? fill(S.ez, { ez: p.ez }) : p.ezNotCovered ? S.ez_unknown : S.ez_none;
+    const template = prelude ? { ...TEMPLATES[pw], frames: [...PRELUDES[prelude], ...TEMPLATES[pw].frames] } : TEMPLATES[pw];
+    return {
+      OCL, mol: m, site, roles, flags, tokens, virt, template, texts,
+      labels: act ? { lg: act.label } : {},
+      vars: { Nu, NuAtom: nuAtom, Base, LG, LGion, X: virt.hx.atom, Acid: r.label, class: CLS_TEXT[site.cls], cation, cation2, via: p.via || '', stereo, rank: p.rank || '' },
+      productName: nameOf(p.mol).then((n) => String(n.name || n.why || '').replace(/\.$/, '')),
+      resultCard: () => card(p, pw, undefined, true),
+      offer: offerFor(pw),
+    };
+  }
+  // "E1 also competes here. See it?": another lit pathway (its partner first), with why it's major/minor
+  function offerFor(pw){
+    const res = st.res;
+    const lit = (q) => q !== pw && res.lamps[q] && res.lamps[q] !== 'none' && TEMPLATES[q] && res.pathways[q] && res.pathways[q].products.length;
+    const other = [PARTNER[pw], ...PATHWAYS].find(lit);
+    if (!other) return null;
+    const otherMajor = res.lamps[other] === 'major';
+    const [maj, min] = otherMajor ? [other, pw] : [pw, other];
+    const v = { other, Nu: speciesText(st.reagent), class: CLS_TEXT[res.site.cls] };
+    const why = texts.compete[`${maj}>${min}`] || texts.compete.generic;
+    return {
+      text: fill(otherMajor ? texts.ui.offerMajor : texts.ui.offerMinor, v) + ' ' + fill(why, v),
+      label: fill(texts.ui.offerButton, v),
+      open: () => openPathway(other),
+    };
+  }
+  // Step 1 of a two-step sequence (TsCl/MsCl): the activation on its own; the C–O bond is kept
+  function openActivation(p){
+    const res = st.res, site = res.site, r = st.reagent;
+    closeMech();
+    $('mechTitle').textContent = 'Activation (step 1)';
+    $('mechWin').hidden = false;
+    const [actA, axA] = ACT_ATOMS[r.act] || ACT_ATOMS.TsCl;
+    st.mech = openMechanism($('mechMount'), {
+      OCL, mol: analyse(OCL, st.mol).mol, site, roles: { ca: site.ca, lg: site.lgAtom }, flags: {}, tokens: {},
+      virt: { act: actA, ax: axA }, template: ACTIVATION, texts,
+      vars: { Nu: '', LG: 'OH', class: CLS_TEXT[site.cls], stereo: '', rank: '' },
+      productName: nameOf(p.mol).then((n) => String(n.name || n.why || '').replace(/\.$/, '')),
+      resultCard: () => card(p, 'activation', undefined, true),
+    });
+    $('mechWin').scrollIntoView({ behavior: smooth(), block: 'start' });
   }
   // the stereo sentence for SN2, with R/S from OpenChemLib on the product (never swapped by hand)
   function sn2Stereo(site, r, p){
