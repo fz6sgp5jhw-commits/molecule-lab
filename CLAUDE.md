@@ -23,11 +23,14 @@ Live at https://fz6sgp5jhw-commits.github.io/molecule-lab/ (GitHub Pages serves 
 | `reagents.js`, `data/reagents.json` | Reagent catalogue: name/alias and drawn-structure matching (counter-ions stripped), solvents, unknown-reagent guess |
 | `predict.js`, `data/rules.json` | Decision table → lamps (SN1/SN2/E1/E2) + products, sequences, SN1/SN2 rate ranking |
 | `reactions-ui.js` | Reactions window: reagent entry (type/chip/draw, unknown → estimated role), solvent + heat, Predict, decision path, lamps, result cards, Reactivity facts, site chips, ranking mode. Mounted from `index.html`; listens for the `ml:molecule` event; also switches the Molecule / Reactions app tabs (`.mol-only` / `.rx-only` cards) |
-| `mech-view.js`, `mech-templates.js`, `data/mech-text.json` | Mechanism viewer (SVG frames on fixed atom positions, density clouds, pull line, hill + ball, stability meter, RPG dialog with WHY pages and glossary); templates per mechanism as data (SN2, SN1, E1, E2 + alcohol activation preludes; optional frames by flag: shifts, allylic resonance, proton transfers; quiz points); all teaching text |
+| `mech-view.js`, `mech-templates.js`, `data/mech-text.json` | Mechanism viewer (SVG frames on fixed atom positions, drawn in layers that each have a Show checkbox: bond density, atom glow, orbitals, skeleton, dipoles, labels, arrows; pull line, hill + ball, stability meter, RPG dialog with WHY pages and glossary); templates per mechanism as data (SN2, SN1, E1, E2 + alcohol activation preludes; optional frames by flag: shifts, allylic resonance, proton transfers; quiz points; `orbitals` per frame); all teaching text and orbital captions |
+| `density.js` | Rule-based electron density per frame (charges, lone pairs, electronegativity, stated δ, inductive/hyperconjugation one or two bonds out; bond fullness from the textbook bond-energy order). Qualitative levels only, never shown as numbers |
+| `mech-place.js` | Collision avoidance: labels, captions, dipoles and arrow bends go where they don't cover bonds, atom symbols or other labels |
+| `chem-text.js` | Wraps "Cl" in UI text in `<span class="chem">` (VT323), because Pixelify Sans draws l and I the same. OpenChemLib drawings' text is forced to VT323 in CSS |
 | `sw.js` | Service worker: precaches the app; PubChem and OPSIN are network-only |
 | `manifest.webmanifest`, `icons/` | Installable app (display: standalone) |
 | `fonts/` | Local Press Start 2P, Pixelify Sans, VT323 |
-| `tests/` | `namer.test.mjs` (Node, 193 cases), `app.test.mjs` and `chair-ui.test.mjs` (Playwright, with fake PubChem/OPSIN responses), `chair.test.mjs` (energy report), `reactions.test.mjs` (Node, table-driven from `seed-cases.json`), `reactions-ui.test.mjs` (Playwright: SN2 walkthrough, then SN1 (W3d), W4 ring expansion with the quiz, E2, E1 with acid, TsCl; `SHOTS=1` refreshes `docs/screens/`) |
+| `tests/` | `namer.test.mjs` (Node, 193 cases), `app.test.mjs` and `chair-ui.test.mjs` (Playwright, with fake PubChem/OPSIN responses), `chair.test.mjs` (energy report), `reactions.test.mjs` (Node, table-driven from `seed-cases.json`), `mech-logic.test.mjs` (Node: density rules, placement, orbital data), `reactions-ui.test.mjs` (Playwright: SN2 walkthrough with density/orbital/layer checks, then SN1 (W3d), W4 ring expansion with the quiz, E2, E1 with acid, PBr₃, SOCl₂, TsCl, a drawn reagent; every frame is checked for overlapping labels with `overlaps.js`; `SHOTS=1` refreshes `docs/screens/`) |
 | `docs/worksheet-guide.md` | How to solve each Ch 6 worksheet problem with the Reactions tab (for Peter; update when behaviour changes) |
 | `docs/mechanisms-plan.md` | **Next feature:** SN1/SN2/E1/E2 learning mode. Read this before starting on it. |
 
@@ -57,6 +60,7 @@ It must stay readable on a phone, with no sideways scrolling at 390 px wide.
 npm install && npx playwright install chromium   # first time only
 npm test                 # starts a local server on :8765 and runs all suites
 npm run test:namer       # quick, Node only
+npm run test:mech        # mechanism logic (density, placement), Node only
 npm run serve            # look at the app at http://localhost:8765
 ```
 Pushing to `main` deploys to GitHub Pages in about a minute.
