@@ -7,6 +7,7 @@
     "test": "node tests/run-all.mjs",
     "test:namer": "node tests/namer.test.mjs",
     "test:reactions": "node tests/reactions.test.mjs",
+    "test:mech": "node tests/mech-logic.test.mjs",
     "test:reactions-ui": "node tests/run-all.mjs reactions-ui",
     "test:chair-report": "node tests/chair.test.mjs",
     "serve": "python3 -m http.server 8765"

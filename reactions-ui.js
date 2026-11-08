@@ -37,7 +37,7 @@ export async function mountReactions(app){
   const { OCL } = app;
   const [rules, cat, texts] = await Promise.all(['./data/rules.json', './data/reagents.json', './data/mech-text.json']
     .map((u) => fetch(u).then((r) => r.json())));
-  const st = { scene: [], sceneSig: '', sceneNames: {}, key: null, mol: null, sites: [], site: 0, frags: [], reagent: null, drawn: null, guess: null, solvent: null, heat: false, res: null, ed: null, quiet: false, mech: null };
+  const st = { scene: [], sceneSig: '', drawnKey: '', hideSub: false, sceneNamesOn: true, sceneNames: {}, key: null, mol: null, sites: [], site: 0, frags: [], reagent: null, drawn: null, guess: null, solvent: null, heat: false, res: null, ed: null, quiet: false, mech: null };
   const reason = (k) => rules.reasons[k] || k;
 
   // ---------- naming (PubChem → built-in namer → OPSIN check), same order as the main window ----------
@@ -186,7 +186,7 @@ export async function mountReactions(app){
       info.innerHTML = `<b>Drawn reagent</b>: ${esc(ROLE_TEXT[r.box])}${r.estimated ? ` <span class="rx-est">${esc(texts.ui.estimated)}</span>` : ''}`;
     } else {
       info.innerHTML = `<b>${esc(r.label)}</b>: ${esc(texts.path.reagent[r.box] || '')}`;
-      if (how !== 'drawn' && st.ed){ st.quiet = true; try { st.ed.setMolecule(OCL.Molecule.fromSmiles(r.smiles[0])); } catch {} st.quiet = false; }
+      if (how !== 'drawn') showInEditor(r.smiles[0]);
     }
     for (const b of $('rxReagentChips').children) b.setAttribute('aria-pressed', String(!!r && findReagent(cat, b.dataset.q) === r));
     clearOut();
@@ -235,10 +235,21 @@ export async function mountReactions(app){
     if (st.guess) { const w = document.createElement('div'); w.className = 'note'; w.textContent = 'Rule used: ' + st.guess.why; box.appendChild(w); }
     const g = document.createElement('div'); g.innerHTML = typeGuide(st.reagent ? st.reagent.box : null); box.appendChild(g.firstElementChild);
   }
+  // a typed/chosen reagent is shown in the reagent editor; remember it, so its redraws aren't read as a new drawing
+  function showInEditor(smiles){
+    if (!st.ed) return;
+    st.quiet = true; try { st.ed.setMolecule(OCL.Molecule.fromSmiles(smiles)); } catch {} st.quiet = false;
+    const m = st.ed.getMolecule(); st.drawnKey = m && m.getAllAtoms() ? m.getIDCode() : '';
+  }
   function drawnReagent(){
-    if (st.quiet) return;
+    if (st.quiet || !st.ed) return;
     const m = st.ed.getMolecule();
-    if (!m || !m.getAllAtoms()){ st.drawn = null; return; }
+    // like the main editor, the reagent editor reports redraws and resizes as changes: only a different
+    // structure counts (otherwise a layout change elsewhere re-set the reagent and closed the results)
+    const key = m && m.getAllAtoms() ? m.getIDCode() : '';
+    if (key === st.drawnKey) return;
+    st.drawnKey = key;
+    if (!key){ st.drawn = null; return; }
     const mol = m.getCompactCopy();
     const r = matchMolecule(OCL, cat, mol);
     $('rxReagentInput').value = '';
@@ -267,7 +278,7 @@ export async function mountReactions(app){
   $('rxDrawBox').addEventListener('toggle', () => {
     if (!$('rxDrawBox').open || st.ed) return;
     st.ed = new OCL.CanvasEditor($('rxReagentEd'), { initialMode: 'molecule' });
-    if (st.reagent && st.reagent.smiles && st.reagent.smiles[0]){ st.quiet = true; try { st.ed.setMolecule(OCL.Molecule.fromSmiles(st.reagent.smiles[0])); } catch {} st.quiet = false; }
+    if (st.reagent && st.reagent.smiles && st.reagent.smiles[0]) showInEditor(st.reagent.smiles[0]);
     let t = 0;
     st.ed.setOnChangeListener((e) => { if (!e || e.type === 'molecule'){ clearTimeout(t); t = setTimeout(drawnReagent, 350); } });
   });
@@ -452,7 +463,12 @@ export async function mountReactions(app){
   function renderScene(){
     const items = sceneItems();
     $('sceneNote').textContent = items.length ? texts.ui.sceneNote : texts.ui.sceneEmpty;
-    $('sceneChips').replaceChildren(...items.map((it) => {
+    // the substrate is a chip too, so it can be switched off like the others (on by default)
+    const subChip = document.createElement('button'); subChip.type = 'button'; subChip.className = 'chip'; subChip.dataset.key = 'substrate';
+    subChip.textContent = texts.ui.sceneSubstrate; subChip.setAttribute('aria-pressed', String(!st.hideSub));
+    subChip.onclick = () => { st.hideSub = !st.hideSub; renderScene(); };
+    $('sceneNamesBox').hidden = !items.length;
+    $('sceneChips').replaceChildren(...(items.length ? [subChip] : []), ...items.map((it) => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.key = it.key;
       b.textContent = it.label;
       b.setAttribute('aria-pressed', String(st.scene.includes(it.key)));
@@ -462,8 +478,13 @@ export async function mountReactions(app){
     }));
     const byKey = new Map(items.map((it) => [it.key, it]));
     const extras = st.scene.map((k) => byKey.get(k)).filter(Boolean);
-    const sig = extras.map((e) => e.key).join('|');
-    if (sig !== st.sceneSig){ st.sceneSig = sig; app.set3DExtras(extras); } // rebuild the 3D scene only when it changes
+    pushScene(extras);
+  }
+  // the Molecule tab always shows the substrate; only the Reactions tab's chip can hide it
+  function pushScene(extras){
+    const hideSubstrate = st.hideSub && document.querySelector('main').dataset.app === 'rx' && !!st.res;
+    const sig = [extras.map((e) => e.key).join('|'), hideSubstrate, st.sceneNamesOn].join('#');
+    if (sig !== st.sceneSig){ st.sceneSig = sig; app.set3DExtras(extras, { hideSubstrate, names: st.sceneNamesOn }); } // rebuild the 3D scene only when it changes
   }
   function toggleScene(key, on){
     const has = st.scene.includes(key);
@@ -644,12 +665,15 @@ export async function mountReactions(app){
       history.replaceState(null, '', tab === 'rx' ? '#reactions' : location.pathname + location.search);
     }
     window.dispatchEvent(new Event('resize')); // 3D viewers and the editor size themselves on resize
+    if (st.hideSub) renderScene(); // the substrate is always shown on the Molecule tab
   }
   for (const b of document.querySelectorAll('.apptab')) b.onclick = () => setApp(b.dataset.app);
+  $('sceneNames').onchange = (e) => { st.sceneNamesOn = e.target.checked; renderScene(); };
   let saved = null; try { saved = localStorage.getItem('ml-app-tab'); } catch {}
   setApp(location.hash === '#reactions' ? 'rx' : saved === 'rx' ? 'rx' : 'mol', false);
 
   document.addEventListener('ml:molecule', (e) => onMolecule(e.detail));
   onMolecule(app.getMol());
-  return { st };
+  // drawnReagent: re-read the reagent editor (tests set a molecule there, which fires no change event)
+  return { st, drawnReagent };
 }

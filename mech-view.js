@@ -20,6 +20,9 @@
 // otherwise it is an extra bond. Frames and keys that name a role this case doesn't have are skipped,
 // so one template serves e.g. SN1 with and without a shift.
 
+import { density, elementOf } from './density.js';
+import { placer, textBox } from './mech-place.js';
+
 const NS = 'http://www.w3.org/2000/svg';
 const BL = 42;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -134,7 +137,13 @@ function layout(OCL, m, site, roles, flags){
   segs = segsOf(P1, adj1);
   // the nucleophile: SN2 and attack at Cα → the backside (mirror of LG across Cα); attack elsewhere → the open side
   const c = roles.c ?? ca;
-  if (c === ca) virt.nu = add(P0[ca], mul(dir, 1.45 * BL));
+  if (c === ca){
+    // straight out of the back when there's room; else a little further out, or turned slightly off the line
+    const rot = (u, deg) => { const r = deg * Math.PI / 180; return { x: u.x * Math.cos(r) - u.y * Math.sin(r), y: u.x * Math.sin(r) + u.y * Math.cos(r) }; };
+    const tries = [];
+    for (const k of [1.45, 1.75, 2.05]) for (const t of [0, 12, -12, 24, -24]) tries.push(add(P0[ca], mul(rot(dir, t), k * BL)));
+    virt.nu = tries.find((pt) => clearance(pt, P0, new Set([ca])) >= 0.75 * BL && !cross(P0[ca], pt)) || tries[0];
+  }
   else {
     const prefs = [];
     if (flags.shiftAlkyl) prefs.push(sub(P0[roles.g], P0[c]));
@@ -209,6 +218,12 @@ function drawFrame(svg, ctx, f, t){
     if (flags.shiftH) gh = q;
     else { const T = sub(q, start); P = geo.P0.map((p, i) => (geo.branch.includes(i) ? add(p, T) : p)); }
   }
+  // a leaving group that has gone (one atom, e.g. Br⁻ or OH₂ as a label) drifts a little further from Cα
+  const lgSt = f.bonds && tok(f.bonds['ca-lg']);
+  if (lgSt === 'none' && roles.lg != null && [...geo.adj0[roles.lg]].every((b) => b === roles.ca)){
+    const u = unit(sub(P[roles.lg], P[roles.ca]));
+    P = P.map((p, i) => (i === roles.lg ? add(p, mul(u, 0.45 * BL)) : p));
+  }
   const show = new Set([...(ctx.template.show || []), ...(f.show || [])]);
   for (const r of f.hide || []) show.delete(r);
   const vpos = { ...geo.virt, gh };
@@ -224,9 +239,14 @@ function drawFrame(svg, ctx, f, t){
   const grad = (id, c, a) => { const g = el('radialGradient', { id }, defs); el('stop', { offset: '0', 'stop-color': c, 'stop-opacity': a }, g); el('stop', { offset: '1', 'stop-color': c, 'stop-opacity': 0 }, g); };
   // one colour (blue) for electron density: brighter = more electrons; an electron-poor C⁺/δ+ carbon only glows faintly,
   // so the bond that breaks there stays easy to see
-  grad('mvRich', '#6cc4ff', 1); grad('mvSome', '#6cc4ff', 0.6); grad('mvPoor', '#6cc4ff', 0.2);
-  const mk = el('marker', { id: 'mvHead', viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 9, markerHeight: 9, markerUnits: 'userSpaceOnUse', orient: 'auto-start-reverse' }, defs);
-  el('path', { d: 'M0,0 L10,5 L0,10 z', fill: '#c00000' }, mk);
+  // electron density (rule-based, density.js): red = electron-rich, blue = electron-poor, faint grey = neutral;
+  // bonds get a smaller amber cloud of their own
+  grad('mvG-rich', '#ff4a4a', 0.95); grad('mvG-rich1', '#ff4a4a', 0.55); grad('mvG-neutral', '#c8c8c8', 0.22);
+  grad('mvG-poor1', '#3c9cff', 0.6); grad('mvG-poor', '#3c9cff', 1); grad('mvBondG', '#ffb347', 1);
+  const marker = (id, d, fillc, size = 9) => { const mk = el('marker', { id, viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: size, markerHeight: size, markerUnits: 'userSpaceOnUse', orient: 'auto-start-reverse' }, defs); el('path', { d, fill: fillc, stroke: fillc === 'none' ? '#9ec8ff' : null, 'stroke-width': fillc === 'none' ? 1.6 : null }, mk); };
+  marker('mvHead', 'M0,0 L10,5 L0,10 z', '#c00000');
+  marker('mvDip', 'M0,0 L10,5 L0,10 z', '#e6a8ff', 7);
+  marker('mvOpen', 'M1,1 L9,5 L1,9', 'none', 8);
 
   const forms = [f];
   if (f.resonance) forms.push(merge({ ...f, arrows: [], resonance: null }, f.resonance));
@@ -250,20 +270,32 @@ function drawFrame(svg, ctx, f, t){
   let minY = Math.min(...pts.map((b) => b.minY)), maxY = Math.max(...pts.map((b) => b.maxY));
   if (f.ts){
     const L = minX + 8, Rr = maxX - 8, T = minY + 6, B = maxY - 6;
-    el('path', { d: `M${L + 7},${T} H${L} V${B} H${L + 7} M${Rr - 7},${T} H${Rr} V${B} H${Rr - 7}`, class: 'mv-bracket' }, svg);
-    el('text', { x: Rr + 3, y: T + 6, class: 'mv-dagger' }, svg).textContent = '‡';
+    const g = el('g', { class: 'mv-L mv-L-labels' }, svg);
+    el('path', { d: `M${L + 7},${T} H${L} V${B} H${L + 7} M${Rr - 7},${T} H${Rr} V${B} H${Rr - 7}`, class: 'mv-bracket' }, g);
+    el('text', { x: Rr + 3, y: T + 6, class: 'mv-dagger' }, g).textContent = '‡';
     maxX += 8;
   }
   svg.setAttribute('viewBox', `${minX} ${minY} ${maxX - minX} ${maxY - minY}`);
 }
 
+// Layers, bottom to top. Each can be switched off on its own (the checkboxes under the drawing).
+export const LAYERS = ['density', 'glow', 'orbitals', 'skeleton', 'dipoles', 'labels', 'arrows'];
+const GLOW_R = { rich: 26, rich1: 21, neutral: 12, poor1: 21, poor: 26 };
+const chargeOf = (t) => (!t ? 0 : /[−-]/.test(t) ? -1 : /\+/.test(t) ? 1 : 0);
+const deltaOf = (t) => (!t ? 0 : /\+/.test(t) ? 1 : /[−-]/.test(t) ? -1 : 0);
+
 function drawForm(svg, ctx, f, { P, R, anyR, tok, show }){
   const { mol: m, roles, geo } = ctx;
+  const T = ctx.texts.orbitals || {};
   const ca = roles.ca, lg = roles.lg;
   const labels = { ...(ctx.labels || {}), ...(f.labels || {}) };
   const roleOf = new Map(); // atom index → role name (for labels, data attributes)
   for (const [r, a] of Object.entries(roles)) if (a != null && !roleOf.has(a)) roleOf.set(a, r);
   const near = new Set([ca, lg, roles.c, roles.cb, roles.n, roles.g, roles.ab, roles.y].filter((a) => a != null));
+  const L = {};
+  for (const k of LAYERS) L[k] = el('g', { class: `mv-L mv-L-${k}` }, svg);
+  const moved = f.move || f.moved;
+  const adj = moved ? geo.adj1 : geo.adj0;
 
   // bonds requested by the frame: substrate overrides and extra bonds
   const over = new Map(), extra = [];
@@ -274,40 +306,10 @@ function drawForm(svg, ctx, f, { P, R, anyR, tok, show }){
     const b = A.a != null && B.a != null ? m.getBond(A.a, B.a) : -1;
     if (b >= 0) over.set(b, { st, key }); else if (st !== 'none') extra.push({ A, B, st, key });
   }
+  const arrowFrom = new Set((f.arrows || []).map(([from]) => from).filter((x) => x.includes('-') && !x.startsWith('lp:')));
+  const isBreaking = (key) => key && (arrowFrom.has(key) || arrowFrom.has(key.split('-').reverse().join('-')));
 
-  // electron density clouds
-  const cloudR = { rich: 38, some: 30, poor: 20 };
-  const cloudG = { rich: 'url(#mvRich)', some: 'url(#mvSome)', poor: 'url(#mvPoor)' };
-  for (const [role, lvl] of Object.entries(f.clouds || {})){
-    const x = R(role); if (!x || !lvl) continue;
-    el('circle', { cx: x.p.x, cy: x.p.y, r: cloudR[lvl], fill: cloudG[lvl], class: `mv-cloud mv-${lvl}`, 'data-role': role }, svg);
-  }
-  // p orbital (empty, on a carbocation): two open lobes across the atom
-  const pRoles = [].concat(f.pOrbital || []);
-  const chargeDir = (x, role) => {
-    if (x.a === ca || role === 'lg' || role === 'nu') return { x: -geo.dir.y, y: geo.dir.x };
-    if (x.a != null) return geo.freeDir(x.a, P, f.move || f.moved ? geo.adj1 : geo.adj0);
-    return unit({ x: 1, y: -1 });
-  };
-  for (const role of pRoles){
-    const x = R(role); if (!x) continue;
-    const cd = chargeDir(x, role), ax = { x: -cd.y, y: cd.x };
-    for (const s of [-1, 1]){
-      const c = add(x.p, mul(ax, 13 * s));
-      el('ellipse', { cx: c.x, cy: c.y, rx: 6, ry: 11, transform: `rotate(${Math.atan2(ax.y, ax.x) * 180 / Math.PI - 90} ${c.x} ${c.y})`, class: 'mv-porb', 'data-role': role }, svg);
-    }
-  }
-  // pull line (an electron pair reaching for its target), tightening over the frames
-  const [pf, pt] = ctx.template.pull || ['nu', 'ca'];
-  const PF = anyR(pf), PT = anyR(pt);
-  if (f.pull != null && f.pull < 1 && PF && PT && (show.has(pf) || !VIRTUAL.includes(pf))){
-    const t = f.pull;
-    el('line', { x1: PF.p.x, y1: PF.p.y, x2: PT.p.x, y2: PT.p.y, class: 'mv-pull',
-      stroke: `rgb(${Math.round(150 + 90 * t)},${Math.round(150 - 130 * t)},${Math.round(150 - 130 * t)})`,
-      'stroke-width': (1 + 2.2 * t).toFixed(2), 'stroke-dasharray': `${(2 + 8 * (1 - t)).toFixed(1)} ${(3 + 7 * (1 - t)).toFixed(1)}` }, svg);
-  }
-
-  // labels: heteroatoms (with their H's, like a skeletal drawing), overrides, and virtual atoms
+  // ---- labels (heteroatoms with their H's, overrides, virtual atoms) ----
   const labelOf = (a) => {
     const r = roleOf.get(a);
     if (r && labels[r] != null) return tok(labels[r]);
@@ -315,10 +317,85 @@ function drawForm(svg, ctx, f, { P, R, anyR, tok, show }){
     const h = m.getImplicitHydrogens(a);
     return m.getAtomLabel(a) + (h ? 'H' + (h > 1 ? '₂₃₄'[h - 2] : '') : '');
   };
+  const vAtoms = VIRTUAL.map((r) => ({ r, x: R(r) })).filter((v) => v.x);
+  const vAtom = (r) => (r === 'hb' || r === 'gh' || r === 'hp' ? { atom: 'H' } : (ctx.virt[r] || { atom: '?' }));
+
+  // ---- the drawn graph: atoms (substrate + shown virtual ones) and bonds, for the density rules ----
+  const nodes = [], nodeOf = new Map(); // key: atom index or 'v:role'
+  const charges = {};
+  const lgBound = (() => { const o = [...over.values()].find((v) => v.key === 'ca-lg' || v.key === 'lg-ca'); return !o || o.st !== 'none'; })();
+  if (lgBound && ctx.tokens.lgBound) charges.lg = ctx.tokens.lgBound;
+  for (const [r, c] of Object.entries(f.charges || {})) charges[r] = tok(c);
+  const deltas = {};
+  for (const [r, d0] of Object.entries(f.deltas || {})){ const d = tok(d0); if (d && !charges[r]) deltas[r] = d; }
+  const keyOfRole = (role) => { const x = R(role); return !x ? null : x.a != null ? x.a : 'v:' + role; };
+  const chargeAt = new Map(), deltaAt = new Map();
+  for (const [r, c] of Object.entries(charges)){ const k = keyOfRole(r); if (k != null && c) chargeAt.set(k, chargeOf(c)); }
+  for (const [r, d] of Object.entries(deltas)){ const k = keyOfRole(r); if (k != null) deltaAt.set(k, deltaOf(d)); }
+  for (let a = 0; a < m.getAtoms(); a++){
+    nodeOf.set(a, nodes.length);
+    nodes.push({ key: a, p: P[a], role: roleOf.get(a) || null, el: m.getAtomLabel(a), charge: chargeAt.get(a) || 0, delta: deltaAt.get(a) || 0 });
+  }
+  for (const { r, x } of vAtoms){
+    nodeOf.set('v:' + r, nodes.length);
+    nodes.push({ key: 'v:' + r, p: x.p, role: r, el: elementOf(vAtom(r).atom), charge: chargeAt.get('v:' + r) || 0, delta: deltaAt.get('v:' + r) || 0 });
+  }
+  const STATE = { solid: 'full', single: 'full', double: 'full', partial: 'partial', pdouble: 'pdouble' };
+  const gBonds = [];
+  for (let b = 0; b < m.getBonds(); b++){
+    const a1 = m.getBondAtom(0, b), a2 = m.getBondAtom(1, b);
+    const o = over.get(b), st = o ? o.st : 'solid';
+    if (st === 'none') continue;
+    const order = st === 'single' ? 1 : st === 'double' ? 2 : st === 'solid' ? m.getBondOrder(b) : 1;
+    const key = o ? o.key : null;
+    gBonds.push({ a: nodeOf.get(a1), b: nodeOf.get(a2), order, state: isBreaking(key) && STATE[st] === 'full' ? 'breaking' : STATE[st] || 'full', key, b0: b });
+  }
+  for (const { A, B, st, key } of extra){
+    const ka = A.a != null ? A.a : 'v:' + A.v, kb = B.a != null ? B.a : 'v:' + B.v;
+    if (!nodeOf.has(ka) || !nodeOf.has(kb)) continue;
+    gBonds.push({ a: nodeOf.get(ka), b: nodeOf.get(kb), order: st === 'double' ? 2 : 1, state: isBreaking(key) && STATE[st] === 'full' ? 'breaking' : STATE[st] || 'full', key });
+  }
+  // a bond that a lone-pair arrow is about to make: a faint, growing cloud
+  for (const [from, to] of f.arrows || []){
+    const fr = from.startsWith('lp:') ? from.slice(3) : from;
+    if (!(LONE.has(fr) || from.startsWith('lp:')) || to.includes('-')) continue;
+    const ka = keyOfRole(fr), kb = keyOfRole(to);
+    if (ka == null || kb == null || !nodeOf.has(ka) || !nodeOf.has(kb)) continue;
+    const ia = nodeOf.get(ka), ib = nodeOf.get(kb);
+    if (gBonds.some((g) => (g.a === ia && g.b === ib) || (g.a === ib && g.b === ia))) continue;
+    gBonds.push({ a: ia, b: ib, order: 1, state: 'forming', key: `${fr}-${to}` });
+  }
+  const dens = density({ atoms: nodes, bonds: gBonds });
+
+  // ---- collision avoidance: bonds and atom symbols are obstacles for everything placed later ----
+  const pairName = (g) => g.key || `${nodes[g.a].role || nodes[g.a].key}-${nodes[g.b].role || nodes[g.b].key}`;
+  const segs = gBonds.filter((g) => g.state !== 'forming').map((g) => [nodes[g.a].p, nodes[g.b].p]);
+  const pl = placer({ segs });
+  const atomBox = new Map();
+  for (let a = 0; a < m.getAtoms(); a++){ const t = labelOf(a); if (t){ const bx = textBox(t, 20); atomBox.set(a, pl.reserve({ x: P[a].x, y: P[a].y, w: Math.min(bx.w, 22), h: bx.h })); } }
+  for (const { r, x } of vAtoms) pl.reserve({ x: x.p.x, y: x.p.y, w: Math.max(14, textBox(vAtom(r).atom, 20).w), h: 15 });
+
+  // ---- bond density: smaller than an atom's glow, centred toward the electronegative end ----
+  gBonds.forEach((g, i) => {
+    const d = dens.bonds[i]; if (d.weight <= 0) return;
+    const p = nodes[g.a].p, q = nodes[g.b].p, v = sub(q, p), Lb = len(v) || 1;
+    const c = add(add(p, mul(v, 0.5)), mul(v, (d.toB ? 1 : -1) * d.shift));
+    const ang = Math.atan2(v.y, v.x) * 180 / Math.PI;
+    el('ellipse', { cx: c.x, cy: c.y, rx: Lb * (0.26 + 0.1 * Math.min(1, d.weight)), ry: 1.5 + 5 * Math.min(1.5, d.weight), fill: 'url(#mvBondG)',
+      'fill-opacity': Math.min(1, 0.3 + 0.55 * d.weight).toFixed(2), transform: `rotate(${ang.toFixed(1)} ${c.x} ${c.y})`,
+      class: 'mv-bdens' + (g.state !== 'full' ? ' mv-' + g.state : ''), 'data-pair': pairName(g), 'data-w': d.weight.toFixed(2), 'data-state': g.state }, L.density);
+  });
+  // ---- atom glow: red = electron-rich, blue = electron-poor, faint = neutral ----
+  nodes.forEach((x, i) => {
+    const lv = dens.atoms[i].level;
+    el('circle', { cx: x.p.x, cy: x.p.y, r: GLOW_R[lv], fill: `url(#mvG-${lv})`, class: `mv-glow mv-${lv}`, 'data-role': x.role, 'data-dens': lv }, L.glow);
+  });
+
+  // ---- skeleton: bonds, atom symbols, lone pairs ----
   const lineLine = (p, q, s1, s2, cls, offs, data) => {
-    const d = sub(q, p), L = len(d) || 1, u = mul(d, 1 / L), nx = -u.y, ny = u.x;
+    const d = sub(q, p), Ll = len(d) || 1, u = mul(d, 1 / Ll), nx = -u.y, ny = u.x;
     const a = add(p, mul(u, s1)), b = sub(q, mul(u, s2));
-    offs.forEach(([o, dash]) => el('line', { x1: a.x + nx * o, y1: a.y + ny * o, x2: b.x + nx * o, y2: b.y + ny * o, class: cls + (dash ? ' mv-partial' : ''), 'data-bond': data }, svg));
+    offs.forEach(([o, dash]) => el('line', { x1: a.x + nx * o, y1: a.y + ny * o, x2: b.x + nx * o, y2: b.y + ny * o, class: cls + (dash ? ' mv-partial' : ''), 'data-bond': data }, L.skeleton));
   };
   const OFFS = { 1: [[0]], 2: [[-2.5], [2.5]], 3: [[-4], [0], [4]] };
   const offsFor = (st, order) => st === 'single' ? OFFS[1] : st === 'double' ? OFFS[2] : st === 'partial' ? [[0, true]]
@@ -336,7 +413,6 @@ function drawForm(svg, ctx, f, { P, R, anyR, tok, show }){
     const s = (x) => (x.v ? 9 : shortBy(x.a));
     lineLine(A.p, B.p, s(A), s(B), 'mv-bond mv-centre mv-new', offsFor(st, 1), key);
   }
-  // heavy-atom labels
   const labelPts = [];
   for (let a = 0; a < m.getAtoms(); a++){
     const t = labelOf(a); if (!t) continue;
@@ -344,76 +420,192 @@ function drawForm(svg, ctx, f, { P, R, anyR, tok, show }){
     // the activated leaving group's long label (OH₂, O(H)PBr₂…) starts at the atom and runs away from Cα
     const long = t.length > 2 && roleOf.get(a) === 'lg' && a !== ca;
     const right = long ? P[a].x >= P[ca].x : true;
-    if (long) labelPts.push({ x: p.x + (right ? 1 : -1) * (t.length * 10 - 20), y: p.y });
-    el('text', { x: long ? p.x + (right ? -6 : 6) : p.x, y: p.y, class: 'mv-atom' + (near.has(a) ? ' mv-centre' : ''), 'text-anchor': long ? (right ? 'start' : 'end') : 'middle', 'dominant-baseline': 'central', 'data-atom': roleOf.get(a) || null }, svg).textContent = long && !right ? flipLabel(t) : t;
-  }
-  // virtual atoms
-  for (const r of VIRTUAL){
-    const x = R(r); if (!x) continue;
-    const v = r === 'hb' || r === 'gh' || r === 'hp' ? { atom: 'H' } : (ctx.virt[r] || { atom: '?' });
-    el('text', { x: x.p.x, y: x.p.y, class: 'mv-atom mv-nu', 'text-anchor': 'middle', 'dominant-baseline': 'central', 'data-atom': r }, svg).textContent = v.atom;
-    const rest = labels[r + 'Rest'] != null ? tok(labels[r + 'Rest']) : v.rest;
-    if (rest){
-      const side = r === 'nu' ? (geo.dir.x >= 0 ? 1 : -1) : 1;
-      el('text', { x: x.p.x + side * 9, y: x.p.y + 13, class: 'mv-rest', 'text-anchor': side > 0 ? 'start' : 'end' }, svg).textContent = rest;
+    if (long){
+      const w = textBox(t, 20).w;
+      labelPts.push({ x: p.x + (right ? 1 : -1) * (w - 6), y: p.y });
+      const bx = atomBox.get(a); bx.x = p.x + (right ? 1 : -1) * (w / 2 - 6); bx.w = w;
     }
+    el('text', { x: long ? p.x + (right ? -6 : 6) : p.x, y: p.y, class: 'mv-atom' + (near.has(a) ? ' mv-centre' : ''), 'text-anchor': long ? (right ? 'start' : 'end') : 'middle', 'dominant-baseline': 'central', 'data-atom': roleOf.get(a) || null }, L.skeleton).textContent = long && !right ? flipLabel(t) : t;
   }
-
-  // lone pairs: two dots on the side facing the electrons' target
-  const lpTarget = (role, x) => {
-    const arrow = (f.arrows || []).find(([from]) => from === role || from === 'lp:' + role);
-    if (arrow){ const T = anchorOf(arrow[1]); if (T) return T; }
-    if (role === 'nu'){ const c = R('c') || R('ca'); return c && c.p; }
-    if (role === 'base'){ const h = anyR('hb'); return h && h.p; }
-    return add(x.p, sub(x.p, P[ca]));
-  };
+  for (const { r, x } of vAtoms){
+    el('text', { x: x.p.x, y: x.p.y, class: 'mv-atom mv-nu', 'text-anchor': 'middle', 'dominant-baseline': 'central', 'data-atom': r }, L.skeleton).textContent = vAtom(r).atom;
+  }
   const anchorOf = (r) => {
     if (r.startsWith('lp:')) r = r.slice(3);
     if (r.includes('-')){ const [a, b] = r.split('-').map(R); return a && b ? mul(add(a.p, b.p), 0.5) : null; }
     const x = R(r); return x && x.p;
   };
+  const lpTarget = (role, x) => {
+    const arrow = (f.arrows || []).find(([from]) => from === role || from === 'lp:' + role);
+    if (arrow){ const Tt = anchorOf(arrow[1]); if (Tt) return Tt; }
+    if (role === 'nu'){ const c = R('c') || R('ca'); return c && c.p; }
+    if (role === 'base'){ const h = anyR('hb'); return h && h.p; }
+    return add(x.p, sub(x.p, P[ca]));
+  };
   for (const role of [].concat(f.lonePair || [])){
     const x = R(role); if (!x) continue;
-    const T = lpTarget(role, x); if (!T) continue;
-    const u = unit(sub(T, x.p)), c = add(x.p, mul(u, 13));
-    for (const o of [-3, 3]) el('circle', { cx: c.x - u.y * o, cy: c.y + u.x * o, r: 1.8, class: 'mv-lp' }, svg);
+    const Tt = lpTarget(role, x); if (!Tt) continue;
+    const u = unit(sub(Tt, x.p)), c = add(x.p, mul(u, 13));
+    for (const o of [-3, 3]) el('circle', { cx: c.x - u.y * o, cy: c.y + u.x * o, r: 1.8, class: 'mv-lp' }, L.skeleton);
+    pl.reserve({ x: c.x, y: c.y, w: 9, h: 9 });
   }
 
-  // formal charges and δ labels, beside the atom (off the bonds)
-  const charges = {};
-  const lgBound = (() => { const o = [...over.values()].find((v) => v.key === 'ca-lg' || v.key === 'lg-ca'); return !o || o.st !== 'none'; })();
-  if (lgBound && ctx.tokens.lgBound) charges.lg = ctx.tokens.lgBound;
-  for (const [r, c] of Object.entries(f.charges || {})) charges[r] = tok(c);
-  const tag = (role, txt, cls) => {
-    const x = R(role); if (!x || !txt) return;
-    const d = chargeDir(x, role), k = x.a === ca ? 20 : 15;
-    const p = x.v && role !== 'nu' ? add(x.p, { x: 11, y: -11 }) : add(x.p, mul(d, k));
-    el('text', { x: p.x, y: p.y, class: cls, 'data-role': role, 'text-anchor': 'middle', 'dominant-baseline': 'central' }, svg).textContent = txt;
-  };
-  for (const [role, c] of Object.entries(charges)) tag(role, c, 'mv-charge');
-  for (const [role, d0] of Object.entries(f.deltas || {})){ const d = tok(d0); if (d && !charges[role]) tag(role, d, 'mv-delta ' + (d.includes('+') ? 'mv-dplus' : 'mv-dminus')); }
-
-  // curved arrows that draw themselves: from a lone pair ('nu', 'base', 'lp:role') or a bond ('a-b'), to an atom or bond
+  // ---- curved arrows (drawn on top), each bent to the side with more room ----
+  const [pf, pt] = ctx.template.pull || ['nu', 'ca'];
+  const PF = anyR(pf), PT = anyR(pt);
+  if (f.pull != null && f.pull < 1 && PF && PT && (show.has(pf) || !VIRTUAL.includes(pf))){
+    const t = f.pull;
+    el('line', { x1: PF.p.x, y1: PF.p.y, x2: PT.p.x, y2: PT.p.y, class: 'mv-pull',
+      stroke: `rgb(${Math.round(150 + 90 * t)},${Math.round(150 - 130 * t)},${Math.round(150 - 130 * t)})`,
+      'stroke-width': (1 + 2.2 * t).toFixed(2), 'stroke-dasharray': `${(2 + 8 * (1 - t)).toFixed(1)} ${(3 + 7 * (1 - t)).toFixed(1)}` }, L.arrows);
+  }
+  const quad = (a, c, b, t) => ({ x: (1 - t) ** 2 * a.x + 2 * (1 - t) * t * c.x + t * t * b.x, y: (1 - t) ** 2 * a.y + 2 * (1 - t) * t * c.y + t * t * b.y });
   (f.arrows || []).forEach(([from, to], i) => {
     const fr = from.startsWith('lp:') ? from.slice(3) : from;
     let a;
     if (LONE.has(fr) || from.startsWith('lp:')){
-      const x = R(fr); const T = anchorOf(to); if (!x || !T) return;
-      a = add(x.p, mul(unit(sub(T, x.p)), 13));
+      const x = R(fr); const Tt = anchorOf(to); if (!x || !Tt) return;
+      a = add(x.p, mul(unit(sub(Tt, x.p)), 13));
     } else a = anchorOf(from);
     const b0 = anchorOf(to);
     if (!a || !b0) return;
     const d0 = sub(b0, a), d = len(d0) || 1;
     const b = sub(b0, mul(d0, (to.includes('-') ? 4 : 10) / d));
-    const bend = (i % 2 ? -1 : 1) * Math.max(18, d * 0.45);
-    const c = { x: (a.x + b.x) / 2 - d0.y / d * bend, y: (a.y + b.y) / 2 + d0.x / d * bend };
-    el('path', { d: `M${a.x},${a.y} Q${c.x},${c.y} ${b.x},${b.y}`, class: 'mv-arrow', 'marker-end': 'url(#mvHead)', pathLength: 100, style: `animation-delay:${i * 0.5}s`, 'data-arrow': `${from}>${to}` }, svg);
+    const ctrl = (sgn) => { const bend = sgn * Math.max(18, d * 0.45); return { x: (a.x + b.x) / 2 - d0.y / d * bend, y: (a.y + b.y) / 2 + d0.x / d * bend }; };
+    const sides = i % 2 ? [-1, 1] : [1, -1];
+    const samples = sides.map((sg) => { const c = ctrl(sg); return Array.from({ length: 9 }, (_, k) => quad(a, c, b, 0.1 + k * 0.1)); });
+    const pick = pl.pickCurve(samples, 3);
+    const c = ctrl(sides[pick]);
+    pl.reservePath(samples[pick], 3);
+    el('path', { d: `M${a.x},${a.y} Q${c.x},${c.y} ${b.x},${b.y}`, class: 'mv-arrow', 'marker-end': 'url(#mvHead)', pathLength: 100, style: `animation-delay:${i * 0.5}s`, 'data-arrow': `${from}>${to}` }, L.arrows);
   });
 
-  // bounding box (atoms + everything virtual that is shown)
+  const chargeDir = (x, role) => {
+    if (x.a === ca || role === 'lg' || role === 'nu') return { x: -geo.dir.y, y: geo.dir.x };
+    if (x.a != null) return geo.freeDir(x.a, P, adj);
+    return unit({ x: 1, y: -1 });
+  };
+  // ---- orbitals (template data): what a textbook draws at this step ----
+  const caps = [];
+  const caption = (key, at, dir) => caps.push([key, at, dir]);
+  const placeCaption = (key, at, dir) => {
+    const t = T[key]; if (!t) return;
+    const bx = textBox(t, 13);
+    const p = pl.place(at, dir, 12, bx.w, bx.h, 1);
+    el('text', { x: p.x, y: p.y, class: 'mv-orbcap', 'text-anchor': 'middle', 'dominant-baseline': 'central', 'data-orb': key }, L.orbitals).textContent = t;
+  };
+  // lobes are reserved, so charges and δ labels placed after them stay out of the orbitals
+  const lobe = (c, ax, rx, ry, cls, data) => { const t = Math.atan2(ax.y, ax.x), co = Math.cos(t), si = Math.sin(t);
+    pl.reserve({ x: c.x, y: c.y, w: 2 * Math.sqrt(rx * rx * co * co + ry * ry * si * si), h: 2 * Math.sqrt(rx * rx * si * si + ry * ry * co * co) });
+    return el('ellipse', { cx: c.x, cy: c.y, rx, ry, transform: `rotate(${(Math.atan2(ax.y, ax.x) * 180 / Math.PI).toFixed(1)} ${c.x} ${c.y})`, class: cls, 'data-role': data }, L.orbitals); };
+  const pAxis = (x, role) => { const cd = chargeDir(x, role); return { x: -cd.y, y: cd.x }; };
+  const pairOf = (key) => { const [r1, r2] = key.split('-'); const A = R(r1), B = R(r2); return A && B ? [A, B] : null; };
+  const drawP = (role, x, ax, cls = 'mv-porb') => { for (const s of [-1, 1]) lobe(add(x.p, mul(ax, 13 * s)), ax, 11, 6, cls, role); };
+  // the existing field: an empty p orbital on a carbocation
+  for (const role of [].concat(f.pOrbital || [])){ const x = R(role); if (x) drawP(role, x, pAxis(x, role)); }
+  for (const o of [].concat(f.orbitals || [])){
+    if (o.if && !ctx.flags[o.if]) continue;
+    if (o.unless && ctx.flags[o.unless]) continue;
+    if (o.k === 'sigmaStar'){ // empty σ*: a big lobe out of the back of C, a small one beyond the LG
+      const pr = pairOf(o.bond); if (!pr) continue;
+      const [A, B] = pr, u = unit(sub(B.p, A.p));
+      lobe(add(A.p, mul(u, -17)), u, 14, 9, 'mv-sstar', 'sigmaStar');
+      lobe(add(B.p, mul(u, 13)), u, 7, 5, 'mv-sstar', 'sigmaStar');
+      caption('sigmaStar', add(A.p, mul(u, -30)), mul(u, -1));
+    } else if (o.k === 'sigma'){ // a filled σ bond (C–H or C–C) that gives electrons away
+      const pr = pairOf(o.bond); if (!pr) continue;
+      const [A, B] = pr, v = sub(B.p, A.p);
+      lobe(add(A.p, mul(v, 0.5)), unit(v), len(v) * 0.42, 5.5, 'mv-sorb', 'sigma');
+      if (o.cap) caption(o.cap, add(A.p, mul(v, 0.5)), { x: -unit(v).y, y: unit(v).x });
+    } else if (o.k === 'p'){ // p orbital: empty on C⁺; o.along: lobes along the line to that role (SN2 TS)
+      const x = R(o.at); if (!x) continue;
+      let ax = pAxis(x, o.at);
+      if (o.along){ const y = R(o.along); if (y) ax = unit(sub(y.p, x.p)); }
+      drawP(o.at, x, ax, o.along ? 'mv-porb mv-pshared' : 'mv-porb');
+      if (o.faces){ // the nucleophile can come in at either lobe: one arrow from each side
+        for (const s of [-1, 1]){
+          const tip = add(x.p, mul(ax, 26 * s)), st = add(x.p, mul(ax, 44 * s));
+          el('line', { x1: st.x, y1: st.y, x2: tip.x, y2: tip.y, class: 'mv-approach', 'marker-end': 'url(#mvOpen)', 'data-face': s }, L.orbitals);
+        }
+        caption('faces', add(x.p, mul(ax, 46)), { x: -ax.y, y: ax.x });
+      } else if (o.cap) caption(o.cap, add(x.p, mul(ax, 26)), ax);
+    } else if (o.k === 'hyper'){ // a neighbouring C–H σ bond, lined up with the empty p, feeds it a little
+      const x = R(o.at); if (!x || x.a == null) continue;
+      const ax = pAxis(x, o.at);
+      drawP(o.at, x, ax);
+      const cands = [...adj[x.a]].filter((b) => m.getAtomicNo(b) === 6 && m.getImplicitHydrogens(b) > 0 && b !== roles.g);
+      const nb = cands.find((b) => b === roles.cb) ?? cands[0];
+      if (nb == null) continue;
+      // the ghost H sits on the neighbour, parallel to the p axis, on the side with more room
+      const opts = [ax, mul(ax, -1)].map((u) => add(P[nb], mul(u, 0.7 * BL)));
+      const hp = opts.sort((p, q) => pl.clearance({ ...q, w: 10, h: 12 }) - pl.clearance({ ...p, w: 10, h: 12 }))[0];
+      el('line', { x1: P[nb].x, y1: P[nb].y, x2: hp.x, y2: hp.y, class: 'mv-ghostbond' }, L.orbitals);
+      el('text', { x: hp.x, y: hp.y, class: 'mv-ghostH', 'text-anchor': 'middle', 'dominant-baseline': 'central' }, L.orbitals).textContent = 'H';
+      pl.reserve({ x: hp.x, y: hp.y, w: 10, h: 12 });
+      const v = sub(hp, P[nb]);
+      lobe(add(P[nb], mul(v, 0.45)), unit(v), len(v) * 0.4, 5, 'mv-sorb', 'hyper');
+      // a dotted arrow from the σ bond to the nearer lobe of the empty p
+      const s = (hp.x - x.p.x) * ax.x + (hp.y - x.p.y) * ax.y >= 0 ? 1 : -1;
+      const from = add(P[nb], mul(v, 0.45)), lobeC = add(x.p, mul(ax, 13 * s));
+      const mid = add(mul(add(from, lobeC), 0.5), mul(ax, 8 * s));
+      el('path', { d: `M${from.x},${from.y} Q${mid.x},${mid.y} ${lobeC.x},${lobeC.y}`, class: 'mv-donate', 'marker-end': 'url(#mvOpen)' }, L.orbitals);
+      caption('hyper', from, unit(v));
+    } else if (o.k === 'pi' || o.k === 'piForm'){ // two parallel p orbitals side by side: forming π, or the π bond
+      const A = R(o.a), B = R(o.b); if (!A || !B) continue;
+      const v = sub(B.p, A.p), u = unit(v), ax = { x: -u.y, y: u.x };
+      if (o.k === 'piForm'){ drawP(o.a, A, ax, 'mv-porb mv-pfill'); drawP(o.b, B, ax, 'mv-porb mv-pfill'); }
+      for (const s of [-1, 1]){
+        const c = add(add(A.p, mul(v, 0.5)), mul(ax, 13 * s));
+        lobe(c, u, len(v) * (o.k === 'pi' ? 0.62 : 0.3), o.k === 'pi' ? 7 : 4, o.k === 'pi' ? 'mv-piorb' : 'mv-piorb mv-forming', o.k);
+      }
+      caption(o.k, add(add(A.p, mul(v, 0.5)), mul(ax, 26)), ax);
+    }
+  }
+
+  // ---- formal charges and δ labels, in free space beside their atom ----
+  const tag = (role, txt, cls) => {
+    const x = R(role); if (!x || !txt) return;
+    const bx = textBox(txt, 18);
+    const d = x.v && role !== 'nu' ? unit({ x: 1, y: -1 }) : chargeDir(x, role);
+    const p = pl.place(x.p, d, x.a === ca ? 13 : 10, bx.w, bx.h);
+    el('text', { x: p.x, y: p.y, class: cls, 'data-role': role, 'text-anchor': 'middle', 'dominant-baseline': 'central' }, L.labels).textContent = txt;
+  };
+  for (const [role, c] of Object.entries(charges)) tag(role, c, 'mv-charge');
+  for (const [role, d] of Object.entries(deltas)) tag(role, d, 'mv-delta ' + (d.includes('+') ? 'mv-dplus' : 'mv-dminus'));
+  // a virtual atom's rest, e.g. "(CH₃OH)": under or beside the atom, wherever it fits
+  for (const { r, x } of vAtoms){
+    const rest = labels[r + 'Rest'] != null ? tok(labels[r + 'Rest']) : vAtom(r).rest;
+    if (!rest) continue;
+    const bx = textBox(rest, 14);
+    const side = r === 'nu' ? (geo.dir.x >= 0 ? 1 : -1) : 1;
+    const p = pl.place(x.p, unit({ x: 0.35 * side, y: 1 }), 9, bx.w, bx.h);
+    el('text', { x: p.x, y: p.y, class: 'mv-rest', 'text-anchor': 'middle', 'dominant-baseline': 'central', 'data-rest': r }, L.labels).textContent = rest;
+  }
+
+  for (const c of caps) placeCaption(...c);
+
+  // ---- dipole arrows (+⟶) on polar bonds, toward the more electronegative atom, on the freer side ----
+  gBonds.forEach((g, i) => {
+    const d = dens.bonds[i]; if (!d.polar || g.state === 'partial') return;
+    const [p, q] = d.toB ? [nodes[g.a].p, nodes[g.b].p] : [nodes[g.b].p, nodes[g.a].p]; // δ+ end → δ− end
+    const v = sub(q, p), u = unit(v), n = { x: -u.y, y: u.x }, Lb = len(v);
+    const half = Lb * (0.18 + 0.12 * d.size);
+    const mid = add(p, mul(v, 0.5));
+    const sides = [1, -1].map((s) => add(mid, mul(n, 10 * s)));
+    const c = sides.sort((x, y) => pl.clearance({ ...y, w: 2 * half, h: 6 }) - pl.clearance({ ...x, w: 2 * half, h: 6 }))[0];
+    pl.reserve({ x: c.x, y: c.y, w: 8, h: 8 });
+    const s0 = sub(c, mul(u, half)), s1 = add(c, mul(u, half));
+    const g0 = el('g', { class: 'mv-dipole', 'data-pair': pairName(g) }, L.dipoles);
+    el('line', { x1: s0.x, y1: s0.y, x2: s1.x, y2: s1.y, 'marker-end': 'url(#mvDip)' }, g0);
+    const tk = add(s0, mul(u, 4));
+    el('line', { x1: tk.x + n.x * 3.5, y1: tk.y + n.y * 3.5, x2: tk.x - n.x * 3.5, y2: tk.y - n.y * 3.5 }, g0); // the + tail
+  });
+
+  // bounding box (atoms, virtual atoms and every placed label)
   const all = [...P, ...labelPts];
-  for (const r of VIRTUAL){ const x = R(r); if (x) all.push(x.p); }
-  return { minX: Math.min(...all.map((p) => p.x)) - 34, maxX: Math.max(...all.map((p) => p.x)) + 34, minY: Math.min(...all.map((p) => p.y)) - 34, maxY: Math.max(...all.map((p) => p.y)) + 34 };
+  for (const { x } of vAtoms) all.push(x.p);
+  for (const u of pl.used) all.push({ x: u.x - u.w / 2, y: u.y - u.h / 2 }, { x: u.x + u.w / 2, y: u.y + u.h / 2 });
+  return { minX: Math.min(...all.map((p) => p.x)) - 26, maxX: Math.max(...all.map((p) => p.x)) + 26, minY: Math.min(...all.map((p) => p.y)) - 26, maxY: Math.max(...all.map((p) => p.y)) + 26 };
 }
 // "OPBr₂" drawn to the left of its atom reads "Br₂PO": keep the attached atom next to the bond
 function flipLabel(t){
@@ -492,6 +684,9 @@ function typewriter(box){
 }
 
 // remembered per viewer (tolerates blocked storage)
+// checkbox order under the drawing (LAYERS is the drawing order)
+const LAYER_ORDER = ['skeleton', 'glow', 'density', 'dipoles', 'arrows', 'orbitals', 'labels'];
+const hidden = (k) => pref('hide-' + k);
 const pref = (k, v) => { try { if (v === undefined) return localStorage.getItem('ml-mech-' + k) === '1'; localStorage.setItem('ml-mech-' + k, v ? '1' : '0'); } catch {} return false; };
 
 export function openMechanism(host, opts){
@@ -509,7 +704,10 @@ export function openMechanism(host, opts){
   host.hidden = false;
   host.innerHTML = `
     <div class="mv-grid">
-      <div class="mv-stage"><svg class="mv-svg" role="img" aria-label="Mechanism drawing"></svg><div class="mv-key">${esc(texts.ui.densityKey)}</div><div class="mv-result"></div></div>
+      <div class="mv-stage${LAYERS.filter(hidden).map((k) => ' mv-off-' + k).join('')}"><svg class="mv-svg" role="img" aria-label="Mechanism drawing"></svg>
+        <div class="mv-layers" role="group" aria-label="${esc(texts.ui.layersCaption)}"><span>${esc(texts.ui.layersCaption)}</span>${LAYER_ORDER.map((k) =>
+          `<label><input type="checkbox" class="mv-layer" data-layer="${k}"${hidden(k) ? '' : ' checked'}> ${esc(texts.ui.layers[k])}</label>`).join('')}</div>
+        <div class="mv-key">${esc(texts.ui.densityKey)}</div><div class="mv-result"></div></div>
       <div class="mv-sidecol">
         <div class="mv-side"></div>
         <div class="mv-dialog" id="mechDialog" role="button" tabindex="0" aria-live="polite">
@@ -529,6 +727,8 @@ export function openMechanism(host, opts){
         </div>
       </div>
     </div>`;
+  // layer checkboxes: pure CSS (a class on the stage), so switching one doesn't redraw or restart the arrows
+  host.querySelectorAll('.mv-layer').forEach((b) => { b.onchange = () => { pref('hide-' + b.dataset.layer, !b.checked); host.querySelector('.mv-stage').classList.toggle('mv-off-' + b.dataset.layer, !b.checked); }; });
   const svg = host.querySelector('.mv-svg'), side = host.querySelector('.mv-side'), dialog = host.querySelector('.mv-dialog');
   const gloss = host.querySelector('.mv-gloss'), result = host.querySelector('.mv-result'), qbtns = host.querySelector('.mv-qbtns');
   buildSide(side, texts, ctx.humps);

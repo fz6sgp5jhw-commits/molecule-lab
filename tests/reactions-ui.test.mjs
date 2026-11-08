@@ -4,8 +4,9 @@ import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 
 const BASE = process.env.BASE_URL || 'http://localhost:8765/';
-let fails = 0;
-const ok = (cond, label) => { if (!cond){ console.log('FAIL ' + label); fails++; } };
+let fails = 0, checks = 0;
+let lastOk = '';
+const ok = (cond, label) => { checks++; lastOk = label; if (!cond){ console.log('FAIL ' + label); fails++; } };
 
 const cors = { 'access-control-allow-origin': '*' };
 async function mockServices(ctx){
@@ -32,6 +33,9 @@ page.setDefaultTimeout(5000);
 try {
   await page.goto(BASE);
   await page.waitForSelector('#boot', { state: 'detached', timeout: 20000 });
+  await page.addScriptTag({ path: new URL('./overlaps.js', import.meta.url).pathname });
+  // ERRLINES=n: on a crash, print n lines of Playwright's log and what closed/changed the page (debugging aid)
+  if (process.env.ERRLINES) await page.evaluate(() => { window.__mlog = []; const w = document.querySelector('#mechWin'); const hd = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'hidden'); Object.defineProperty(w, 'hidden', { set(v){ if (v) window.__mlog.push('HIDE ' + new Error().stack.split('\n').slice(2, 8).join(' < ')); hd.set.call(this, v); }, get(){ return hd.get.call(this); } }); document.addEventListener('ml:molecule', (e) => window.__mlog.push((e.detail ? e.detail.getIDCode().slice(0, 12) : 'null') + ' ' + new Error().stack.split('\n').slice(2, 6).join(' < '))); });
   await page.waitForFunction(() => document.querySelectorAll('#rxReagentChips .chip').length > 0, null, { timeout: 10000 });
   ok(await page.isHidden('#rxWin') && await page.isVisible('#viewer3d'), 'Molecule tab first: Reactions hidden');
   await page.click('.apptab[data-app="rx"]');
@@ -64,12 +68,39 @@ try {
   await page.click('#rxCards .rx-watch');
   await page.waitForSelector('#mechDialog');
   ok((await text('#mechDialog')).includes('I⁻ is the nucleophile'), 'frame 1 dialog names the nucleophile');
-  ok(await page.locator('.mv-svg [data-role="ca"].mv-cloud').count() === 1 && (await text('.mv-svg')).includes('δ+'), 'density cloud + δ+ on Cα');
+  ok(/poor/.test(await page.getAttribute('.mv-svg .mv-glow[data-role="ca"]', 'data-dens')) && (await text('.mv-svg')).includes('δ+'), 'blue (electron-poor) glow + δ+ on Cα');
   if (process.env.SHOTS){
     mkdirSync(new URL('../docs/screens', import.meta.url).pathname, { recursive: true });
   }
+  // whole-molecule electron density (rule-based): every atom glows, every bond has its own cloud
+  const attr = (sel, a) => page.getAttribute(sel, a);
+  const bw = async (pair) => Number(await attr(`.mv-svg .mv-bdens[data-pair="${pair}"]`, 'data-w'));
+  const noOverlap = async (where) => { const o = await page.evaluate(() => window.__mvOverlaps()); ok(!o.length, `${where}: labels clear of each other and of bonds${o.length ? ' (' + o.slice(0, 3).join(', ') + ')' : ''}`); };
+  ok(await attr('.mv-svg .mv-glow[data-role="nu"]', 'data-dens') === 'rich', 'SN2 frame 1: I⁻ glows electron-rich (red)');
+  ok(await page.locator('.mv-svg .mv-glow').count() >= 6, 'SN2 frame 1: a glow on every atom');
+  { const ws = await page.$$eval('.mv-svg .mv-bdens', (e) => e.filter((x) => x.dataset.pair !== 'ca-lg').map((x) => +x.dataset.w));
+    ok(ws.length >= 3 && (await bw('ca-lg')) < Math.min(...ws), 'SN2 frame 1: the C–Br bond cloud is thinner than the C–C bonds'); }
+  ok(await page.locator('.mv-svg .mv-dipole[data-pair="ca-lg"]').count() === 1, 'SN2 frame 1: dipole arrow on C–Br');
+  ok(await page.locator('.mv-svg .mv-sstar').count() === 2, 'SN2 frame 1: the empty σ* lobes behind C–Br');
+  await noOverlap('SN2 frame 1');
+  // layer checkboxes: each hides only its own layer, and stays off on the next frame
+  const LAY = ['skeleton', 'glow', 'density', 'dipoles', 'arrows', 'orbitals', 'labels'];
+  ok(await page.locator('.mv-layer').count() === LAY.length, 'seven layer checkboxes');
+  const shown = (k) => page.$eval(`.mv-svg .mv-L-${k}`, (g) => getComputedStyle(g).display !== 'none');
+  for (const k of LAY){
+    await page.uncheck(`.mv-layer[data-layer="${k}"]`);
+    const others = await Promise.all(LAY.filter((x) => x !== k).map(shown));
+    ok(!(await shown(k)) && others.every(Boolean), `layer toggle "${k}" hides only that layer`);
+    await page.check(`.mv-layer[data-layer="${k}"]`);
+    ok(await shown(k), `layer toggle "${k}" shows it again`);
+  }
+  await page.uncheck('.mv-layer[data-layer="glow"]');
   await page.click('.mv-next');
   ok((await text('#mechDialog')).includes('backside attack') && await page.locator('.mv-arrow').count() === 2, 'frame 2: backside attack, two curved arrows');
+  ok(!(await shown('glow')) && !(await page.isChecked('.mv-layer[data-layer="glow"]')), 'a layer switched off stays off on the next frame');
+  await page.check('.mv-layer[data-layer="glow"]');
+  ok(await attr('.mv-svg .mv-bdens[data-pair="ca-lg"]', 'data-state') === 'breaking' && await page.locator('.mv-svg .mv-bdens[data-state="forming"]').count() === 1, 'SN2 frame 2: C–Br starts breaking, the Nu–C cloud starts forming');
+  await noOverlap('SN2 frame 2');
   await page.click('.mv-why');
   ok((await text('#mechDialog')).includes('antibonding'), 'WHY? page explains the σ* orbital');
   await page.click('.mv-dialog .term');
@@ -77,8 +108,14 @@ try {
   await page.click('.mv-next'); // closes nothing: Next always advances (WHY 2)
   await page.click('.mv-next'); // frame 3
   ok((await text('#mechDialog')).includes('transition state') && await page.locator('.mv-bracket').count() === 1, 'frame 3: transition state with ‡ brackets');
+  ok(await attr('.mv-svg .mv-bdens[data-pair="ca-lg"]', 'data-state') === 'partial' && await attr('.mv-svg .mv-bdens[data-pair="nu-ca"]', 'data-state') === 'partial', 'SN2 TS: both partial bonds have thin clouds');
+  ok(await page.locator('.mv-svg .mv-pshared').count() === 2, 'SN2 TS: one p orbital shared by Nu and LG');
+  await noOverlap('SN2 TS');
   ok(await page.locator('.mv-meter i.on').count() === 0, 'stability meter empty at the transition state');
   await page.click('.mv-next');
+  ok(await attr('.mv-svg .mv-glow[data-role="lg"]', 'data-dens') === 'rich' && await page.locator('.mv-svg .mv-bdens[data-pair="ca-lg"]').count() === 0, 'SN2 product: Br⁻ fully electron-rich, C–Br cloud gone');
+  ok(await attr('.mv-svg .mv-bdens[data-pair="nu-ca"]', 'data-state') === 'full', 'SN2 product: the new C–I bond has a full cloud');
+  await noOverlap('SN2 product');
   await page.click('.mv-next');
   await page.waitForFunction(() => /Product: 2-iodobutane/.test(document.querySelector('#mechDialog').textContent), null, { timeout: 10000 });
   ok((await text('.mv-result')).includes('2-iodobutane'), 'final frame: product name 2-iodobutane + result card');
@@ -113,12 +150,21 @@ try {
     await page.waitForSelector('#rxOut:not([hidden])');
   }
   const dialog = () => text('#mechDialog .mv-text');
+  // review screenshots of the mechanism window at laptop and phone width (SHOTS=1 only)
+  async function phoneToo(name){
+    await page.locator('#mechWin').screenshot({ path: `${dir}/${name}-desktop.png` });
+    await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300);
+    await page.locator('#mechWin').screenshot({ path: `${dir}/${name}-phone.png` });
+    await page.setViewportSize({ width: 1280, height: 900 }); await page.waitForTimeout(300);
+  }
   const steps = async () => Number((await text('.mv-step')).match(/\/(\d+)/)[1]);
   // step to the end, collecting each frame's dialog text
   async function walk(onFrame){
     const seen = [];
     for (let i = 0; i < 30; i++){
       seen.push(await dialog());
+      const o = await page.evaluate(() => window.__mvOverlaps());
+      ok(!o.length, `${await text('#mechTitle')} ${await text('.mv-step')}: labels clear of each other and of bonds${o.length ? ' (' + o.slice(0, 3).join(', ') + ')' : ''}`);
       if (onFrame) await onFrame(i, seen[i]);
       if (await page.isDisabled('.mv-next')) break;
       await page.click('.mv-next');
@@ -147,14 +193,36 @@ try {
   await page.click('.lamp[data-pw="SN1"]');
   await page.waitForSelector('#mechDialog');
   const n3d = await steps();
-  let all = await walk(async (i, t) => { if (/benzylic carbocation/.test(t)) ok(await page.locator('.mv-porb').count() === 2, 'SN1: cation drawn with an empty p orbital'); });
+  let all = await walk(async (i, t) => {
+    if (/benzylic carbocation/.test(t)){
+      ok(await page.locator('.mv-porb').count() === 2, 'SN1: cation drawn with an empty p orbital');
+      ok(await page.locator('.mv-svg .mv-ghostH').count() === 1 && await page.locator('.mv-svg .mv-sorb').count() === 1, 'SN1 cation: a neighbouring C–H σ lined up with the empty p (hyperconjugation)');
+      ok(await attr('.mv-svg .mv-glow[data-role="ca"]', 'data-dens') === 'poor' && await page.locator('.mv-svg .mv-glow[data-dens="poor1"]').count() >= 1, 'SN1 cation: C⁺ electron-poor, its neighbours share some of the +');
+    }
+    if (/arrives/.test(t) && !(await page.locator('.mv-hit').count())) ok(await page.locator('.mv-svg .mv-approach').count() === 2, 'SN1: Nu can come in at either face of the empty p');
+  });
   ok(/benzylic carbocation/.test(all) && /oxonium/.test(all) && !/shift:/.test(all), 'SN1 (W3d): ionise → benzylic C⁺ → oxonium, no shift step');
   ok(/both configurations/.test(all) && /not stereospecific/.test(all), 'SN1 result: racemic, not stereospecific');
   await page.waitForTimeout(600);
-  ok(await page.locator('#sceneChips .chip[aria-pressed="true"]').count() === 1 && /SN1 major/.test(await text('#sceneChips .chip[aria-pressed="true"]')), 'last step (laptop): the product is added to the Viewer\'s 3D scene');
+  ok(await page.locator('#sceneChips .chip[aria-pressed="true"]:not([data-key="substrate"])').count() === 1 && /SN1 major/.test(await text('#sceneChips .chip[aria-pressed="true"]:not([data-key="substrate"])')), 'last step (laptop): the product is added to the Viewer\'s 3D scene');
   ok(/reagent|CH₃OH/.test(await text('#sceneChips')) && /Br⁻/.test(await text('#sceneChips')), 'quick-add offers the reagent and the leaving group');
   await page.locator('#sceneChips .chip', { hasText: 'Br⁻' }).click();
-  ok(await page.locator('#sceneChips .chip[aria-pressed="true"]').count() === 2, 'quick-add: a second molecule joins the scene');
+  ok(await page.locator('#sceneChips .chip[aria-pressed="true"]:not([data-key="substrate"])').count() === 2, 'quick-add: a second molecule joins the scene');
+  // the substrate is a chip too, and the names under the molecules can be switched off
+  await page.waitForTimeout(400);
+  ok(await page.getAttribute('#sceneChips .chip[data-key="substrate"]', 'aria-pressed') === 'true' && (await page.evaluate(() => window.ml3d())).models === 3, '3D scene: substrate + two molecules');
+  await page.click('#sceneChips .chip[data-key="substrate"]');
+  await page.waitForTimeout(300);
+  { const s3 = await page.evaluate(() => window.ml3d());
+    ok(await page.getAttribute('#sceneChips .chip[data-key="substrate"]', 'aria-pressed') === 'false' && s3.models === 2 && !s3.names.includes('substrate'), 'substrate chip: switches the substrate off'); }
+  await page.uncheck('#sceneNames');
+  await page.waitForTimeout(300);
+  ok((await page.evaluate(() => window.ml3d())).names.length === 0, 'names switch: no labels under the molecules');
+  await page.check('#sceneNames');
+  await page.click('#sceneChips .chip[data-key="substrate"]');
+  await page.waitForTimeout(300);
+  { const s3 = await page.evaluate(() => window.ml3d());
+    ok(s3.models === 3 && s3.names.length === 3 && s3.names.includes('substrate'), 'substrate and names back on'); }
   ok((await text('.mv-offer')).includes('E1 also competes'), 'SN1 end: offers the competing E1');
   await page.check('.mv-skipbox');
   ok(await steps() === n3d - 1, 'Skip proton transfers removes the oxonium deprotonation');
@@ -176,6 +244,10 @@ try {
       ok(/rearrange/.test(t), 'quiz: "will this cation shift?"');
       await page.click('.mv-qbtn >> text=Yes');
       ok(/Right!/.test(await dialog()), 'quiz: Yes is right for W4 (it shifts)'); quizzed++;
+      // review finding 4: rebuilding the frame list must not forget which questions were answered
+      await page.check('.mv-skipbox');
+      ok(await page.locator('.mv-qbtn').count() === 0, 'answered quiz is not asked again after "Skip proton transfers"');
+      await page.uncheck('.mv-skipbox');
     } else if (await page.locator('.mv-hit').count()){
       ok(/which carbon/i.test(t), 'quiz: tap the carbon the Nu bonds to');
       await page.locator('.mv-hit').first().click();
@@ -183,7 +255,7 @@ try {
     }
     if (/^Done: the ring/.test(await dialog())){
       ok(await page.locator('.mv-svg [data-bond="ca-g"]').count() > 0, 'ring expansion: the migrated ring bond is drawn to Cα');
-      if (process.env.SHOTS && !shot){ shot = true; await page.locator('#mechWin').screenshot({ path: `${dir}/sn1-shift-frame-desktop.png` }); }
+      if (process.env.SHOTS && !shot){ shot = true; await phoneToo('sn1-ring-expansion-frame'); }
     }
   });
   ok(quizzed === 2, `W4 SN1 asks two quiz questions (got ${quizzed})`);
@@ -202,10 +274,15 @@ try {
   await page.click('.lamp[data-pw="E2"]');
   await page.waitForSelector('#mechDialog');
   all = await walk(async (i, t) => {
-    if (/anti-periplanar/.test(t)) ok(await page.locator('.mv-svg [data-atom="hb"]').count() === 1, 'E2: the β-H is drawn');
+    if (/anti-periplanar/.test(t)){
+      ok(await page.locator('.mv-svg [data-atom="hb"]').count() === 1, 'E2: the β-H is drawn');
+      ok(await page.locator('.mv-svg .mv-sorb').count() === 1 && await page.locator('.mv-svg .mv-sstar').count() === 2, 'E2: σ C–H lined up with the C–Br σ*');
+    }
+    if (/half-formed/.test(t)) ok(await page.locator('.mv-svg .mv-piorb.mv-forming').count() === 2 && await page.locator('.mv-svg .mv-pfill').count() === 4, 'E2 TS: two p orbitals overlapping (π forming)');
+    if (/^The alkene is made/.test(t)) ok(await page.locator('.mv-svg .mv-piorb:not(.mv-forming)').count() === 2 && await attr('.mv-svg .mv-glow[data-role="lg"]', 'data-dens') === 'rich', 'E2 product: π bond drawn, Br⁻ electron-rich');
     if (/Three curved arrows/.test(t)){
       ok(await page.locator('.mv-arrow').count() === 3, 'E2: three curved arrows');
-      if (process.env.SHOTS) await page.locator('#mechWin').screenshot({ path: `${dir}/e2-frame-desktop.png` });
+      if (process.env.SHOTS) await phoneToo('e2-frame');
     }
   });
   ok(/strong \[?base/.test(all) && /anti-periplanar/.test(all) && /Zaitsev/.test(all), 'E2: base, anti-periplanar, Zaitsev');
@@ -258,6 +335,43 @@ try {
   all = await walk();
   ok(/attacks phosphorus/.test(all) && /HOPBr₂/.test(all) && /backside attack/.test(all), 'PBr₃: activation, then SN2 with HOPBr₂ leaving');
 
+  // SOCl₂ on butan-2-ol: O attacks S, Cl⁻ leaves, pyridine deprotonates, then Cl⁻ does SN2.
+  // Chlorine is drawn in VT323 (l with a flag and foot, I with serifs) on cards, chips and in the drawing.
+  await setup('CCC(C)O', 'SOCl2', false);
+  await page.click('.lamp[data-pw="SN2"]');
+  await page.waitForSelector('#mechDialog');
+  all = await walk();
+  ok(/attacks sulfur/.test(all) && /chlorosulfite/.test(all) && /backside attack/.test(all), 'SOCl₂: activation (chlorosulfite), then SN2 by Cl⁻');
+  const fam = (sel) => page.$eval(sel, (e) => getComputedStyle(e).fontFamily);
+  ok(/^"?VT323/.test(await fam('#rxCards .rx-draw svg text')) && (await text('#rxCards .rx-draw svg')).includes('Cl'), 'Cl on the result card drawing is in VT323');
+  ok(/^"?VT323/.test(await fam('.mv-svg text.mv-atom')), 'mechanism atom symbols are in VT323');
+  { const chip = page.locator('#sceneChips .chip', { hasText: 'SOCl' }).first();
+    ok(await chip.locator('.chem').count() === 1 && /^"?VT323/.test(await chip.locator('.chem').evaluate((e) => getComputedStyle(e).fontFamily)), 'Cl in a chip label is set in VT323'); }
+  ok(!(await page.evaluate(() => [...document.querySelectorAll('.chem')].some((e) => e.textContent !== 'Cl'))), 'only "Cl" is re-fonted (not words like "Click")');
+
+  // review finding 3: a drawn, uncatalogued reagent (isopropanol) is named by its formula, never "(drawn reagent)"
+  await page.fill('#nameInput', 'CC(C)(C)Br'); await page.click('#nameBtn');
+  await page.waitForFunction(() => /3°/.test(document.querySelector('#rxFactList').textContent), null, { timeout: 10000 }).catch(() => {});
+  await page.click('#rxDrawBox summary');
+  await page.waitForTimeout(300);
+  await page.evaluate(async () => {
+    const api = await window.reactions, m = api.st.ed.getMolecule();
+    const a = [6, 6, 6, 8].map((z) => m.addAtom(z)); m.addBond(a[0], a[1]); m.addBond(a[1], a[2]); m.addBond(a[1], a[3]);
+    m.inventCoordinates(); api.st.ed.setMolecule(m); api.drawnReagent();
+  });
+  ok(/Drawn reagent/.test(await text('#rxReagentInfo')), 'drawn isopropanol: recognised as a drawn reagent');
+  await page.click('#rxSolvents [data-solvent="EtOH"]');
+  if ((await page.getAttribute('#rxHeat', 'aria-pressed')) !== 'true') await page.click('#rxHeat');
+  await page.click('#rxPredict');
+  await page.waitForSelector('#rxOut:not([hidden])');
+  await page.click('.lamp[data-pw="SN1"]');
+  await page.waitForSelector('#mechDialog');
+  { const seen = [];
+    for (let i = 0; i < 12; i++){ seen.push(await text('.mv-svg')); if (await page.isDisabled('.mv-next')) break; await page.click('.mv-next'); }
+    const svgText = seen.join(' ');
+    ok(!/drawn reagent/.test(svgText) && /C₃H₈O/.test(svgText), 'drawn reagent: the mechanism labels it by formula (C₃H₈O), not "(drawn reagent)"'); }
+  await page.click('#rxDrawBox summary');
+
   // Ch 6 test 2a: 3° benzylic + NaCN in DMSO → SN1 major (course rule), E1 minor with CN⁻ as the base
   await setup('CC[C@](C)(Br)c1ccccc1', 'NaCN', true);
   ok(await page.getAttribute('.lamp[data-pw="SN1"]', 'class') === 'lamp major' && await page.getAttribute('.lamp[data-pw="E1"]', 'class') === 'lamp minor', 'test 2a: SN1 major, E1 minor');
@@ -281,9 +395,10 @@ try {
   const rank = await text('#rxRankList');
   ok(/1.*1°.*3°: backside attack blocked/s.test(rank), 'ranking mode: SN2 order 1° first, 3° none');
 } catch (e) {
-  ok(false, 'test crashed: ' + e.message.split('\n').slice(0, 12).join(' | '));
+  if (process.env.ERRLINES) console.log('STATE', JSON.stringify(await page.evaluate(() => ({ mech: !document.querySelector('#mechWin').hidden, nexts: document.querySelectorAll('.mv-next').length, title: document.querySelector('#mechTitle').textContent, mount: document.querySelector('#mechMount').textContent.slice(0, 200), step: document.querySelector('.mv-step') && document.querySelector('.mv-step').textContent, mlog: (window.__mlog || []).slice(-3) }))));
+  ok(false, 'test crashed after "' + lastOk + '": ' + e.message.split('\n').slice(0, +(process.env.ERRLINES || 12)).join(' | '));
 }
 ok(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors[0] : ''));
 await browser.close();
-if (fails) console.log(`${fails} failure(s)`);
+console.log(fails ? `${fails} of ${checks} checks failed` : `reactions-ui: ${checks} checks passed`);
 process.exit(fails ? 1 : 0);

@@ -3,10 +3,11 @@
   "speaker": "LAB",
   "frames": {
     "sn2_meet": {
-      "text": "Meet the players. {Nu} is the [[nucleophile]]: it is rich in electrons (bright blue glow: lots of electron density). The C–{LG} bond is polar, so the carbon is [[electrophile|electron-poor]] (δ+, only a faint glow) and {LG} is δ−.",
+      "text": "Meet the players. {Nu} is the [[nucleophile]]: it is rich in electrons (red glow). The C–{LG} bond is polar (the dipole arrow points to {LG}), so the carbon is [[electrophile|electron-poor]] (δ+, blue glow) and {LG} is δ−.",
       "why": [
         "{LG} is more [[electronegativity|electronegative]] than carbon, so it pulls the shared electrons of the C–{LG} bond towards itself. That leaves the carbon slightly positive (δ+).",
-        "Opposite charges attract: the electron-rich {Nu} is drawn to the δ+ carbon. That pull is the dashed line."
+        "Opposite charges attract: the electron-rich {Nu} is drawn to the δ+ carbon. That pull is the dashed line.",
+        "The C–{LG} bond's cloud (amber) is thinner than the C–C bonds' and sits toward {LG}: a weaker bond whose electrons are already pulled toward the leaving group. The C–C and C–H bonds are strong and evenly shared, so nothing else on the molecule is worth attacking."
       ]
     },
     "sn2_attack": {
@@ -19,6 +20,7 @@
     "sn2_ts": {
       "text": "The [[transition state]]: {Nu} is half-bonded and {LG} is half-gone, at the same time. This is the top of the energy hill. Only one step, so one hump: the rate depends on both {Nu} and the substrate ([[bimolecular]]).",
       "why": [
+        "Orbital view: at the top of the hill the carbon is flat (sp²-like), and one p orbital reaches out to both sides: one lobe overlaps {Nu}, the other {LG}. That is why the two partial bonds lie on one straight line.",
         "Five groups crowd around one carbon here, so this arrangement is unstable: that is why it sits at the top of the hill and can't be isolated.",
         "Because bond-making and bond-breaking happen in one step, the reaction goes faster with more {Nu} AND with more substrate. The 2 in SN2 means two species in the slow step."
       ]
@@ -38,7 +40,7 @@
       ]
     },
     "sn2_meet_act": {
-      "text": "Step 2: the OH is now {LG}, a good [[leaving group]]. {Nu} is the [[nucleophile]] (bright blue glow). The C–O bond is very polar, so the carbon is [[electrophile|electron-poor]] (δ+).",
+      "text": "Step 2: the OH is now {LG}, a good [[leaving group]]. {Nu} is the [[nucleophile]] (red glow: electron-rich). The C–O bond is very polar, so the carbon is [[electrophile|electron-poor]] (δ+).",
       "why": [
         "OH⁻ is a strong base, so it is a poor leaving group. After activation the group that leaves is {LGion}, a weak base, so the C–O bond can break."
       ]
@@ -87,6 +89,7 @@
     "shift_h": {
       "text": "A [[1,2-shift|hydride shift]]: an H on the next carbon moves over with its two bonding electrons (the arrow starts at the C–H bond).",
       "why": [
+        "Orbital view: the σ bond that moves (highlighted) sits next to the empty p orbital and lines up with it. Its electrons slide over into the p orbital, taking the group with them.",
         "The H moves as H⁻ (a hydride: H plus two electrons), so the carbon it leaves becomes the new C⁺.",
         "It only happens because the new cation is more stable ({cation} → {cation2}). The app ranks products by cation stability, so the shifted product is listed as major; your answer key may list all products without ranking."
       ]
@@ -94,6 +97,7 @@
     "shift_alkyl": {
       "text": "A [[1,2-shift|methyl (alkyl) shift]]: the group on the next carbon moves over with its two bonding electrons (the arrow starts at that C–C bond).",
       "why": [
+        "Orbital view: the σ bond that moves (highlighted) sits next to the empty p orbital and lines up with it. Its electrons slide over into the p orbital, taking the group with them.",
         "The group moves together with its bonding pair, so the carbon it leaves becomes the new C⁺.",
         "It only happens because the new cation is more stable ({cation} → {cation2}). Only one shift per pathway is shown; several in a row are not covered yet."
       ]
@@ -101,6 +105,7 @@
     "shift_ring": {
       "text": "A [[ring expansion]]: a ring C–C bond next to C⁺ moves over to the C⁺ (the arrow starts at that ring bond). The ring grows by one carbon.",
       "why": [
+        "Orbital view: the σ bond that moves (highlighted) sits next to the empty p orbital and lines up with it. Its electrons slide over into the p orbital, taking the group with them.",
         "The ring bond moves with its two electrons. The ring carbon it left becomes the new C⁺, now inside a bigger ring.",
         "Two things improve: the new cation is {cation2} instead of {cation}, and a 5-membered (or smaller) ring becomes a less strained bigger ring ([[ring strain]]).",
         "In the drawing the atoms stay put, so the new bond looks long. In the real molecule the ring relaxes into a normal six-membered shape."
@@ -127,7 +132,8 @@
     "sn1_meet_nu": {
       "text": "{Nu} arrives. It is a weak [[nucleophile]], but the C⁺ is so electron-poor that even a neutral lone pair is enough.",
       "why": [
-        "The [[protic solvent]] cages anionic nucleophiles with hydrogen bonds, but here the solvent itself is the nucleophile ([[solvolysis]])."
+        "The [[protic solvent]] cages anionic nucleophiles with hydrogen bonds, but here the solvent itself is the nucleophile ([[solvolysis]]).",
+        "Orbital view: the empty p orbital has two lobes, one on each face of the flat cation. {Nu} can bond through either lobe, so both mirror-image products form ([[racemic]]) when C⁺ is a stereocentre."
       ]
     },
     "sn1_attack": {
@@ -183,12 +189,14 @@
     "e1_ts2": {
       "text": "Transition state 2: the C–H bond is half broken and the π bond half formed.",
       "why": [
+        "Orbital view: as the C–H bond breaks, its carbon becomes sp² and gets a p orbital of its own, parallel to the empty p on C⁺. Side-by-side p orbitals overlap above and below the C–C line: that overlap is the π bond forming.",
         "This hump is lower than the first: the slow step was losing the leaving group."
       ]
     },
     "e1_product": {
       "text": "The alkene is made. {Base} carries the H⁺ away (as its conjugate acid), and the charge is gone.",
       "why": [
+        "Orbital view: the two parallel p orbitals have merged into one π bond, above and below the C–C σ bond.",
         "With an acid catalyst, the H⁺ given back here is the one the acid lent at the start: the acid is a [[catalyst]]."
       ]
     },
@@ -221,12 +229,14 @@
     "e2_ts": {
       "text": "The [[transition state]]: H half-transferred, π bond half-formed, C–{LG} half-broken. Top of the single hump.",
       "why": [
+        "Orbital view: the C–H σ electrons flow into the C–{LG} σ* as both bonds break, and the two carbons' new p orbitals overlap side by side: the π bond forming.",
         "No carbocation forms, so there are no shifts in E2."
       ]
     },
     "e2_product": {
       "text": "The alkene is made. {Base} now carries the H, and {LG} has left as {LGion}.",
       "why": [
+        "Orbital view: the two parallel p orbitals have merged into one π bond, above and below the C–C σ bond.",
         "The leaving group must be good (a weak base) for this to be fast: I > Br > Cl, sulfonates best."
       ]
     },
@@ -320,7 +330,8 @@
     "sn1_meet_ion": {
       "text": "{Nu} arrives. The C⁺ is so electron-poor that it grabs almost any lone pair, so the nucleophile that bumps into it first wins.",
       "why": [
-        "Because the cation is so reactive, SN1 doesn't need a strong nucleophile: the slow step was the leaving group going."
+        "Because the cation is so reactive, SN1 doesn't need a strong nucleophile: the slow step was the leaving group going.",
+        "Orbital view: the empty p orbital has two lobes, one on each face of the flat cation. {Nu} can bond through either lobe, so both mirror-image products form ([[racemic]]) when C⁺ is a stereocentre."
       ]
     }
   },
@@ -415,15 +426,26 @@
     "offerMajor": "{other} is the major path here. See it?",
     "offerButton": "▶ See {other}",
     "activationWatch": "▶ Watch step 1",
-    "densityKey": "Blue glow = electron density: bright = electron-rich, faint = electron-poor.",
+    "densityKey": "Glow: red = electron-rich, blue = electron-poor, faint = about neutral. Amber = a bond's electrons (thin = weak, off-centre = polar). +→ = dipole (points to the electron-rich end).",
     "stale": "These results and the mechanism are for the earlier substrate. The editor (and the Viewer) now hold the product: press Predict to react it, e.g. as step 2.",
     "view3d": "Add to 3D",
     "final3d": "This product in 3D (drag to rotate). A computed shape: OpenChemLib conformer, MMFF94s+.",
     "final3dRacemic": "This product in 3D (drag to rotate). It forms as a racemic mixture: only one of the two mirror images is shown. Computed shape (OpenChemLib, MMFF94s+).",
     "final3dNone": "No 3D model could be built for this structure.",
     "final3dLabel": "3D model of the product",
-    "sceneNote": "Add the reaction's other molecules to the 3D scene (they appear to the right of the substrate):",
-    "sceneEmpty": "Press Predict: the reaction's reagent, leaving group and products can then be added here, next to the substrate."
+    "sceneNote": "Show the reaction's molecules in the 3D scene (tap to switch each on or off; they appear left to right):",
+    "sceneSubstrate": "substrate",
+    "sceneEmpty": "Press Predict: the reaction's reagent, leaving group and products can then be added here, next to the substrate.",
+    "layers": {
+      "skeleton": "Skeleton",
+      "glow": "Atom glow",
+      "density": "Bond density",
+      "dipoles": "Dipoles",
+      "arrows": "Curved arrows",
+      "orbitals": "Orbitals",
+      "labels": "Labels"
+    },
+    "layersCaption": "Show:"
   },
   "quiz": {
     "attack": {
@@ -494,5 +516,16 @@
     "substrateTyped": "“{text}” looks like the name of the substrate (the molecule with the leaving group), not a reagent. The substrate goes in the Draw window (or the name box at the top). The reagent box is for what you add to it, like NaOEt, EtOH or NaI.",
     "substrateDrawn": "This drawing has a leaving group on carbon ({lg}), so it looks like the substrate, not a reagent. The substrate goes in the main Draw window. Draw only what you add to it here (like NaOEt or EtOH), or tap a chip.",
     "useAsSubstrate": "Use it as the substrate"
+  },
+  "orbitals": {
+    "sigmaStar": "σ* (empty)",
+    "pShared": "p: Nu···C···LG",
+    "sigmaShift": "σ bond that shifts",
+    "faces": "Nu: either face",
+    "hyper": "σ C–H → empty p",
+    "sigmaCH": "σ C–H → p",
+    "antiCH": "σ C–H, anti to σ*",
+    "piForm": "π forming",
+    "pi": "π bond"
   }
 }

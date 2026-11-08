@@ -87,6 +87,12 @@
   .facts dd{margin:0;word-break:break-all;font:19px/1.05 var(--crt)}
   .facts dd sub{font-size:14px}
   .mono{font-family:var(--crt)}
+  /* chlorine must not read as "CI": chemical text uses VT323 (l has a flag and a foot, I has serifs).
+     OpenChemLib's drawings set "#id text{font-family:sans-serif}" in their own <style>, and in sans-serif
+     l and I are both plain bars too, hence !important. */
+  .chem{font-family:var(--crt);font-size:1.15em;line-height:1}
+  svg text{font-family:var(--crt) !important}
+  #line2d svg text,.rx-draw svg text,.rx-thumb svg text{font-size:17px}
   .badge{display:flex;align-items:center;gap:8px;font-size:15px;padding:5px 8px;margin-top:8px;box-shadow:var(--sunken);background:var(--face)}
   .badge::before{content:'';flex:0 0 12px;height:12px;box-shadow:inset -2px -2px rgba(0,0,0,.35)}
   .badge.ok{color:var(--ok)} .badge.ok::before{background:#00a000}
@@ -251,7 +257,23 @@
   .mv-bracket{fill:none;stroke:#e8ffe8;stroke-width:1.5}
   .mv-dagger{font:20px var(--crt);fill:#e8ffe8}
   .mv-pull{transition:stroke .4s}
-  .mv-cloud{animation:mvFade .5s ease-out}
+  .mv-glow,.mv-bdens{animation:mvFade .5s ease-out}
+  .mv-bdens.mv-partial{stroke:none}
+  .mv-dipole line{stroke:#e6a8ff;stroke-width:1.6}
+  .mv-porb{fill:#3c9cff;fill-opacity:.12}
+  .mv-porb.mv-pfill,.mv-porb.mv-pshared{fill:#ff4a4a;fill-opacity:.18;stroke:#ff9a9a}
+  .mv-sstar{fill:#3c9cff;fill-opacity:.14;stroke:#9ec8ff;stroke-width:1.3;stroke-dasharray:3 2}
+  .mv-sorb{fill:#ff4a4a;fill-opacity:.3;stroke:#ff9a9a;stroke-width:1}
+  .mv-piorb{fill:#ff4a4a;fill-opacity:.28;stroke:#ff9a9a;stroke-width:1.2}
+  .mv-piorb.mv-forming{fill-opacity:.15;stroke-dasharray:3 2}
+  .mv-approach,.mv-donate{fill:none;stroke:#9ec8ff;stroke-width:1.4;stroke-dasharray:3 3}
+  .mv-ghostH{font:15px var(--crt);fill:#9a9a9a}
+  .mv-ghostbond{stroke:#7a7a7a;stroke-width:1.5;stroke-dasharray:2 2}
+  .mv-orbcap{font:13px var(--crt);fill:#9ec8ff}
+  .mv-layers{display:flex;flex-wrap:wrap;gap:2px 10px;padding:3px 4px 0;font:15px/1.2 var(--crt);color:#33ff66}
+  .mv-layers label{display:flex;align-items:center;gap:3px;cursor:pointer}
+  .mv-layers input{margin:0}
+  .mv-off-skeleton .mv-L-skeleton,.mv-off-glow .mv-L-glow,.mv-off-density .mv-L-density,.mv-off-dipoles .mv-L-dipoles,.mv-off-arrows .mv-L-arrows,.mv-off-orbitals .mv-L-orbitals,.mv-off-labels .mv-L-labels{display:none}
   .mv-key{font:14px var(--crt);color:#3aa0ff;padding:2px 4px}
   @keyframes mvFade{from{opacity:0}}
   .mv-result:empty{display:none}
@@ -264,6 +286,8 @@
   .rx-3dview{position:relative;width:100%;height:240px}
   .scene-add{padding:4px 2px 6px}
   .scene-add .chips{margin-top:4px}
+  .scene-names{display:flex;align-items:center;gap:4px;margin-top:5px;font-size:14px;cursor:pointer}
+  .scene-names[hidden]{display:none}
   .rx-3dview.none{height:auto;color:#33ff66;font:15px var(--crt);padding:8px}
   .rx-3dcap{color:#33ff66;font:14px/1.2 var(--crt);padding:4px 2px 0}
   .mv-sidecol{display:flex;flex-direction:column;gap:8px;min-width:0}
@@ -291,7 +315,7 @@
   .term:active:not(:disabled){padding:0;box-shadow:none}
   .mv-gloss{margin-top:8px;background:#ffffe1;color:#000;border:1px solid #fff;padding:6px 8px;font:15px/1.3 var(--ui)}
   .mv-controls{display:flex;align-items:center;gap:6px}
-  .mv-porb{fill:none;stroke:#9ec8ff;stroke-width:1.4;stroke-dasharray:3 2}
+  .mv-porb{stroke:#9ec8ff;stroke-width:1.4;stroke-dasharray:3 2}
   .mv-trace{fill:none;stroke:#ffd84a;stroke-width:1.2;stroke-dasharray:2 4}
   .mv-reso{font:26px var(--crt);fill:#e8ffe8}
   .mv-hit{fill:#33ff66;fill-opacity:.12;stroke:#33ff66;stroke-opacity:.5;cursor:pointer}
@@ -384,7 +408,8 @@
       </div>
       <div class="panel">
       <div class="view active" id="v3d">
-        <div class="rx-only scene-add" id="sceneAdd"><span class="rx-lab" id="sceneNote"></span><div class="chips" id="sceneChips"></div></div>
+        <div class="rx-only scene-add" id="sceneAdd"><span class="rx-lab" id="sceneNote"></span><div class="chips" id="sceneChips"></div>
+          <label class="scene-names" id="sceneNamesBox" hidden><input type="checkbox" id="sceneNames" checked> Names under the molecules</label></div>
         <div id="viewer3d"><div class="overlay" id="overlay3d">Your molecule will appear here in 3D.</div></div>
         <div class="controls">
           <div class="seg" id="styleSeg">
@@ -492,6 +517,7 @@ import * as OCL from './openchemlib.js';
 import { findChairRings, buildChairs, toXYZ, flipFrames } from './chair.js';
 import { nameMolecule } from './namer.js';
 import { mountReactions } from './reactions-ui.js';
+import { watchChemText } from './chem-text.js';
 
 const $ = (id) => document.getElementById(id);
 const state = { mol: null, smiles: '', style: 'ballstick', seed: 1, nameFor: null, busyToken: 0 };
@@ -622,7 +648,8 @@ function render2D(m){
 }
 
 // Reaction molecules shown beside the main one (Reactions tab quick-add): [{ key, label, mol, conf? }]
-const scene = { extras: [], tags: [] };
+// hideSubstrate: the substrate chip is switched off (Reactions tab); names: the labels under the molecules
+const scene = { extras: [], tags: [], hideSubstrate: false, names: true };
 function conformerOf(m, seed){
   let c = null;
   try {
@@ -639,7 +666,7 @@ function xyzOf(c){
   return t;
 }
 const xRange = (c) => { let lo = Infinity, hi = -Infinity; for (let a = 0; a < c.getAllAtoms(); a++){ lo = Math.min(lo, c.getAtomX(a)); hi = Math.max(hi, c.getAtomX(a)); } return [lo, hi]; };
-function set3DExtras(list){ scene.extras = list; build3D(state.mol); }
+function set3DExtras(list, opts = {}){ scene.extras = list; scene.hideSubstrate = !!opts.hideSubstrate; scene.names = opts.names !== false; build3D(state.mol); }
 function build3D(m){
   const v = getViewer();
   if (!v) return;
@@ -651,14 +678,17 @@ function build3D(m){
     if (conf){ try { new OCL.ForceFieldMMFF94(conf, 'MMFF94s+').minimise({ maxIts: 4000 }); } catch {} }
   } catch (e) { console.warn(e); }
   if (!conf){ $('overlay3d').style.display='flex'; $('overlay3d').textContent='Couldn’t build a 3D shape for this structure. Check for impossible valences.'; v.render(); return; }
+  if (scene.hideSubstrate && !scene.extras.length){ $('overlay3d').style.display='flex'; $('overlay3d').textContent='The substrate is switched off: tap “substrate” (or another molecule) above to show it.'; v.render(); return; }
   $('overlay3d').style.display='none';
   // with reaction molecules beside it, every model is written as XYZ (same raw coordinates for all;
   // toMolfile() rescales coordinates, which would misplace the row)
-  v.addModel(scene.extras.length ? xyzOf(conf) : conf.toMolfile(), scene.extras.length ? 'xyz' : 'sdf');
+  if (!scene.hideSubstrate) v.addModel(scene.extras.length ? xyzOf(conf) : conf.toMolfile(), scene.extras.length ? 'xyz' : 'sdf');
   // extras go in a row to the right, 2.5 Å apart, each labelled underneath
   if (scene.extras.length){
     let [lo, right] = xRange(conf);
-    scene.tags.push({ text: 'substrate', x: (lo + right) / 2, z: centre(conf, 'z') });
+    // without the substrate, the row starts where the substrate would have been (same height and depth)
+    if (scene.hideSubstrate) right = lo - 2.5;
+    else scene.tags.push({ text: 'substrate', x: (lo + right) / 2, z: centre(conf, 'z') });
     for (const e of scene.extras){
       e.conf = e.conf || conformerOf(e.mol, 1);
       if (!e.conf) continue;
@@ -675,6 +705,8 @@ function build3D(m){
   v.zoomTo(); v.zoom(0.9); v.render();
 }
 
+// for the browser tests: what the 3D scene holds (models, and the names drawn under them)
+window.ml3d = () => { const v = getViewer(); return { models: v ? v.getModelList().length : 0, names: scene.names ? scene.tags.map((t) => t.text) : [], overlay: $('overlay3d').style.display !== 'none' ? $('overlay3d').textContent : '' }; };
 function apply3DStyle(){
   const v = getViewer(); if (!v) return;
   const s = state.style;
@@ -691,12 +723,12 @@ function apply3DStyle(){
     const atoms = v.selectedAtoms({});
     for (const a of atoms){
       if (a.elem === 'H' && !$('showH').checked) continue;
-      v.addLabel(a.elem, { position: { x:a.x, y:a.y, z:a.z }, fontSize: 12, fontColor: 'white', backgroundOpacity: 0.35, backgroundColor: 'black', inFront: true, alignment: 'center' });
+      v.addLabel(a.elem, { position: { x:a.x, y:a.y, z:a.z }, font: 'VT323', fontSize: 16, fontColor: 'white', backgroundOpacity: 0.35, backgroundColor: 'black', inFront: true, alignment: 'center' });
     }
   }
-  if (scene.tags.length){
+  if (scene.tags.length && scene.names){
     const ys = v.selectedAtoms({}).map((a) => a.y), low = Math.min(...ys) - 1.6;
-    for (const t of scene.tags) v.addLabel(t.text, { position: { x: t.x, y: low, z: t.z }, fontSize: 12, fontColor: '#33ff66', backgroundColor: 'black', backgroundOpacity: 0.6, alignment: 'center' });
+    for (const t of scene.tags) v.addLabel(t.text, { position: { x: t.x, y: low, z: t.z }, font: 'VT323', fontSize: 17, fontColor: '#33ff66', backgroundColor: 'black', backgroundOpacity: 0.6, alignment: 'center' });
   }
   v.spin($('spin').checked ? 'y' : false);
   v.render();
@@ -1284,6 +1316,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:'){
 loadMolecule(OCL.Molecule.fromSmiles('CC(C)CCO'));
 
 // Reactions window + mechanism viewer (code lives in reactions-ui.js / mech-view.js)
+watchChemText(document.body);
 window.reactions = mountReactions({ OCL, editor, loadMolecule, set3DExtras, getMol: () => state.mol, naming: { pubchemProps, opsin, compareMols, nameMolecule } })
   .catch((e) => { console.error(e); const m = $('rxMsg'); m.hidden = false; m.className = 'msg bad'; m.textContent = 'The Reactions window couldn’t load: ' + e.message; });
 </script>
