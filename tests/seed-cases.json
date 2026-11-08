@@ -737,7 +737,7 @@
   },
   {
    "id": "S1-ring",
-   "note": "Spike S1: ring cis/trans with no R/S centre. SN2 inversion turns cis into trans.",
+   "note": "Spike S1 and worksheet 3e (confirmed from the answer key: SN2, stereospecific Y): ring cis/trans with no R/S centre. SN2 inversion turns cis into trans.",
    "substrate": "I[C@H]1CC[C@@H](C(C)C)CC1",
    "substrateName": "cis-1-iodo-4-(propan-2-yl)cyclohexane",
    "steps": [
@@ -860,6 +860,93 @@
       "smiles": "COCCC",
       "name": "1-methoxypropane",
       "rank": "major"
+     }
+    ]
+   }
+  },
+  {
+   "id": "W3a",
+   "note": "Worksheet 3a (confirmed from the answer key): the Fischer projection is (S)-2-iodobutane (I right, H left, CH3 top). SN2 with NaCN/DMSO inverts it to the (R)-nitrile; stereospecific Y.",
+   "substrate": "C[C@H](I)CC",
+   "substrateName": "(2S)-2-iodobutane",
+   "steps": [
+    {
+     "reagent": "NaCN",
+     "solvent": "DMSO"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN2": "major"
+    },
+    "stereospecific": {
+     "SN2": true
+    },
+    "products": [
+     {
+      "pathway": "SN2",
+      "smiles": "CC[C@@H](C)C#N",
+      "name": "(2R)-2-methylbutanenitrile",
+      "rank": "major",
+      "stereo": "inversion"
+     }
+    ]
+   }
+  },
+  {
+   "id": "W3b",
+   "note": "Worksheet 3b (confirmed from the answer key): 2° alcohol with OH on a wedge, read from the drawing as (S)-pentan-2-ol. SOCl2/pyridine gives the chloride with inversion (Cl on a hash); stereospecific Y.",
+   "substrate": "CCC[C@H](C)O",
+   "substrateName": "(2S)-pentan-2-ol",
+   "steps": [
+    {
+     "reagent": "SOCl2, pyridine"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN2": "major"
+    },
+    "stereospecific": {
+     "SN2": true
+    },
+    "products": [
+     {
+      "pathway": "SN2",
+      "smiles": "CCC[C@@H](C)Cl",
+      "name": "(2R)-2-chloropentane",
+      "rank": "major",
+      "stereo": "inversion"
+     }
+    ]
+   }
+  },
+  {
+   "id": "W5",
+   "note": "Worksheet 5 (confirmed from the answer key): 6-bromospiro[4.5]decane in EtOH with heat gives two ethers: no shift (spiro ether) and ring expansion of the cyclopentane into a decalin (ether at the ring fusion). The photo doesn't show which is marked major, so no rank is checked. Shifting the cyclohexane bond would contract the ring: not covered. Spiro/fused names come from PubChem, so substrateName is left out.",
+   "substrate": "BrC1CCCCC12CCCC2",
+   "steps": [
+    {
+     "reagent": "EtOH",
+     "solvent": "EtOH",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN1": "major",
+     "E1": "competing"
+    },
+    "products": [
+     {
+      "pathway": "SN1",
+      "smiles": "CCOC1CCCCC12CCCC2",
+      "via": "no shift"
+     },
+     {
+      "pathway": "SN1",
+      "smiles": "CCOC12CCCCC1CCCC2",
+      "via": "ring expansion (5- to 6-membered ring)"
      }
     ]
    }

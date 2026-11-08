@@ -180,7 +180,10 @@ export function cationPathways(OCL, m, site){
 function sharesRing(m, a, b, c){
   const rs = m.getRingSet();
   for (let r = 0; r < rs.getSize(); r++){ const at = rs.getRingAtoms(r); if (at.includes(a) && at.includes(b) && at.includes(c)) return true; }
-  return true; // rings above 7 atoms aren't listed: assume shared (contraction isn't covered either way)
+  // getRingSet() only lists rings up to 7 atoms. If the migrating bond's smallest ring is bigger, we can't
+  // tell, so assume it's shared (contraction isn't covered). Otherwise no listed ring holds all three: the shift
+  // expands a ring that doesn't contain C+ (worksheet 5: spiro[4.5]decane → decalin), so it's allowed.
+  return m.getBondRingSize(m.getBond(b, c)) > 7;
 }
 
 // ---------- alkenes ----------
