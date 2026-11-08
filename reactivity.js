@@ -138,25 +138,25 @@ function siteInfo(OCL, m, ca, lgAtom, lgAtoms, lg){
 function cationScore(g, c, strain){ return carbonsOn(g, c) + (nextToPi(g, c) ? 1 : 0) + strain; }
 
 // ---------- carbocation pathways: no shift, allylic resonance, every 1,2-shift that helps ----------
-// Each pathway: { centre, ops (graph edits after the LG leaves), score, shift, label, from, group, notes }
+// Each pathway: { centre, ops (graph edits after the LG leaves), score, carbons (C's on the C⁺ → its class), shift, label, from, group, notes }
 export function cationPathways(OCL, m, site){
   const g0 = applyOps(toGraph(m), { del: site.lgAtoms });
   const ca = site.ca;
   const s0 = cationScore(g0, ca, 0);
-  const base = { centre: ca, ops: {}, score: s0, shift: null, label: 'no shift' };
+  const base = { centre: ca, ops: {}, score: s0, carbons: carbonsOn(g0, ca), shift: null, label: 'no shift' };
   const out = [base];
   const notes = [];
   // allylic resonance: the + is shared with the far end of the C=C
   for (const b of g0.nb[ca]){
     if (g0.arom[b] || g0.Z[b] !== 6) continue;
     for (const y of g0.nb[b]) if (y !== ca && g0.Z[y] === 6 && g0.order.get(key(b, y)) === 2)
-      out.push({ centre: y, ops: { setOrder: [[ca, b, 2], [b, y, 1]] }, score: s0, shift: 'allylic', label: 'allylic resonance form', from: ca });
+      out.push({ centre: y, ops: { setOrder: [[ca, b, 2], [b, y, 1]] }, score: s0, carbons: carbonsOn(g0, y), shift: 'allylic', label: 'allylic resonance form', from: ca });
   }
   for (const n of g0.nb[ca]){
     if (g0.Z[n] !== 6 || g0.arom[n] || hasPi(g0, n)) continue;
     if (hOn(g0, n, ca) > 0){
       const sc = cationScore(g0, n, 0);
-      if (sc > s0) out.push({ centre: n, ops: {}, score: sc, shift: 'H', label: 'hydride shift', from: n });
+      if (sc > s0) out.push({ centre: n, ops: {}, score: sc, carbons: carbonsOn(g0, n), shift: 'H', label: 'hydride shift', from: n });
     }
     for (const gx of g0.nb[n]){
       if (gx === ca || g0.Z[gx] !== 6) continue;
@@ -167,11 +167,11 @@ export function cationPathways(OCL, m, site){
         if (m.isRingAtom(ca) && sharesRing(m, ca, n, gx)){ notes.push('ring contraction'); continue; }
         const size = m.getBondRingSize(b);
         const sc = cationScore(applyOps(g0, ops), n, size >= 3 && size <= 5 ? 1 : 0);
-        if (sc > s0) out.push({ centre: n, ops, score: sc, shift: 'ring', label: `ring expansion (${size}- to ${size + 1}-membered ring)`, from: n, group: gx, ringFrom: size });
+        if (sc > s0) out.push({ centre: n, ops, score: sc, carbons: carbonsOn(applyOps(g0, ops), n), shift: 'ring', label: `ring expansion (${size}- to ${size + 1}-membered ring)`, from: n, group: gx, ringFrom: size });
       } else {
         const sc = cationScore(applyOps(g0, ops), n, 0);
         const what = g0.arom[gx] ? 'phenyl shift' : carbonsOn(g0, gx) === 1 ? 'methyl shift' : 'alkyl shift';
-        if (sc > s0) out.push({ centre: n, ops, score: sc, shift: 'alkyl', label: what, from: n, group: gx });
+        if (sc > s0) out.push({ centre: n, ops, score: sc, carbons: carbonsOn(applyOps(g0, ops), n), shift: 'alkyl', label: what, from: n, group: gx });
       }
     }
   }

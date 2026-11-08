@@ -194,6 +194,41 @@ try {
   ok(/E1 is not/.test(all) && (await text('.mv-result')).includes('2-methylbut-2-ene'), 'E1 (acid): Zaitsev alkene 2-methylbut-2-ene');
   await page.uncheck('.mv-skipbox');
 
+  // HBr on a 2° alcohol (seed 12): protonation, then SN1 with a hydride shift (the H travels on an arc)
+  await setup('CC(C)C(C)O', 'HBr', false);
+  await page.click('.lamp[data-pw="SN1"]');
+  await page.waitForSelector('#mechDialog');
+  all = await walk(async (i, t) => { if (/^Done: the H/.test(t)) ok(await page.locator('.mv-svg [data-bond="ca-gh"]').count() > 0, 'hydride shift: the H is now bonded to Cα'); });
+  ok(/hydride shift/.test(all) && /New cation: 3°/.test(all) && /Br⁻ arrives/.test(all), 'HBr: hydride shift 2° → 3°, then Br⁻ attacks');
+  ok((await text('.mv-result')).includes('2-bromo-2-methylbutane'), 'HBr: product 2-bromo-2-methylbutane');
+
+  // allylic SN1: one resonance frame with two structures; either end is right in the tap quiz
+  await setup('C=CC(C)Br', 'EtOH', true);
+  await page.locator('#rxCards .rx-card', { hasText: 'allylic' }).first().locator('.rx-watch').click();
+  await page.waitForSelector('#mechDialog');
+  await page.check('.mv-quizbox');
+  let taps = 0;
+  all = await walk(async (i, t) => {
+    if (/shared between both ends/.test(t)) ok(await page.locator('.mv-svg .mv-form').count() === 2 && (await text('.mv-svg')).includes('↔'), 'allylic: resonance frame draws two structures');
+    if (await page.locator('.mv-qbtn').count()) ok(false, 'allylic: no "will it shift?" question');
+    if (await page.locator('.mv-hit').count()){
+      taps++;
+      const atoms = await page.$$eval('.mv-hit', (h) => h.map((x) => +x.dataset.hit));
+      await page.locator('.mv-hit').nth(atoms.length - 1).click(); // any atom; then the ring shows both ends
+      ok(await page.locator('.mv-correct').count() === 2, 'allylic quiz: both ends are marked right');
+      ok(/Either end/.test(await dialog()), 'allylic quiz explains that either end can react');
+    }
+  });
+  ok(taps === 1, `allylic SN1 asks one tap question (got ${taps})`);
+  await page.uncheck('.mv-quizbox');
+
+  // PBr₃ on butan-1-ol (seed 15): O attacks P, then Br⁻ does SN2
+  await setup('CCCCO', 'PBr3', false);
+  await page.click('.lamp[data-pw="SN2"]');
+  await page.waitForSelector('#mechDialog');
+  all = await walk();
+  ok(/attacks phosphorus/.test(all) && /HOPBr₂/.test(all) && /backside attack/.test(all), 'PBr₃: activation, then SN2 with HOPBr₂ leaving');
+
   // TsCl: step 1 on its own (retention)
   await setup('CC[C@@H](C)O', 'TsCl', false);
   await page.click('#rxCards .rx-watch');

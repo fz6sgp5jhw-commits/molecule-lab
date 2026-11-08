@@ -29,7 +29,7 @@
 //   hill     0..1 or a stop: start, up1, ts1, cation, shiftTs, cation2, up2, ts2, end
 //   meter    0..4 or '@c0' / '@c1' (cation stability before / after a shift, from the cation score)
 //   ts       true → ‡ brackets
-//   quiz     { kind: 'tap', role, q, hide?, if? } | { kind: 'yesno', answer: flag, taken?: flag, q, if? }
+//   quiz     { kind: 'tap', role (or [roles], any is right), q, hide?, if? ('flag' or '!flag') } | { kind: 'yesno', answer: flag, taken?: flag, q, if? }
 //   result   true → the dialog shows the product card after the text
 
 // ---------- SN2 ----------
@@ -83,7 +83,7 @@ const IONISE = [
     bonds: { 'ca-lg': 'none', 'n-gh': 'solid' }, show: ['gh'],
     charges: { ca: '+', lg: '@lgFree' }, clouds: { ca: 'poor', lg: 'rich' }, pOrbital: 'ca',
     hill: 'cation', meter: '@c0',
-    quiz: { kind: 'yesno', answer: 'canShift', taken: 'shift', q: 'shift' } },
+    quiz: { kind: 'yesno', answer: 'canShift', taken: 'shift', q: 'shift', if: '!allylic' } },
   // allylic: one frame with both resonance forms
   { if: 'allylic', text: 'allyl_resonance',
     bonds: { 'ca-lg': 'none' }, charges: { ca: '+', lg: '@lgFree' }, clouds: { ca: 'poor' }, pOrbital: 'ca',
@@ -105,7 +105,9 @@ const SN1 = {
   humps: 2, show: ['gh'], pull: ['nu', 'c'],
   frames: [
     ...IONISE,
-    { text: { nuNeutral: 'sn1_meet_nu', else: 'sn1_meet_ion' }, moved: true, bonds: { ...SHIFTED, 'nu-c': 'none' }, show: ['nu'], when: FAR_FORM,
+    { text: { nuNeutral: 'sn1_meet_nu', else: 'sn1_meet_ion' }, moved: true, bonds: { ...SHIFTED, 'nu-c': 'none' }, show: ['nu'],
+      // allylic: the + is shared, so either end is a right answer
+      when: { ...FAR_FORM, allylic: { quiz: { kind: 'tap', role: ['ca', 'y'], q: 'attack_allyl', hide: ['nu'] } } },
       charges: { c: '+', nu: '@nu', lg: '@lgFree' }, clouds: { c: 'poor', nu: 'rich' }, lonePair: 'nu', pOrbital: 'c',
       pull: 0.3, hill: 'cation2', meter: '@c1',
       quiz: { kind: 'tap', role: 'c', q: 'attack_cation', hide: ['nu'] } },

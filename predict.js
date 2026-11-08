@@ -83,7 +83,7 @@ function product(mol, extra){
 }
 
 // Products also carry the atoms the mechanism viewer needs to follow them (substrate indices):
-// centre (the C⁺ the Nu attacks or loses its β-H next to), group (the shifting atom, alkyl/ring
+// centre (the C⁺ the Nu attacks or loses its β-H next to), cationCarbons (its class), group (the shifting atom, alkyl/ring
 // shifts) and beta (the carbon that loses H in E1/E2).
 // Ranks products by key (descending, compared element by element): first = major,
 // an exact tie at the top = competing, everything else = minor. Duplicates (same ID code) are dropped.
@@ -139,14 +139,14 @@ function cationic(OCL, m, site, r, pw, out){
       const p = buildProduct(OCL, m, { del: site.lgAtoms, ...c.ops, attach: [{ to: c.centre, frag: r.nu }] });
       const nc = p.map[c.centre];
       const racemic = p.mol.isAtomStereoCenter(nc);
-      list.push(product(p.mol, { key: [c.score], via: c.label, cationScore: c.score, shift: c.shift, centre: c.centre, group: c.group, stereo: racemic ? 'racemic' : null }));
+      list.push(product(p.mol, { key: [c.score], via: c.label, cationScore: c.score, cationCarbons: c.carbons, shift: c.shift, centre: c.centre, group: c.group, stereo: racemic ? 'racemic' : null }));
     }
   } else {
     if (site.allylic){ out.notes.push('allylic_e1'); return; }
     for (const c of pathways){
       for (const al of alkenesFrom(OCL, m, c.centre, { del: site.lgAtoms, ...c.ops })){
         for (const iso of alkeneProducts(OCL, m, al))
-          list.push(product(iso.mol, { key: [c.score, al.zaitsev, iso.trans ? 1 : 0], ez: iso.ez, trans: iso.trans, zaitsev: al.zaitsev, beta: al.beta, via: c.label, cationScore: c.score, shift: c.shift, centre: c.centre, group: c.group }));
+          list.push(product(iso.mol, { key: [c.score, al.zaitsev, iso.trans ? 1 : 0], ez: iso.ez, trans: iso.trans, zaitsev: al.zaitsev, beta: al.beta, via: c.label, cationScore: c.score, cationCarbons: c.carbons, shift: c.shift, centre: c.centre, group: c.group }));
       }
     }
     if (!list.length) out.notes.push('no_beta_h');

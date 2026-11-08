@@ -372,20 +372,26 @@ export async function mountReactions(app){
     win.scrollIntoView({ behavior: smooth(), block: 'start' });
   }
 
+  // The prepared substrate (same atom indices as the analysis), as a fresh copy: the viewer lays it out
+  // and sets helper arrays on it, so the stored analysis isn't touched.
+  function subMol(){ const c = (st.an ? st.an.mol : analyse(OCL, st.mol).mol).getCompactCopy(); c.ensureHelperArrays(OCL.Molecule.cHelperRings); return c; }
   // Everything the viewer needs to follow this product: roles (atom indices), flags (which optional
   // frames apply), tokens (charges/labels that depend on the reagent) and the text variables.
   function mechOptions(pw, p, out){
     const res = st.res, site = res.site, r = st.reagent;
-    const m = analyse(OCL, st.mol).mol;
+    const m = subMol();
     const S = texts.stereo;
     const prelude = site.lg === 'OH' ? PRELUDE_OF[r.act] : null;
     const act = prelude && ACTIVATED[prelude];
     // nucleophile: the reagent's attaching atom; an activator's halide comes as X⁻
     const nuMol = r.nu ? (r.nu.mol || OCL.Molecule.fromSmiles(r.nu.smiles)) : null;
     const nuAtom = nuMol ? nuMol.getAtomLabel(r.nu.atom) : '';
-    const Nu = r.box === 'activator' ? (nuAtom ? nuAtom + '⁻' : '') : speciesText(r);
+    // a drawn, uncatalogued reagent is named by its formula; its R group is just "R"
+    const rLabel = r.id === 'custom' ? subs(r.formula || '?') : r.label;
+    const sp = speciesText(r);
+    const Nu = r.box === 'activator' ? (nuAtom ? nuAtom + '⁻' : '') : r.id === 'custom' && !sp.endsWith('⁻') ? rLabel : sp;
     const nuCharged = Nu.endsWith('⁻');
-    const R0 = r.id === 'water' ? 'H' : (r.label.replace(/OH$/, '') || r.label);
+    const R0 = r.id === 'water' ? 'H' : r.id === 'custom' ? 'R' : (r.label.replace(/OH$/, '') || r.label);
     // base: E2 → the reagent; E1 → the solvent (a weak base), which is water for acid dehydration
     const solv = findSolvent(cat, st.solvent) || { label: 'solvent' };
     const e1Base = r.act === 'acid' ? 'H₂O' : solv.label;
@@ -412,10 +418,8 @@ export async function mountReactions(app){
     }
     if (pw === 'E1' || pw === 'E2') roles.cb = p.beta ?? null;
     // cation classes and the stability meter (from the rule-based cation score, not a calculation)
-    const carbonsOn = (a) => { let k = 0; for (let i = 0; i < m.getConnAtoms(a); i++) if (m.getAtomicNo(m.getConnAtom(a, i)) === 6) k++; return k; };
-    const clsName = (k) => ({ 1: '1°', 2: '2°', 3: '3°' }[k] || `${k}°`);
     const cation = CLS_TEXT[site.cls] + (site.allylic ? ' allylic' : site.benzylic ? ' benzylic' : '');
-    const cation2 = flags.shift ? clsName(carbonsOn(roles.n) - (p.shift === 'H' ? 0 : 1)) : cation;
+    const cation2 = flags.shift ? CLS_TEXT[p.cationCarbons] || `${p.cationCarbons}°` : cation;
     const meterOf = (sc) => Math.max(1, Math.min(4, (sc ?? 2) - 1));
     // leaving group as drawn, and what leaves
     const LG = act ? act.LG : site.lg;
@@ -429,7 +433,7 @@ export async function mountReactions(app){
       c0: meterOf(site.cationScore), c1: meterOf(p.cationScore ?? site.cationScore),
     };
     const virt = {
-      nu: { atom: nuAtom || '?', rest: nuCharged ? (nuMol && nuMol.getAtoms() > 1 ? `(${Nu})` : '') : `(${r.label})` },
+      nu: { atom: nuAtom || '?', rest: nuCharged ? (nuMol && nuMol.getAtoms() > 1 ? `(${Nu})` : '') : `(${rLabel})` },
       base: { atom: baseAtom, rest: `(${Base})` },
       hx: { atom: r.act === 'acid' ? (r.id === 'h3po4' ? 'OPO₃H₂' : 'OSO₃H') : nuAtom },
     };
@@ -443,7 +447,7 @@ export async function mountReactions(app){
     return {
       OCL, mol: m, site, roles, flags, tokens, virt, template, texts,
       labels: act ? { lg: act.label } : {},
-      vars: { Nu, NuAtom: nuAtom, Base, LG, LGion, X: virt.hx.atom, Acid: r.label, class: CLS_TEXT[site.cls], cation, cation2, via: p.via || '', stereo, rank: p.rank || '' },
+      vars: { Nu, NuAtom: nuAtom, Base, LG, LGion, X: virt.hx.atom, Acid: rLabel, class: CLS_TEXT[site.cls], cation, cation2, via: p.via || '', stereo, rank: p.rank || '' },
       productName: nameOf(p.mol).then((n) => String(n.name || n.why || '').replace(/\.$/, '')),
       resultCard: () => card(p, pw, undefined, true),
       offer: offerFor(pw),
@@ -473,7 +477,7 @@ export async function mountReactions(app){
     $('mechWin').hidden = false;
     const [actA, axA] = ACT_ATOMS[r.act] || ACT_ATOMS.TsCl;
     st.mech = openMechanism($('mechMount'), {
-      OCL, mol: analyse(OCL, st.mol).mol, site, roles: { ca: site.ca, lg: site.lgAtom }, flags: {}, tokens: {},
+      OCL, mol: subMol(), site, roles: { ca: site.ca, lg: site.lgAtom }, flags: {}, tokens: {},
       virt: { act: actA, ax: axA }, template: ACTIVATION, texts,
       vars: { Nu: '', LG: 'OH', class: CLS_TEXT[site.cls], stereo: '', rank: '' },
       productName: nameOf(p.mol).then((n) => String(n.name || n.why || '').replace(/\.$/, '')),
@@ -488,7 +492,7 @@ export async function mountReactions(app){
     if (site.stereo === 'none') return S.none;
     if (site.stereo === 'cis/trans') return S.inversion_cistrans;
     try {
-      const m = analyse(OCL, st.mol).mol;
+      const m = subMol();
       const b = buildProduct(OCL, m, { replace: [{ atom: site.lgAtom, frag: r.nu }], del: site.lgAtoms.filter((a) => a !== site.lgAtom), invert: [site.ca] });
       if (b.mol.getIDCode() !== p.idcode) return '';
       const q = b.mol; q.ensureHelperArrays(OCL.Molecule.cHelperCIP);

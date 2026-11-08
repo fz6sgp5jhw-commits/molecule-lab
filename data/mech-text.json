@@ -443,6 +443,10 @@
     "activate_o": {
       "q": "Quiz: which atom of the alcohol does the reagent react with first? Tap it.",
       "explain": "The O: its lone pairs attack the reagent. The C–O bond is not touched in this step."
+    },
+    "attack_allyl": {
+      "q": "Quiz: which carbon can {Nu} bond to? Tap one.",
+      "explain": "Either end: the + is shared by both ends of the allylic cation (resonance), so {Nu} can bond at either one. That is why two products form."
     }
   },
   "compete": {

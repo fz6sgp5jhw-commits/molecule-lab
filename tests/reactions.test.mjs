@@ -95,7 +95,7 @@ for (const row of data.rules.rows) for (const k of [...(row.reasons || []), row.
   const all = [...Object.entries(TEMPLATES).flatMap(([k, t]) => t.frames.map((f) => [k, f])), ...Object.entries(PRELUDES).flatMap(([k, fs]) => fs.map((f) => [k, f]))];
   for (const [k, f] of all){
     for (const key of typeof f.text === 'object' ? Object.values(f.text) : [f.text]) if (!T.frames[key]) fail('mech', `${k}: missing frame text ${key}`);
-    if (f.quiz && !T.quiz[f.quiz.q]) fail('mech', `${k}: missing quiz text ${f.quiz.q}`);
+    for (const q of [f.quiz, ...Object.values(f.when || {}).map((w) => w.quiz)]) if (q && !T.quiz[q.q]) fail('mech', `${k}: missing quiz text ${q.q}`);
   }
   const strings = JSON.stringify([T.frames, T.quiz]);
   for (const [, term] of strings.matchAll(/\[\[([^\]|]+)/g)) if (!T.glossary[term]) fail('mech', `glossary term missing: ${term}`);

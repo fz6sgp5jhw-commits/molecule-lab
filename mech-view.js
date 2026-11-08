@@ -213,7 +213,7 @@ function drawFrame(svg, ctx, f, t){
   const vpos = { ...geo.virt, gh };
   // role → { a: atom index | null, p: point } (null if this case has no such role, or it's hidden)
   const R = (role) => {
-    if (VIRTUAL.includes(role)) return vpos[role] && (show.has(role) || f.forceAll) ? { a: null, p: vpos[role], v: role } : null;
+    if (VIRTUAL.includes(role)) return vpos[role] && show.has(role) ? { a: null, p: vpos[role], v: role } : null;
     const a = role === 'c' ? roles.c ?? roles.ca : roles[role];
     return a == null ? null : { a, p: P[a] };
   };
@@ -252,7 +252,6 @@ function drawFrame(svg, ctx, f, t){
     maxX += 8;
   }
   svg.setAttribute('viewBox', `${minX} ${minY} ${maxX - minX} ${maxY - minY}`);
-  return { P, R };
 }
 
 function drawForm(svg, ctx, f, { P, R, anyR, tok, show }){
@@ -339,8 +338,8 @@ function drawForm(svg, ctx, f, { P, R, anyR, tok, show }){
   for (let a = 0; a < m.getAtoms(); a++){
     const t = labelOf(a); if (!t) continue;
     const p = P[a];
-    // long labels (OH₂, OPBr₂…) start at the atom and run away from Cα
-    const long = t.length > 2 && a !== ca;
+    // the activated leaving group's long label (OH₂, O(H)PBr₂…) starts at the atom and runs away from Cα
+    const long = t.length > 2 && roleOf.get(a) === 'lg' && a !== ca;
     const right = long ? P[a].x >= P[ca].x : true;
     if (long) labelPts.push({ x: p.x + (right ? 1 : -1) * (t.length * 10 - 20), y: p.y });
     el('text', { x: long ? p.x + (right ? -6 : 6) : p.x, y: p.y, class: 'mv-atom' + (near.has(a) ? ' mv-centre' : ''), 'text-anchor': long ? (right ? 'start' : 'end') : 'middle', 'dominant-baseline': 'central', 'data-atom': roleOf.get(a) || null }, svg).textContent = long && !right ? flipLabel(t) : t;
@@ -538,7 +537,9 @@ export function openMechanism(host, opts){
   Promise.resolve(opts.productName).then((n) => { vars.product = n || vars.product; nameReady = true; if (frames[st.frame].result && st.page === 0 && !st.pending) showPage(); });
 
   function frameText(){ return texts.frames[frames[st.frame].text] || { text: `(missing text: ${frames[st.frame].text})` }; }
-  function quizOf(f){ return st.quiz && f.quiz && (!f.quiz.if || flags[f.quiz.if]) && !st.answered.has(f) ? f.quiz : null; }
+  // quiz.if: a flag, or '!flag' for "only when this flag is off"
+  const flagOn = (k) => (k[0] === '!' ? !flags[k.slice(1)] : !!flags[k]);
+  function quizOf(f){ return st.quiz && f.quiz && (!f.quiz.if || flagOn(f.quiz.if)) && !st.answered.has(f._i) ? f.quiz : null; }
   function draw(f){
     cancelAnimationFrame(st.anim);
     const q = st.pending;
@@ -560,25 +561,25 @@ export function openMechanism(host, opts){
       c.addEventListener('click', (e) => { e.stopPropagation(); answer(f, q, a); });
     });
   }
-  function rightAtom(q){ return q.role === 'c' ? ctx.roles.c ?? ctx.roles.ca : ctx.roles[q.role]; }
+  // every atom that counts as right (q.role may list several, e.g. both ends of an allylic cation)
+  function rightAtoms(q){ return [].concat(q.role).map((r) => (r === 'c' ? ctx.roles.c ?? ctx.roles.ca : ctx.roles[r])).filter((a) => a != null); }
   function answer(f, q, given){
     const Q = texts.quiz[q.q];
     let right, explain;
     if (q.kind === 'tap'){
-      const want = rightAtom(q);
-      right = given !== null && opts.mol.getSymmetryRank(given) === opts.mol.getSymmetryRank(want);
+      right = given !== null && rightAtoms(q).some((a) => opts.mol.getSymmetryRank(given) === opts.mol.getSymmetryRank(a));
       explain = Q.explain;
     } else {
       const yes = !!flags[q.answer];
       right = given !== null && given === yes;
       explain = yes ? (q.taken && !flags[q.taken] ? Q.explainYesNotTaken : Q.explainYes) : Q.explainNo;
     }
-    st.answered.add(f); st.pending = null;
+    st.answered.add(f._i); st.pending = null;
     qbtns.hidden = true; qbtns.replaceChildren();
     draw(f);
     if (q.kind === 'tap'){
-      const p = (f.move || f.moved ? ctx.geo.P1 : ctx.geo.P0)[rightAtom(q)];
-      el('circle', { cx: p.x, cy: p.y, r: 16, class: 'mv-correct' }, svg.querySelector('.mv-form') || svg);
+      const P = f.move || f.moved ? ctx.geo.P1 : ctx.geo.P0;
+      for (const a of rightAtoms(q)) el('circle', { cx: P[a].x, cy: P[a].y, r: 16, class: 'mv-correct' }, svg.querySelector('.mv-form') || svg);
     }
     const verdict = given === null ? texts.ui.quizSkipped : right ? texts.ui.quizRight : texts.ui.quizWrong;
     st.pages = [`${verdict} ${explain}`, frameText().text]; st.page = 0; st.whyShown = false;

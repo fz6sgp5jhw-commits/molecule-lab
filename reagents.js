@@ -91,7 +91,9 @@ export function entryFromMolecule(OCL, mol, box){
   const g = guessBox(OCL, mol);
   box = box || (g && g.box);
   if (!box) return null;
+  // keep the drawn form (with its charge) so the UI can show it as e.g. C₂H₅O⁻ rather than "drawn reagent"
+  const smiles = [m.toIsomericSmiles()], formula = m.getMolecularFormula().formula;
   let nu = null;
   if (at >= 0){ m.setAtomCharge(at, 0); m.ensureHelperArrays(OCL.Molecule.cHelperNeighbours); nu = { mol: m, atom: at }; }
-  return { id: 'custom', label: 'drawn reagent', names: [], smiles: [], box, nu, estimated: !!g && g.box === box };
+  return { id: 'custom', label: 'drawn reagent', formula, names: [], smiles, box, nu, estimated: !!g && g.box === box };
 }
