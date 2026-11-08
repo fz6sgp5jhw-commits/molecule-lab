@@ -389,42 +389,58 @@ export async function mountReactions(app){
     return div;
   }
 
-  // ---------- the mechanism's last step: product in 3D, beside its result card ----------
-  // Built once per mechanism (the same element is re-shown on every page of the last step). The shape is a
-  // computed conformer (OpenChemLib + MMFF94s+), like the Molecule tab's 3D model.
+  // ---------- the mechanism's last step: product in 3D ----------
+  // Laptop (two columns): its own "Product in 3D" window in the left column's empty space, pinned while
+  // scrolling, shown only on the last step. Phone (one column): inside the last step, above the card.
+  // One 3D box per mechanism, moved between the two places. The shape is a computed conformer
+  // (OpenChemLib + MMFF94s+), like the Molecule tab's 3D model.
+  const finalHooks = (fv) => ({ resultCard: () => fv.card(), onResult: (on) => fv.shown(on) });
+  const wide = () => typeof matchMedia === 'function' && matchMedia('(min-width: 981px)').matches;
   function finalView(p, pw){
-    let wrap = null, built = false;
     const T = texts.ui;
-    const cap = p.stereo === 'racemic' ? T.final3dRacemic : T.final3d;
+    const box = document.createElement('div');
+    box.className = 'rx-3dbox';
+    box.innerHTML = `<div class="rx-3dview" role="img" aria-label="${esc(T.final3dLabel)}"></div><div class="rx-3dcap">${esc(p.stereo === 'racemic' ? T.final3dRacemic : T.final3d)}</div>`;
+    const wrap = document.createElement('div');
+    wrap.className = 'rx-final';
+    const cardEl = card(p, pw, undefined, true);
+    let v = null, built = false;
     function build(){
-      if (built || !wrap.isConnected) return;
+      if (!box.isConnected || box.closest('[hidden]')) return;
+      if (built){ if (v){ v.resize(); v.render(); } return; }
       built = true;
-      const view = wrap.querySelector('.rx-3dview');
+      const view = box.querySelector('.rx-3dview');
       let conf = null;
       try {
         conf = new OCL.ConformerGenerator(42).getOneConformerAsMolecule(p.mol.getCompactCopy());
         if (conf){ try { new OCL.ForceFieldMMFF94(conf, 'MMFF94s+').minimise({ maxIts: 4000 }); } catch {} }
       } catch (e) { console.warn(e); }
-      const v = conf && window.$3Dmol ? $3Dmol.createViewer(view, { backgroundColor: '#000000', antialias: true }) : null;
+      v = conf && window.$3Dmol ? $3Dmol.createViewer(view, { backgroundColor: '#000000', antialias: true }) : null;
       if (!v){ view.textContent = T.final3dNone; view.classList.add('none'); return; }
       v.addModel(conf.toMolfile(), 'sdf');
       v.setStyle({}, { stick: { radius: 0.13, colorscheme: 'Jmol' }, sphere: { scale: 0.27, colorscheme: 'Jmol' } });
       v.zoomTo(); v.zoom(0.9); v.render();
     }
-    return () => {
-      if (!wrap){
-        wrap = document.createElement('div');
-        wrap.className = 'rx-final';
-        wrap.innerHTML = `<div class="rx-3dbox"><div class="rx-3dview" role="img" aria-label="${esc(T.final3dLabel)}"></div><div class="rx-3dcap">${esc(cap)}</div></div>`;
-        wrap.appendChild(card(p, pw, undefined, true));
-      }
-      requestAnimationFrame(build); // the viewer needs the box on the page, with its size
-      return wrap;
+    return {
+      // the element for the mechanism's last step
+      card(){
+        if (wide()){
+          $('prod3dMount').replaceChildren(box);
+          $('prod3dWin').hidden = false;
+          wrap.replaceChildren(cardEl);
+        } else {
+          $('prod3dWin').hidden = true;
+          wrap.replaceChildren(box, cardEl);
+        }
+        requestAnimationFrame(build); // the viewer needs the box on the page, with its size
+        return wrap;
+      },
+      shown(onLast){ if (!onLast) $('prod3dWin').hidden = true; },
     };
   }
 
   // ---------- mechanism ----------
-  function closeMech(){ if (st.mech){ st.mech.close(); st.mech = null; } $('mechWin').hidden = true; }
+  function closeMech(){ if (st.mech){ st.mech.close(); st.mech = null; } $('mechWin').hidden = true; $('prod3dWin').hidden = true; $('prod3dMount').replaceChildren(); }
   $('mechClose').onclick = closeMech;
   // pw's mechanism for one product (default: its first, i.e. the major one). Several products of one
   // pathway (SN1 with/without a shift, E2 Zaitsev/Hofmann) each get a Watch button, so each can be followed.
@@ -526,7 +542,7 @@ export async function mountReactions(app){
       labels: act ? { lg: act.label } : {},
       vars: { Nu, NuAtom: nuAtom, Base, LG, LGion, X: virt.hx.atom, Acid: rLabel, class: CLS_TEXT[site.cls], cation, cation2, via: p.via || '', stereo, rank: p.rank || '' },
       productName: nameOf(p.mol).then((n) => String(n.name || n.why || '').replace(/\.$/, '')),
-      resultCard: finalView(p, pw),
+      ...finalHooks(finalView(p, pw)),
       offer: offerFor(pw),
     };
   }
@@ -558,7 +574,7 @@ export async function mountReactions(app){
       virt: { act: actA, ax: axA }, template: ACTIVATION, texts,
       vars: { Nu: '', LG: 'OH', class: CLS_TEXT[site.cls], stereo: '', rank: '' },
       productName: nameOf(p.mol).then((n) => String(n.name || n.why || '').replace(/\.$/, '')),
-      resultCard: finalView(p, 'activation'),
+      ...finalHooks(finalView(p, 'activation')),
     });
     $('mechWin').scrollIntoView({ behavior: smooth(), block: 'start' });
   }

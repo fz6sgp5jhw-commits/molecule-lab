@@ -418,8 +418,8 @@
     "densityKey": "Blue glow = electron density: bright = electron-rich, faint = electron-poor.",
     "stale": "These results and the mechanism are for the earlier substrate. The editor now holds the product: press Predict to react it (e.g. step 2), or open the Molecule tab to see its name and 3D model.",
     "view3d": "View in 3D",
-    "final3d": "The product in 3D (drag to rotate). A computed shape: OpenChemLib conformer, MMFF94s+.",
-    "final3dRacemic": "The product in 3D (drag to rotate). It forms as a racemic mixture: only one of the two mirror images is shown. Computed shape (OpenChemLib, MMFF94s+).",
+    "final3d": "This product in 3D (drag to rotate). A computed shape: OpenChemLib conformer, MMFF94s+.",
+    "final3dRacemic": "This product in 3D (drag to rotate). It forms as a racemic mixture: only one of the two mirror images is shown. Computed shape (OpenChemLib, MMFF94s+).",
     "final3dNone": "No 3D model could be built for this structure.",
     "final3dLabel": "3D model of the product"
   },

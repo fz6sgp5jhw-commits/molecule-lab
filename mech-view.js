@@ -11,7 +11,8 @@
 //           labels { lg: 'OH₂', … }  label overrides for every frame
 //           template { humps, show, pull, frames }, texts (data/mech-text.json),
 //           vars { Nu, LG, … }, productName (Promise<string>), resultCard () → Element,
-//           offer { text, label, open() } | null   competing pathway offered at the end }
+//           offer { text, label, open() } | null   competing pathway offered at the end,
+//           onResult (bool) → called on every page: is the last (result) step showing? }
 //
 // Roles used in frames: substrate roles above, plus virtual ones: nu, base, hb (the β-H that is removed),
 // gh (a shifting H), hp (an acid's H⁺), hx (the acid's counter-ion), act (P/S of PBr₃/SOCl₂/TsCl), ax (its Br/Cl).
@@ -622,6 +623,7 @@ export function openMechanism(host, opts){
     host.querySelector('.mv-back').disabled = st.frame === 0 && st.page === 0;
     host.querySelector('.mv-next').disabled = st.frame === frames.length - 1 && st.page === st.pages.length - 1;
     result.replaceChildren();
+    if (opts.onResult) opts.onResult(!!f.result);
     if (f.result && opts.resultCard) result.appendChild(opts.resultCard());
     if (f.result && opts.offer && st.frame === frames.length - 1){
       const d = document.createElement('div'); d.className = 'mv-offer';
