@@ -147,6 +147,10 @@ try {
   let all = await walk(async (i, t) => { if (/benzylic carbocation/.test(t)) ok(await page.locator('.mv-porb').count() === 2, 'SN1: cation drawn with an empty p orbital'); });
   ok(/benzylic carbocation/.test(all) && /oxonium/.test(all) && !/shift:/.test(all), 'SN1 (W3d): ionise → benzylic C⁺ → oxonium, no shift step');
   ok(/both configurations/.test(all) && /not stereospecific/.test(all), 'SN1 result: racemic, not stereospecific');
+  await page.waitForTimeout(600);
+  const b3d = await page.locator('.mv-result .rx-3dbox').boundingBox(), bcard = await page.locator('.mv-result .rx-card').boundingBox();
+  ok(b3d && bcard && b3d.x + b3d.width <= bcard.x + 1 && Math.abs(b3d.y - bcard.y) < 4, 'last step: product 3D model sits left of the result card');
+  ok(await page.locator('.mv-result .rx-3dview canvas').count() > 0 && /mirror images/.test(await text('.mv-result .rx-3dcap')), 'last step: 3D viewer drawn; racemic caption');
   ok((await text('.mv-offer')).includes('E1 also competes'), 'SN1 end: offers the competing E1');
   await page.check('.mv-skipbox');
   ok(await steps() === n3d - 1, 'Skip proton transfers removes the oxonium deprotonation');

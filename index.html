@@ -257,6 +257,13 @@
   .mv-result:empty{display:none}
   .mv-result{padding:6px 0 0}
   .mv-result .rx-card{box-shadow:none}
+  .mv-result{container-type:inline-size}
+  .rx-final{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;align-items:start}
+  @container (min-width:440px){.rx-final{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+  .rx-3dbox{background:#000;box-shadow:var(--sunken);padding:4px;min-width:0}
+  .rx-3dview{position:relative;width:100%;height:240px}
+  .rx-3dview.none{height:auto;color:#33ff66;font:15px var(--crt);padding:8px}
+  .rx-3dcap{color:#33ff66;font:14px/1.2 var(--crt);padding:4px 2px 0}
   .mv-sidecol{display:flex;flex-direction:column;gap:8px;min-width:0}
   .mv-side{display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .mv-gauge{background:#000;box-shadow:var(--sunken);padding:4px 6px;color:#33ff66;font:15px/1.1 var(--crt)}

@@ -389,6 +389,40 @@ export async function mountReactions(app){
     return div;
   }
 
+  // ---------- the mechanism's last step: product in 3D, beside its result card ----------
+  // Built once per mechanism (the same element is re-shown on every page of the last step). The shape is a
+  // computed conformer (OpenChemLib + MMFF94s+), like the Molecule tab's 3D model.
+  function finalView(p, pw){
+    let wrap = null, built = false;
+    const T = texts.ui;
+    const cap = p.stereo === 'racemic' ? T.final3dRacemic : T.final3d;
+    function build(){
+      if (built || !wrap.isConnected) return;
+      built = true;
+      const view = wrap.querySelector('.rx-3dview');
+      let conf = null;
+      try {
+        conf = new OCL.ConformerGenerator(42).getOneConformerAsMolecule(p.mol.getCompactCopy());
+        if (conf){ try { new OCL.ForceFieldMMFF94(conf, 'MMFF94s+').minimise({ maxIts: 4000 }); } catch {} }
+      } catch (e) { console.warn(e); }
+      const v = conf && window.$3Dmol ? $3Dmol.createViewer(view, { backgroundColor: '#000000', antialias: true }) : null;
+      if (!v){ view.textContent = T.final3dNone; view.classList.add('none'); return; }
+      v.addModel(conf.toMolfile(), 'sdf');
+      v.setStyle({}, { stick: { radius: 0.13, colorscheme: 'Jmol' }, sphere: { scale: 0.27, colorscheme: 'Jmol' } });
+      v.zoomTo(); v.zoom(0.9); v.render();
+    }
+    return () => {
+      if (!wrap){
+        wrap = document.createElement('div');
+        wrap.className = 'rx-final';
+        wrap.innerHTML = `<div class="rx-3dbox"><div class="rx-3dview" role="img" aria-label="${esc(T.final3dLabel)}"></div><div class="rx-3dcap">${esc(cap)}</div></div>`;
+        wrap.appendChild(card(p, pw, undefined, true));
+      }
+      requestAnimationFrame(build); // the viewer needs the box on the page, with its size
+      return wrap;
+    };
+  }
+
   // ---------- mechanism ----------
   function closeMech(){ if (st.mech){ st.mech.close(); st.mech = null; } $('mechWin').hidden = true; }
   $('mechClose').onclick = closeMech;
@@ -492,7 +526,7 @@ export async function mountReactions(app){
       labels: act ? { lg: act.label } : {},
       vars: { Nu, NuAtom: nuAtom, Base, LG, LGion, X: virt.hx.atom, Acid: rLabel, class: CLS_TEXT[site.cls], cation, cation2, via: p.via || '', stereo, rank: p.rank || '' },
       productName: nameOf(p.mol).then((n) => String(n.name || n.why || '').replace(/\.$/, '')),
-      resultCard: () => card(p, pw, undefined, true),
+      resultCard: finalView(p, pw),
       offer: offerFor(pw),
     };
   }
@@ -524,7 +558,7 @@ export async function mountReactions(app){
       virt: { act: actA, ax: axA }, template: ACTIVATION, texts,
       vars: { Nu: '', LG: 'OH', class: CLS_TEXT[site.cls], stereo: '', rank: '' },
       productName: nameOf(p.mol).then((n) => String(n.name || n.why || '').replace(/\.$/, '')),
-      resultCard: () => card(p, 'activation', undefined, true),
+      resultCard: finalView(p, 'activation'),
     });
     $('mechWin').scrollIntoView({ behavior: smooth(), block: 'start' });
   }
