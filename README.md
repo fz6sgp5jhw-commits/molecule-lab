@@ -43,3 +43,7 @@ No build step. Plain HTML and JS, with libraries kept as local files:
 **When you change any file,** bump `VERSION` in `sw.js` so installed copies update.
 
 Library licenses are in `licenses/`.
+
+## Developing
+
+See `CLAUDE.md` for conventions and `docs/mechanisms-plan.md` for the next feature (SN1/SN2/E1/E2). Tests: `npm install && npx playwright install chromium`, then `npm test`.

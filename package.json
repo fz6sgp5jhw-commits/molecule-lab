@@ -1,0 +1,15 @@
+{
+  "name": "molecule-lab",
+  "private": true,
+  "type": "module",
+  "description": "Organic chemistry homework tool. Static site, no build step; package.json exists only for tests.",
+  "scripts": {
+    "test": "node tests/run-all.mjs",
+    "test:namer": "node tests/namer.test.mjs",
+    "test:chair-report": "node tests/chair.test.mjs",
+    "serve": "python3 -m http.server 8765"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.0"
+  }
+}
