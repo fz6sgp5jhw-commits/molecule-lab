@@ -11,7 +11,7 @@ const cors = { 'access-control-allow-origin': '*' };
 async function mockServices(ctx){
   // PubChem knows nothing → products are named by namer.js and checked by OPSIN
   await ctx.route(/pubchem\.ncbi\.nlm\.nih\.gov/, (route) => route.fulfill({ status: 404, contentType: 'application/json', headers: cors, body: '{"Fault":{"Code":"PUGREST.NotFound"}}' }));
-  const opsin = { '2-iodobutane': 'CCC(C)I', '(2E)-but-2-ene': 'C/C=C/C', '2-methylbut-2-ene': 'CC=C(C)C' };
+  const opsin = { '2-bromo-2-methylpropane': 'CC(C)(C)Br', '2-iodobutane': 'CCC(C)I', '(2E)-but-2-ene': 'C/C=C/C', '2-methylbut-2-ene': 'CC=C(C)C' };
   await ctx.route(/(ebi\.ac\.uk\/opsin|opsin\.ch\.cam\.ac\.uk)/, (route) => {
     const name = decodeURIComponent(route.request().url().split('/').pop().replace(/\.json$/, ''));
     const smi = opsin[name];
@@ -130,6 +130,13 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'reagent type guide: no sideways scroll at 390 px');
   await page.setViewportSize({ width: 1280, height: 900 });
+
+  // the substrate's name typed in the reagent box: say so, and move it on request
+  await page.fill('#rxReagentInput', '2-bromo-2-methylpropane'); await page.press('#rxReagentInput', 'Enter');
+  ok(/looks like the name of the substrate/.test(await text('#rxReagentInfo')), 'substrate name in the reagent box: explained');
+  await page.click('.rx-use-sub');
+  await page.waitForFunction(() => /3°/.test(document.querySelector('#rxFactList').textContent), null, { timeout: 10000 }).catch(() => {});
+  ok(/3°/.test(await text('#rxFactList')), '"Use it as the substrate" loads it as the substrate');
 
   // SN1 on worksheet 3d: (1-bromoethyl)benzene + CH₃OH, heat → benzylic cation, oxonium, proton transfer, racemic
   await setup('C[C@@H](Br)c1ccccc1', 'CH3OH', true);

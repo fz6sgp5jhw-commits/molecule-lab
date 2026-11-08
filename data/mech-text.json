@@ -481,6 +481,9 @@
     },
     "typed": "“{text}” isn’t in the reagent list, so the app can’t tell its type from the name. Compare it with the four types below. To use it, draw it under “Draw the reagent”: the rules will then estimate its type from the structure.",
     "noRule": "None of the rules fit this structure: it has no negative charge on O, S, N, C or a halide, and no neutral O–H. If it is an acid or an activator (H₂SO₄, HBr, PBr₃, SOCl₂, TsCl), type its name instead. Otherwise pick the type that fits it:",
-    "guessed": "The rules estimated this type from the structure (marked estimated). Check it against the four types below, and pick another if it fits better:"
+    "guessed": "The rules estimated this type from the structure (marked estimated). Check it against the four types below, and pick another if it fits better:",
+    "substrateTyped": "“{text}” looks like the name of the substrate (the molecule with the leaving group), not a reagent. The substrate goes in the Draw window (or the name box at the top). The reagent box is for what you add to it, like NaOEt, EtOH or NaI.",
+    "substrateDrawn": "This drawing has a leaving group on carbon ({lg}), so it looks like the substrate, not a reagent. The substrate goes in the main Draw window. Draw only what you add to it here (like NaOEt or EtOH), or tap a chip.",
+    "useAsSubstrate": "Use it as the substrate"
   }
 }

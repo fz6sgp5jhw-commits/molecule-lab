@@ -195,7 +195,21 @@ export async function mountReactions(app){
     if (r){ setReagent(r, 'typed'); setMsg(''); return; }
     setReagent(null);
     setMsg('');
+    // an organic name with a leaving group (bromo…, …yl tosylate) is the substrate typed in the wrong box.
+    // Alcohols aren't flagged: an unlisted alcohol may really be the (weak) nucleophile.
+    if (/(fluoro|chloro|bromo|iodo)[\w-]|\w+yl (tosylate|mesylate)|\b(alkyl|benzyl) (halide|bromide|chloride|iodide)/i.test(text)){
+      substrateHint(fill(texts.reagentTypes.substrateTyped, { text }), () => { $('nameInput').value = text; $('nameBtn').click(); });
+      return;
+    }
     $('rxReagentInfo').innerHTML = `<div class="msg warn">${esc(fill(texts.reagentTypes.typed, { text }))}</div>${typeGuide(null)}`;
+  }
+  // "This looks like the substrate": explain, and offer to move it where the substrate goes
+  function substrateHint(msg, move){
+    const info = $('rxReagentInfo');
+    info.innerHTML = `<div class="msg warn">${esc(msg)}</div>`;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'rx-use-sub'; b.textContent = texts.reagentTypes.useAsSubstrate;
+    b.onclick = () => { move(); $('rxReagentInput').value = ''; info.innerHTML = ''; $('editor').scrollIntoView({ behavior: smooth(), block: 'center' }); };
+    info.appendChild(b);
   }
   // The four reagent types: how to spot each one and what it does (shown for unrecognised reagents).
   // `pick` highlights the type currently chosen for a drawn reagent.
@@ -227,6 +241,13 @@ export async function mountReactions(app){
     const r = matchMolecule(OCL, cat, mol);
     $('rxReagentInput').value = '';
     if (r){ st.drawn = null; setReagent(r, 'drawn'); $('rxRoles').hidden = true; setMsg(''); return; }
+    // a C–halogen or C–OSO₂R bond means this is a substrate drawn in the reagent editor
+    const lgSite = mol.getFragments().length === 1 && analyse(OCL, mol).sites.find((x) => x.lg !== 'OH');
+    if (lgSite){
+      st.drawn = null; setReagent(null); $('rxRoles').hidden = true; setMsg('');
+      substrateHint(fill(texts.reagentTypes.substrateDrawn, { lg: 'C–' + (LG_LABEL[lgSite.lg] || lgSite.lg) }), () => app.loadMolecule(mol.getCompactCopy()));
+      return;
+    }
     st.drawn = mol;
     st.guess = guessBox(OCL, mol);
     setReagent(st.guess ? entryFromMolecule(OCL, mol, st.guess.box) : null, 'drawn');
