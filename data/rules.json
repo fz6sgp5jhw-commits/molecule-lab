@@ -2,7 +2,7 @@
   "_about": "Decision table for SN1/SN2/E1/E2. Rows are checked in order and the first match wins. when: lg (halide | sulfonate | OH), cls (methyl | 1 | 2 | 3), ab (allylic/benzylic), box (nuc | nucbase | bulky | weak | activator), act (HX | PBr3 | SOCl2 | TsCl | MsCl | acid), solvent (protic | aprotic), heat (true | false). A missing key matches anything; a list matches any of its values. lamps: major | minor | competing (missing = doesn't happen). notCovered: a reason key instead of a prediction. activate: the step only turns OH into a leaving group.",
   "rows": [
     { "when": { "lg": "OH", "act": "HX", "cls": ["methyl", "1"] }, "lamps": { "SN2": "major" }, "reasons": ["oh_protonated", "hx_primary"] },
-    { "when": { "lg": "OH", "act": "HX", "cls": ["2", "3"] }, "lamps": { "SN1": "major" }, "reasons": ["oh_protonated", "hx_secondary_tertiary", "hx_no_e1"] },
+    { "when": { "lg": "OH", "act": "HX", "cls": ["2", "3"] }, "lamps": { "SN1": "major" }, "reasons": ["oh_protonated", "hx_secondary_tertiary", "hx_why_not_sn2", "hx_evidence", "hx_no_e1"] },
     { "when": { "lg": "OH", "act": ["PBr3", "SOCl2"], "cls": ["methyl", "1", "2"] }, "lamps": { "SN2": "major" }, "reasons": ["pbr3_socl2"] },
     { "when": { "lg": "OH", "act": ["PBr3", "SOCl2"], "cls": "3" }, "notCovered": "pbr3_tertiary" },
     { "when": { "lg": "OH", "act": ["TsCl", "MsCl"] }, "activate": true, "reasons": ["sulfonate_ester"] },
@@ -57,6 +57,8 @@
     "oh_protonated": "OH⁻ is a poor leaving group, so the acid first protonates the OH; water (H₂O) is a good leaving group.",
     "hx_primary": "On a 1° alcohol, the halide then attacks from the back (SN2): a 1° carbocation is too unstable.",
     "hx_secondary_tertiary": "On a 2° or 3° alcohol, water leaves first to give a carbocation (which can shift), and the halide adds to it (SN1).",
+    "hx_why_not_sn2": "Why can't the halide push water out from the back at the same moment (SN2)? Both paths start from the same OH₂⁺; it is a race. SN2 needs the halide to hit the back of the carbon exactly as water leaves. SN1 lets water leave on its own first. On a 2° or 3° carbon, water wins: it is a very good leaving group (neutral), the cation is stable enough to form (carbons on C⁺ feed it electrons), the carbon groups crowd the back, and in the acidic water the halide is held back by hydrogen bonds.",
+    "hx_evidence": "Evidence for the carbocation: when a hydride or methyl shift can make a more stable cation, the halide ends up on the neighbouring carbon (3-methylbutan-2-ol + HBr → 2-bromo-2-methylbutane). SN2 only swaps groups on one carbon, so a shifted product proves a cation formed. Compare butan-1-ol + HBr: a 1° cation is too unstable, so there it is SN2 (one hump, two arrows at once). For 2° alcohols this is the textbook rule; real reactions can also give a little SN2.",
     "hx_no_e1": "The halide is a good nucleophile and a very weak base, so substitution wins over elimination.",
     "pbr3_socl2": "PBr₃ / SOCl₂ turn the OH into a good leaving group on oxygen, then the halide attacks from the back (SN2, inversion). No carbocation, so no shifts.",
     "pbr3_tertiary": "PBr₃ and SOCl₂ work by SN2, which a 3° alcohol can't do; this case isn't covered.",

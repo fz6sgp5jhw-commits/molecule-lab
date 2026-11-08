@@ -55,14 +55,17 @@
     "cat_meet_act": {
       "text": "Step 2: the OH is now {LG}, a good [[leaving group]]. The carbon is {class}, so it can hold a + charge: the leaving group goes first and a [[carbocation]] forms.",
       "why": [
-        "OH⁻ is a strong base, so it is a poor leaving group. Water (H₂O) is a weak base, so it leaves easily."
+        "OH⁻ is a strong base, so it is a poor leaving group. Water (H₂O) is a weak base, so it leaves easily.",
+        "Why doesn't a nucleophile push {LG} out from the back at the same moment (SN2)? It is a race. SN2 needs the nucleophile to hit the back of the carbon exactly as {LG} leaves; here {LG} leaves on its own first. On a {class} carbon that is faster: {LG} is neutral and leaves easily, the cation is stable enough to form, the carbon groups crowd the back, and in acidic water the halide is held back by hydrogen bonds.",
+        "Where to see it: the next frame has only ONE curved arrow (from the C–{LG} bond to {LG}) and nothing behind the carbon, and the energy hill has TWO humps with a dip (the cation). Compare butan-1-ol + HBr: SN2, one hump, two arrows at once (the halide in at the back while water leaves). Watch the C–{LG} bond cloud too: thin and pulled toward {LG}, ready to break on its own."
       ]
     },
     "cat_ionise": {
       "text": "{LG} leaves, taking both bonding electrons (one curved arrow, from the bond to {LG}). This is the slow step.",
       "why": [
         "Breaking a bond into two ions costs a lot of energy, so this is the highest hump: the [[rate-determining step]].",
-        "Only the substrate is in this slow step, so the rate doesn't depend on the nucleophile or base: [[unimolecular]] (the 1 in SN1 and E1)."
+        "Only the substrate is in this slow step, so the rate doesn't depend on the nucleophile or base: [[unimolecular]] (the 1 in SN1 and E1).",
+        "No nucleophile is drawn behind the carbon in this step: nothing pushes {LG} out. That is the difference from SN2, where the nucleophile's arrow and the leaving group's arrow happen together."
       ]
     },
     "cat_ts1": {

@@ -36,5 +36,8 @@ Open the **Reactions** tab at the top of the app (or go to `…/molecule-lab/#re
 | **6, 7** rank five halides | Draw all five side by side in one Draw window | The window switches to ranking mode: press **Rank by SN1 rate** or **Rank by SN2 rate**. Each place shows its reason; ties are shown as ties |
 | **8** (S)-2-chloropentane + CH₃SNa, DMSO | Draw with a wedge; tap the `CH₃SNa` chip | Tap the SN2 lamp: step 2 shows the two curved arrows to copy, step 3 the transition state, and the last step the product with its R/S worked out |
 
+## 2° alcohol + HX: why SN1 and not SN2?
+After H⁺ turns OH into OH₂⁺, it is a race: SN2 needs the halide to hit the back of the carbon at the moment water leaves; SN1 lets water leave alone first. On a 2° or 3° carbon water wins (good neutral leaving group, cation stable enough, crowded back, halide held back by hydrogen bonds in acidic water). The decision path's **rule** box and the WHY? pages on "Step 2" say this. To see it, Watch **butan-1-ol + HBr** (SN2: one hump, two arrows at once) and then **butan-2-ol + HBr** (SN1: two humps, water leaves with one arrow, a C⁺ frame, then Br⁻). **3-methylbutan-2-ol + HBr** adds a hydride shift: the Br ends up on the neighbouring carbon, which only a carbocation can explain. For 2° alcohols this is the textbook rule; real reactions can also give a little SN2.
+
 ## When the app says "not covered yet"
 It means the rules don't cover that case, so the app won't guess. Examples: neopentyl substrates, E2 where both carbons' stereo decides E/Z, and ring contraction. Work these out from your notes or ask in class.

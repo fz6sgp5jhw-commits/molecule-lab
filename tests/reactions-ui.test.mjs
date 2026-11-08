@@ -302,9 +302,16 @@ try {
 
   // HBr on a 2° alcohol (seed 12): protonation, then SN1 with a hydride shift (the H travels on an arc)
   await setup('CC(C)C(C)O', 'HBr', false);
+  await page.click('.rx-box[data-step="rule"]');
+  ok(/race/.test(await text('#rxPathInfo')) && /butan-1-ol \+ HBr/.test(await text('#rxPathInfo')), '2° alcohol + HBr: rule box explains why not SN2, with the 1° comparison');
   await page.click('.lamp[data-pw="SN1"]');
   await page.waitForSelector('#mechDialog');
-  all = await walk(async (i, t) => { if (/^Done: the H/.test(t)) ok(await page.locator('.mv-svg [data-bond="ca-gh"]').count() > 0, 'hydride shift: the H is now bonded to Cα'); });
+  let raced = false;
+  all = await walk(async (i, t) => {
+    if (/^Done: the H/.test(t)) ok(await page.locator('.mv-svg [data-bond="ca-gh"]').count() > 0, 'hydride shift: the H is now bonded to Cα');
+    if (/^Step 2: the OH is now/.test(t) && !raced){ raced = true; await page.click('.mv-why'); }
+  });
+  ok(/It is a race/.test(all) && /ONE curved arrow/.test(all) && !/\{(LG|class)\}/.test(all), 'HBr step 2 WHY?: why the halide does not push water out (SN2), and where to look');
   ok(/hydride shift/.test(all) && /New cation: 3°/.test(all) && /Br⁻ arrives/.test(all), 'HBr: hydride shift 2° → 3°, then Br⁻ attacks');
   ok((await text('.mv-result')).includes('2-bromo-2-methylbutane'), 'HBr: product 2-bromo-2-methylbutane');
 
