@@ -76,7 +76,7 @@ export async function mountReactions(app){
 
   // ---------- reactivity facts + site chips ----------
   function renderSites(){
-    for (const box of [$('rxSites'), $('rxFactSites')]){
+    for (const box of [$('rxSites')]){
       box.hidden = st.sites.length < 2;
       box.replaceChildren();
       if (st.sites.length < 2) continue;
@@ -308,7 +308,8 @@ export async function mountReactions(app){
   }
 
   // ---------- result card ----------
-  function card(p, pw, extra){
+  // inMech: the copy shown inside the mechanism's last frame (no Watch button there)
+  function card(p, pw, extra, inMech = false){
     const div = document.createElement('div');
     div.className = 'rx-card';
     const out = st.res && st.res.pathways[pw];
@@ -329,8 +330,9 @@ export async function mountReactions(app){
         ${p.via ? `<dt>Via</dt><dd>${esc(p.via)}</dd>` : ''}
       </dl>
       ${extra ? `<div class="note">${esc(extra)}</div>` : ''}
-      <div class="row"><button type="button" class="rx-load">Load into editor</button></div>`;
+      <div class="row"><button type="button" class="rx-load">Load into editor</button>${out && !inMech ? '<button type="button" class="rx-watch">▶ Watch</button>' : ''}</div>`;
     nameLine(p.mol, div.querySelector('.rx-nameline'));
+    const w = div.querySelector('.rx-watch'); if (w) w.onclick = () => openPathway(pw, p);
     div.querySelector('.rx-load').onclick = () => { app.loadMolecule(p.mol.getCompactCopy()); $('editor').scrollIntoView({ behavior: smooth(), block: 'center' }); };
     return div;
   }
@@ -338,7 +340,9 @@ export async function mountReactions(app){
   // ---------- mechanism ----------
   function closeMech(){ if (st.mech){ st.mech.close(); st.mech = null; } $('mechWin').hidden = true; }
   $('mechClose').onclick = closeMech;
-  function openPathway(pw){
+  // pw's mechanism for one product (default: its first, i.e. the major one). Several products of one
+  // pathway (SN1 with/without a shift, E2 Zaitsev/Hofmann) each get a Watch button, so each can be followed.
+  function openPathway(pw, chosen){
     const res = st.res; if (!res) return;
     closeMech();
     const out = res.pathways[pw];
@@ -353,7 +357,7 @@ export async function mountReactions(app){
       mount.innerHTML = `<div class="msg warn">${esc(fill(texts.ui.comingSoon, { pw }))}</div>`;
       win.scrollIntoView({ behavior: smooth(), block: 'start' }); return;
     }
-    const p = out.products[0], site = res.site, r = st.reagent;
+    const p = chosen || out.products[0], site = res.site, r = st.reagent;
     const nuMol = r.nu.mol || OCL.Molecule.fromSmiles(r.nu.smiles);
     const Nu = speciesText(r);
     const nuAtom = nuMol.getAtomLabel(r.nu.atom);
@@ -362,7 +366,7 @@ export async function mountReactions(app){
       nu: { atom: nuAtom, rest: nuMol.getAtoms() > 1 ? `(${Nu})` : '', charged: Nu.endsWith('⁻') },
       vars: { Nu, LG: site.lg, class: CLS_TEXT[site.cls], stereo: sn2Stereo(site, r, p) },
       productName: nameOf(p.mol).then((n) => n.name || n.why),
-      resultCard: () => card(p, pw),
+      resultCard: () => card(p, pw, undefined, true),
     });
     win.scrollIntoView({ behavior: smooth(), block: 'start' });
   }
@@ -383,6 +387,20 @@ export async function mountReactions(app){
       return fill(to === site.stereo ? S.inversion_same : S.inversion, { from: site.stereo, to });
     } catch { return ''; }
   }
+
+  // ---------- Molecule | Reactions sections (remembered per viewer; #reactions links straight here) ----------
+  function setApp(tab, remember = true){
+    document.querySelector('main').dataset.app = tab;
+    for (const b of document.querySelectorAll('.apptab')) b.setAttribute('aria-selected', String(b.dataset.app === tab));
+    if (remember){
+      try { localStorage.setItem('ml-app-tab', tab); } catch {}
+      history.replaceState(null, '', tab === 'rx' ? '#reactions' : location.pathname + location.search);
+    }
+    window.dispatchEvent(new Event('resize')); // 3D viewers and the editor size themselves on resize
+  }
+  for (const b of document.querySelectorAll('.apptab')) b.onclick = () => setApp(b.dataset.app);
+  let saved = null; try { saved = localStorage.getItem('ml-app-tab'); } catch {}
+  setApp(location.hash === '#reactions' ? 'rx' : saved === 'rx' ? 'rx' : 'mol', false);
 
   document.addEventListener('ml:molecule', (e) => onMolecule(e.detail));
   onMolecule(app.getMol());

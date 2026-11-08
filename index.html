@@ -103,9 +103,9 @@
 
   /* tabs */
   .tabs{display:flex;gap:0;padding:6px 4px 0 6px;flex-wrap:wrap;position:relative;z-index:1}
-  .tab{box-shadow:inset 1px 1px var(--hi), inset -1px 0 var(--dark), inset -2px 0 var(--shadow), inset 2px 2px var(--lite);padding:6px 12px 5px;margin-right:-1px;margin-top:3px;min-height:0;color:#000}
-  .tab:active:not(:disabled){box-shadow:inset 1px 1px var(--hi), inset -1px 0 var(--dark), inset -2px 0 var(--shadow), inset 2px 2px var(--lite);padding:6px 12px 5px}
-  .tab[aria-selected="true"]{margin-top:0;padding-bottom:9px;margin-bottom:-2px;background:var(--face);position:relative;z-index:2;font-weight:600}
+  .tab,.apptab{box-shadow:inset 1px 1px var(--hi), inset -1px 0 var(--dark), inset -2px 0 var(--shadow), inset 2px 2px var(--lite);padding:6px 12px 5px;margin-right:-1px;margin-top:3px;min-height:0;color:#000}
+  .tab:active:not(:disabled),.apptab:active:not(:disabled){box-shadow:inset 1px 1px var(--hi), inset -1px 0 var(--dark), inset -2px 0 var(--shadow), inset 2px 2px var(--lite);padding:6px 12px 5px}
+  .tab[aria-selected="true"],.apptab[aria-selected="true"]{margin-top:0;padding-bottom:9px;margin-bottom:-2px;background:var(--face);position:relative;z-index:2;font-weight:600}
   .tab .soon{font-size:12px;margin-left:4px;color:#606060}
   .panel{box-shadow:var(--raised);margin:0 4px 4px;padding:6px}
   .view{display:none}
@@ -167,6 +167,10 @@
   #net.show{display:block}
   .badge button{margin-left:auto;padding:4px 8px;min-height:24px;font-size:14px}
   #boot{position:fixed;inset:0;background:var(--desk);display:flex;align-items:center;justify-content:center;color:#fff;z-index:10;font:12px/1.6 var(--chunky)}
+  /* app sections: Molecule | Reactions */
+  .apptabs{display:flex;flex-wrap:wrap;padding:4px 6px 0;border-bottom:2px solid var(--hi)}
+  .apptab{font-size:15px}
+  main[data-app="mol"] .rx-only,main[data-app="rx"] .mol-only{display:none !important}
   /* reactions window */
   .rx-lab{font-size:14px;color:var(--muted);margin-top:8px}
   #rxReagentForm{margin-top:8px}
@@ -203,8 +207,12 @@
   .rx-src{font-size:12px;color:var(--muted)}
   .rx-dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:6px 0 0;font-size:14px}
   .rx-dl dt{color:var(--muted)} .rx-dl dd{margin:0}
-  .rx-facts{margin-top:10px}
+  .rx-facts{margin-bottom:6px}
   .rx-facth{font-weight:600;font-size:15px}
+  .rx-help{margin-top:12px;font-size:15px}
+  .rx-help summary{cursor:pointer;font-weight:600}
+  .rx-help ol{margin:6px 0 0;padding-left:22px}
+  .rx-help li{margin:4px 0}
   .rx-facts .facts{margin-top:4px}
   .rx-facts .facts dd{word-break:normal}
   .rx-ranklist{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
@@ -281,10 +289,14 @@
   <div class="appbar">
     <div class="titlebar"><h1>MOLECULE LAB</h1><span class="wbtns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span></div>
     <p>Draw a molecule to get its IUPAC name, or type a name to build the structure. Explore it as a line drawing or in 3D.</p>
+    <nav class="apptabs" role="tablist" aria-label="Sections">
+      <button type="button" class="apptab" role="tab" data-app="mol" aria-selected="true">Molecule</button>
+      <button type="button" class="apptab" role="tab" data-app="rx" aria-selected="false">Reactions (SN1/SN2/E1/E2)</button>
+    </nav>
     <div id="net" role="status">You’re offline. Drawing, 3D and the calculated facts still work; naming needs a connection.</div>
   </div>
 </header>
-<main>
+<main data-app="mol">
   <div class="col">
     <section class="card">
       <div class="card-h"><h2>Build from a name</h2><span class="wbtns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span></div>
@@ -308,47 +320,7 @@
       </div>
     </section>
 
-    <section class="card" id="rxWin">
-      <div class="card-h"><h2>Reactions: SN1 · SN2 · E1 · E2</h2><span class="wbtns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span></div>
-      <div class="card-b">
-        <div id="rxRank" hidden>
-          <div class="msg warn" id="rxRankNote"></div>
-          <div class="row"><button type="button" id="rxRankSN1" aria-pressed="false">Rank by SN1 rate</button><button type="button" id="rxRankSN2" aria-pressed="false">Rank by SN2 rate</button></div>
-          <ol class="rx-ranklist" id="rxRankList"></ol>
-        </div>
-        <div id="rxMain">
-          <div class="rx-lab">Substrate: the molecule in the editor above. For a reagent, type it, tap a chip, or draw it.</div>
-          <div class="chips" id="rxSites" hidden></div>
-          <form class="search" id="rxReagentForm">
-            <input id="rxReagentInput" type="text" autocomplete="off" spellcheck="false" placeholder="Reagent, e.g. NaI, sodium ethoxide, KOtBu">
-            <button type="submit">Set</button>
-          </form>
-          <div class="chips" id="rxReagentChips"></div>
-          <details class="rx-drawbox" id="rxDrawBox"><summary>Draw the reagent</summary><div id="rxReagentEd"></div></details>
-          <div class="rx-info" id="rxReagentInfo"></div>
-          <div id="rxRoles" class="chips" hidden></div>
-          <div class="rx-lab">Solvent: <span id="rxSolventType"></span></div>
-          <div class="chips" id="rxSolvents"></div>
-          <div class="row"><button type="button" id="rxHeat" aria-pressed="false">🔥 Heat</button><button type="button" class="primary" id="rxPredict" disabled>Predict</button></div>
-          <div class="msg" id="rxMsg" hidden></div>
-          <div id="rxOut" hidden>
-            <div class="rx-path" id="rxPath"></div>
-            <div class="rx-pathinfo" id="rxPathInfo" hidden></div>
-            <div class="rx-lamps" id="rxLamps"></div>
-            <div class="rx-lab">Tap a lit lamp to watch its mechanism.</div>
-            <div id="rxNotes"></div>
-            <div class="rx-cards" id="rxCards"></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="card" id="mechWin" hidden>
-      <div class="card-h"><h2 id="mechTitle">Mechanism</h2><span class="wbtns"><button type="button" id="mechClose" aria-label="Close mechanism">×</button></span></div>
-      <div class="card-b"><div id="mechMount"></div></div>
-    </section>
-
-    <section class="card">
+    <section class="card mol-only">
       <div class="card-h"><h2>Name &amp; properties</h2><span class="wbtns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span></div>
       <div class="card-b">
         <div class="namebox"><div id="iupac" class="result-name empty">Draw or build a molecule to start.</div>
@@ -361,11 +333,6 @@
           <dt>Stereo</dt><dd id="fStereo"></dd>
           <dt>SMILES</dt><dd class="mono" id="fSmiles"></dd>
         </dl>
-        <div class="rx-facts" id="rxFacts" hidden>
-          <div class="rx-facth">Reactivity facts</div>
-          <div class="chips" id="rxFactSites" hidden></div>
-          <dl class="facts" id="rxFactList"></dl>
-        </div>
         <div class="row">
           <button class="primary" id="nameItBtn" type="button" disabled>Get IUPAC name</button>
           <button id="copyBtn" type="button" disabled>Copy SMILES</button>
@@ -377,7 +344,7 @@
   </div>
 
   <div class="col">
-    <section class="card">
+    <section class="card mol-only">
       <div class="card-h"><h2>Viewer</h2><span class="wbtns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span></div>
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" data-view="v3d" aria-selected="true">3D model</button>
@@ -429,6 +396,61 @@
         <div class="soon-view"><strong>Fischer projections are coming in stage 3</strong>For open chains with stereocentres, like sugars, amino acids and 2,3-dibromobutane, with R/S labels.</div>
       </div>
       </div>
+    </section>
+
+    <section class="card rx-only" id="rxWin">
+      <div class="card-h"><h2>Reactions: SN1 · SN2 · E1 · E2</h2><span class="wbtns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span></div>
+      <div class="card-b">
+        <div id="rxRank" hidden>
+          <div class="msg warn" id="rxRankNote"></div>
+          <div class="row"><button type="button" id="rxRankSN1" aria-pressed="false">Rank by SN1 rate</button><button type="button" id="rxRankSN2" aria-pressed="false">Rank by SN2 rate</button></div>
+          <ol class="rx-ranklist" id="rxRankList"></ol>
+        </div>
+        <div id="rxMain">
+          <div class="rx-facts" id="rxFacts" hidden>
+            <div class="rx-facth">Reactivity facts</div>
+            <dl class="facts" id="rxFactList"></dl>
+          </div>
+          <div class="rx-lab">Substrate: the molecule in the Draw window. For a reagent, type it, tap a chip, or draw it.</div>
+          <div class="chips" id="rxSites" hidden></div>
+          <form class="search" id="rxReagentForm">
+            <input id="rxReagentInput" type="text" autocomplete="off" spellcheck="false" placeholder="Reagent, e.g. NaI, sodium ethoxide, KOtBu">
+            <button type="submit">Set</button>
+          </form>
+          <div class="chips" id="rxReagentChips"></div>
+          <details class="rx-drawbox" id="rxDrawBox"><summary>Draw the reagent</summary><div id="rxReagentEd"></div></details>
+          <div class="rx-info" id="rxReagentInfo"></div>
+          <div id="rxRoles" class="chips" hidden></div>
+          <div class="rx-lab">Solvent: <span id="rxSolventType"></span></div>
+          <div class="chips" id="rxSolvents"></div>
+          <div class="row"><button type="button" id="rxHeat" aria-pressed="false">🔥 Heat</button><button type="button" class="primary" id="rxPredict" disabled>Predict</button></div>
+          <div class="msg" id="rxMsg" hidden></div>
+          <div id="rxOut" hidden>
+            <div class="rx-path" id="rxPath"></div>
+            <div class="rx-pathinfo" id="rxPathInfo" hidden></div>
+            <div class="rx-lamps" id="rxLamps"></div>
+            <div class="rx-lab">Tap a lit lamp to watch its mechanism.</div>
+            <div id="rxNotes"></div>
+            <div class="rx-cards" id="rxCards"></div>
+          </div>
+        </div>
+        <details class="rx-help">
+          <summary>How to use this for homework</summary>
+          <ol>
+            <li>Draw the substrate in the Draw window, or type its name or SMILES in “Build from a name”. Show stereo with wedges (Fischer projections can’t be drawn: redraw them with wedges).</li>
+            <li>Type the reagent (NaCN, sodium ethoxide, KOtBu…) or tap a chip. The usual solvent is filled in; change it to match the problem, and press 🔥 Heat if the problem says heat or a temperature.</li>
+            <li>Press Predict. Tap each box of the decision path to see the rule, then read the lamps: bright = major, dim = minor or competing, off = doesn’t happen.</li>
+            <li>Each result card gives the product, its name, R/S or E/Z and “Stereospecific Y/N”. Tap a lit lamp to step through the mechanism and press WHY? for the reasons.</li>
+            <li>Two steps (e.g. 1) TsCl, pyridine 2) NaCN): predict step 1, press “Load into editor” on its product, then set the step 2 reagent and predict again.</li>
+            <li>Ranking problems: draw all the molecules side by side in the Draw window, then press “Rank by SN1 rate” or “Rank by SN2 rate”.</li>
+          </ol>
+        </details>
+      </div>
+    </section>
+
+    <section class="card rx-only" id="mechWin" hidden>
+      <div class="card-h"><h2 id="mechTitle">Mechanism</h2><span class="wbtns"><button type="button" id="mechClose" aria-label="Close mechanism">×</button></span></div>
+      <div class="card-b"><div id="mechMount"></div></div>
     </section>
   </div>
 </main>

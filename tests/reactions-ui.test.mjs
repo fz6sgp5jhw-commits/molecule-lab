@@ -33,6 +33,9 @@ try {
   await page.goto(BASE);
   await page.waitForSelector('#boot', { state: 'detached', timeout: 20000 });
   await page.waitForFunction(() => document.querySelectorAll('#rxReagentChips .chip').length > 0, null, { timeout: 10000 });
+  ok(await page.isHidden('#rxWin') && await page.isVisible('#viewer3d'), 'Molecule tab first: Reactions hidden');
+  await page.click('.apptab[data-app="rx"]');
+  ok(await page.isVisible('#rxWin') && await page.isHidden('#viewer3d') && await page.isVisible('#editor'), 'Reactions tab: Reactions + editor shown, viewer hidden');
 
   // substrate: 2-bromobutane (SMILES through the Build box)
   await page.fill('#nameInput', 'CCC(C)Br');
@@ -53,8 +56,9 @@ try {
   await page.waitForFunction(() => /2-iodobutane/.test(document.querySelector('#rxCards').textContent), null, { timeout: 10000 });
   ok((await text('#rxCards')).includes('Stereospecific') && (await text('#rxCards')).includes('no stereocentre defined'), 'result card: stereospecific + honest stereo note');
 
-  // mechanism
-  await page.click('.lamp[data-pw="SN2"]');
+  ok(await page.locator('#rxCards .rx-watch').count() === 1, 'result card has a Watch button');
+  // mechanism (opened from the card's Watch button)
+  await page.click('#rxCards .rx-watch');
   await page.waitForSelector('#mechDialog');
   ok((await text('#mechDialog')).includes('I⁻ is the nucleophile'), 'frame 1 dialog names the nucleophile');
   ok(await page.locator('.mv-svg [data-role="ca"].mv-cloud').count() === 1 && (await text('.mv-svg')).includes('δ+'), 'density cloud + δ+ on Cα');
@@ -76,6 +80,7 @@ try {
   await page.waitForFunction(() => /Product: 2-iodobutane/.test(document.querySelector('#mechDialog').textContent), null, { timeout: 10000 });
   ok((await text('.mv-result')).includes('2-iodobutane'), 'final frame: product name 2-iodobutane + result card');
   ok(await page.isDisabled('.mv-next'), 'last frame: Next disabled');
+  ok(await page.locator('.mv-result .rx-watch').count() === 0, 'no Watch button inside the mechanism');
   ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'no sideways scroll (desktop)');
 
   if (process.env.SHOTS){
@@ -83,6 +88,8 @@ try {
     await page.click('.mv-back'); await page.click('.mv-back'); await page.click('.mv-back');
     await page.locator('#mechWin').screenshot({ path: `${dir}/sn2-frame-desktop.png` });
     await page.locator('#rxWin').screenshot({ path: `${dir}/reactions-desktop.png` });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.screenshot({ path: `${dir}/reactions-tab-desktop.png` });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.waitForTimeout(300);
     ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'no sideways scroll at 390 px');
