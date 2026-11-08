@@ -1,0 +1,1029 @@
+{
+ "_about": "Expected textbook answers for the SN1/SN2/E1/E2 engine (docs/mechanisms-plan.md, 'Seed test set' and the confirmed course worksheet answers). Each case: substrate SMILES (+ its name, checked by namer.js so a wrong SMILES fails loudly), steps [{reagent, solvent, heat, site}], expect for the last step: lamps (unlisted = none), products [{pathway, smiles, name, rank}], stereospecific, flags, notCovered, activation (first step). Seed 22 (menthyl/neomenthyl) is left out until checked against the course textbook; worksheet cases are only here once confirmed from Peter's answer key.",
+ "cases": [
+  {
+   "id": "1",
+   "substrate": "CBr",
+   "substrateName": "bromomethane",
+   "steps": [
+    {
+     "reagent": "NaOH",
+     "solvent": "H2O"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN2": "major"
+    },
+    "products": [
+     {
+      "pathway": "SN2",
+      "smiles": "CO",
+      "name": "methanol",
+      "rank": "major"
+     }
+    ]
+   }
+  },
+  {
+   "id": "2",
+   "substrate": "CCCCBr",
+   "substrateName": "1-bromobutane",
+   "steps": [
+    {
+     "reagent": "NaCN",
+     "solvent": "DMSO"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN2": "major"
+    },
+    "products": [
+     {
+      "pathway": "SN2",
+      "smiles": "CCCCC#N",
+      "name": "pentanenitrile",
+      "rank": "major"
+     }
+    ]
+   }
+  },
+  {
+   "id": "3",
+   "substrate": "CCCCBr",
+   "substrateName": "1-bromobutane",
+   "steps": [
+    {
+     "reagent": "KOtBu",
+     "solvent": "tBuOH"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "E2": "major",
+     "SN2": "minor"
+    },
+    "products": [
+     {
+      "pathway": "E2",
+      "smiles": "C=CCC",
+      "name": "but-1-ene",
+      "rank": "major"
+     },
+     {
+      "pathway": "SN2",
+      "smiles": "CCCCOC(C)(C)C",
+      "name": "1-tert-butoxybutane"
+     }
+    ]
+   }
+  },
+  {
+   "id": "4",
+   "substrate": "CCCCBr",
+   "substrateName": "1-bromobutane",
+   "steps": [
+    {
+     "reagent": "NaOEt",
+     "solvent": "EtOH"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN2": "major",
+     "E2": "minor"
+    },
+    "products": [
+     {
+      "pathway": "SN2",
+      "smiles": "CCCCOCC",
+      "name": "1-ethoxybutane",
+      "rank": "major"
+     },
+     {
+      "pathway": "E2",
+      "smiles": "C=CCC",
+      "name": "but-1-ene"
+     }
+    ]
+   }
+  },
+  {
+   "id": "5",
+   "substrate": "C[C@@H](Br)CC",
+   "substrateName": "(2R)-2-bromobutane",
+   "steps": [
+    {
+     "reagent": "sodium iodide",
+     "solvent": "acetone"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN2": "major"
+    },
+    "stereospecific": {
+     "SN2": true
+    },
+    "products": [
+     {
+      "pathway": "SN2",
+      "smiles": "C[C@H](I)CC",
+      "name": "(2S)-2-iodobutane",
+      "rank": "major",
+      "stereo": "inversion"
+     }
+    ]
+   }
+  },
+  {
+   "id": "6",
+   "substrate": "CC(Br)CC",
+   "substrateName": "2-bromobutane",
+   "steps": [
+    {
+     "reagent": "NaOEt",
+     "solvent": "EtOH",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "E2": "major",
+     "SN2": "minor"
+    },
+    "stereospecific": {
+     "E2": true
+    },
+    "products": [
+     {
+      "pathway": "E2",
+      "smiles": "C/C=C/C",
+      "name": "(2E)-but-2-ene",
+      "rank": "major",
+      "order": 1
+     },
+     {
+      "pathway": "E2",
+      "smiles": "C/C=C\\C",
+      "name": "(2Z)-but-2-ene",
+      "rank": "minor",
+      "order": 2
+     },
+     {
+      "pathway": "E2",
+      "smiles": "C=CCC",
+      "name": "but-1-ene",
+      "rank": "minor",
+      "order": 3
+     }
+    ]
+   }
+  },
+  {
+   "id": "7",
+   "substrate": "CC(Br)CC",
+   "substrateName": "2-bromobutane",
+   "steps": [
+    {
+     "reagent": "KOtBu",
+     "solvent": "tBuOH"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "E2": "major"
+    },
+    "products": [
+     {
+      "pathway": "E2",
+      "smiles": "C=CCC",
+      "name": "but-1-ene",
+      "rank": "major"
+     }
+    ]
+   }
+  },
+  {
+   "id": "8",
+   "substrate": "CC(C)(C)Br",
+   "substrateName": "2-bromo-2-methylpropane",
+   "steps": [
+    {
+     "reagent": "H2O",
+     "solvent": "H2O"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN1": "major",
+     "E1": "minor"
+    },
+    "stereospecific": {
+     "SN1": false
+    },
+    "products": [
+     {
+      "pathway": "SN1",
+      "smiles": "CC(C)(C)O",
+      "name": "2-methylpropan-2-ol",
+      "rank": "major"
+     },
+     {
+      "pathway": "E1",
+      "smiles": "C=C(C)C",
+      "name": "2-methylprop-1-ene"
+     }
+    ]
+   }
+  },
+  {
+   "id": "9",
+   "substrate": "CC(C)(C)Br",
+   "substrateName": "2-bromo-2-methylpropane",
+   "steps": [
+    {
+     "reagent": "NaOEt",
+     "solvent": "EtOH"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "E2": "major"
+    },
+    "products": [
+     {
+      "pathway": "E2",
+      "smiles": "C=C(C)C",
+      "name": "2-methylprop-1-ene",
+      "rank": "major"
+     }
+    ]
+   }
+  },
+  {
+   "id": "10",
+   "note": "Plan table says 'E1 + SN1'; the confirmed course rule (weak Nu, polar protic, heat) makes SN1 major with E1 competing.",
+   "substrate": "CC(C)(C)Br",
+   "substrateName": "2-bromo-2-methylpropane",
+   "steps": [
+    {
+     "reagent": "EtOH",
+     "solvent": "EtOH",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN1": "major",
+     "E1": "competing"
+    },
+    "products": [
+     {
+      "pathway": "SN1",
+      "smiles": "CCOC(C)(C)C",
+      "name": "2-ethoxy-2-methylpropane",
+      "rank": "major"
+     },
+     {
+      "pathway": "E1",
+      "smiles": "C=C(C)C",
+      "name": "2-methylprop-1-ene",
+      "rank": "major"
+     }
+    ]
+   }
+  },
+  {
+   "id": "11a",
+   "substrate": "CC(C)(Br)CC",
+   "substrateName": "2-bromo-2-methylbutane",
+   "steps": [
+    {
+     "reagent": "NaOEt",
+     "solvent": "EtOH"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "E2": "major"
+    },
+    "products": [
+     {
+      "pathway": "E2",
+      "smiles": "CC=C(C)C",
+      "name": "2-methylbut-2-ene",
+      "rank": "major"
+     },
+     {
+      "pathway": "E2",
+      "smiles": "C=C(C)CC",
+      "name": "2-methylbut-1-ene",
+      "rank": "minor"
+     }
+    ]
+   }
+  },
+  {
+   "id": "11b",
+   "substrate": "CC(C)(Br)CC",
+   "substrateName": "2-bromo-2-methylbutane",
+   "steps": [
+    {
+     "reagent": "KOtBu",
+     "solvent": "tBuOH"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "E2": "major"
+    },
+    "products": [
+     {
+      "pathway": "E2",
+      "smiles": "C=C(C)CC",
+      "name": "2-methylbut-1-ene",
+      "rank": "major"
+     },
+     {
+      "pathway": "E2",
+      "smiles": "CC=C(C)C",
+      "name": "2-methylbut-2-ene",
+      "rank": "minor"
+     }
+    ]
+   }
+  },
+  {
+   "id": "12",
+   "substrate": "CC(O)C(C)C",
+   "substrateName": "3-methylbutan-2-ol",
+   "steps": [
+    {
+     "reagent": "HBr"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN1": "major"
+    },
+    "products": [
+     {
+      "pathway": "SN1",
+      "smiles": "CC(C)(Br)CC",
+      "name": "2-bromo-2-methylbutane",
+      "rank": "major",
+      "via": "hydride shift"
+     },
+     {
+      "pathway": "SN1",
+      "smiles": "CC(Br)C(C)C",
+      "name": "2-bromo-3-methylbutane",
+      "rank": "minor",
+      "via": "no shift"
+     }
+    ]
+   }
+  },
+  {
+   "id": "13",
+   "substrate": "OC1CCCCC1",
+   "substrateName": "cyclohexanol",
+   "steps": [
+    {
+     "reagent": "H3PO4",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "E1": "major"
+    },
+    "stereospecific": {
+     "E1": false
+    },
+    "products": [
+     {
+      "pathway": "E1",
+      "smiles": "C1CCC=CC1",
+      "name": "cyclohexene",
+      "rank": "major"
+     }
+    ]
+   }
+  },
+  {
+   "id": "14",
+   "substrate": "CC(C)(O)CC",
+   "substrateName": "2-methylbutan-2-ol",
+   "steps": [
+    {
+     "reagent": "H2SO4",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "E1": "major"
+    },
+    "products": [
+     {
+      "pathway": "E1",
+      "smiles": "CC=C(C)C",
+      "name": "2-methylbut-2-ene",
+      "rank": "major"
+     },
+     {
+      "pathway": "E1",
+      "smiles": "C=C(C)CC",
+      "name": "2-methylbut-1-ene",
+      "rank": "minor"
+     }
+    ]
+   }
+  },
+  {
+   "id": "15",
+   "substrate": "CCCCO",
+   "substrateName": "butan-1-ol",
+   "steps": [
+    {
+     "reagent": "PBr3"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN2": "major"
+    },
+    "products": [
+     {
+      "pathway": "SN2",
+      "smiles": "CCCCBr",
+      "name": "1-bromobutane",
+      "rank": "major"
+     }
+    ]
+   }
+  },
+  {
+   "id": "16",
+   "substrate": "C[C@@H](O)CC",
+   "substrateName": "(2R)-butan-2-ol",
+   "steps": [
+    {
+     "reagent": "SOCl2, pyridine"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN2": "major"
+    },
+    "products": [
+     {
+      "pathway": "SN2",
+      "smiles": "C[C@H](Cl)CC",
+      "name": "(2S)-2-chlorobutane",
+      "rank": "major",
+      "stereo": "inversion"
+     }
+    ]
+   }
+  },
+  {
+   "id": "17",
+   "substrate": "C[C@@H](O)CC",
+   "substrateName": "(2R)-butan-2-ol",
+   "steps": [
+    {
+     "reagent": "TsCl",
+     "solvent": "pyridine"
+    },
+    {
+     "reagent": "NaCN",
+     "solvent": "DMSO"
+    }
+   ],
+   "expect": {
+    "activation": {
+     "smiles": "C[C@@H](OS(=O)(=O)c1ccc(C)cc1)CC",
+     "stereo": "retention"
+    },
+    "lamps": {
+     "SN2": "major"
+    },
+    "products": [
+     {
+      "pathway": "SN2",
+      "smiles": "C[C@H](C#N)CC",
+      "name": "(2S)-2-methylbutanenitrile",
+      "rank": "major",
+      "stereo": "inversion"
+     }
+    ]
+   }
+  },
+  {
+   "id": "18",
+   "substrate": "CC(C)(C)CBr",
+   "substrateName": "1-bromo-2,2-dimethylpropane",
+   "steps": [
+    {
+     "reagent": "NaOEt",
+     "solvent": "EtOH"
+    }
+   ],
+   "expect": {
+    "notCovered": "neopentyl",
+    "flags": [
+     "neopentyl"
+    ]
+   }
+  },
+  {
+   "id": "19a",
+   "substrate": "Brc1ccccc1",
+   "substrateName": "bromobenzene",
+   "steps": [
+    {
+     "reagent": "NaOEt",
+     "solvent": "EtOH"
+    }
+   ],
+   "expect": {
+    "lamps": {},
+    "flags": [
+     "aryl"
+    ]
+   }
+  },
+  {
+   "id": "19b",
+   "substrate": "C=CBr",
+   "substrateName": "bromoethene",
+   "steps": [
+    {
+     "reagent": "KOtBu",
+     "solvent": "tBuOH"
+    }
+   ],
+   "expect": {
+    "lamps": {},
+    "flags": [
+     "vinyl"
+    ]
+   }
+  },
+  {
+   "id": "20",
+   "substrate": "BrCc1ccccc1",
+   "substrateName": "(bromomethyl)benzene",
+   "steps": [
+    {
+     "reagent": "NaCN",
+     "solvent": "DMSO"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN2": "major"
+    },
+    "products": [
+     {
+      "pathway": "SN2",
+      "smiles": "N#CCc1ccccc1",
+      "name": "2-phenylacetonitrile",
+      "rank": "major"
+     }
+    ]
+   }
+  },
+  {
+   "id": "21",
+   "substrate": "CC(O)C(C)(C)C",
+   "substrateName": "3,3-dimethylbutan-2-ol",
+   "steps": [
+    {
+     "reagent": "H2SO4",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "E1": "major"
+    },
+    "products": [
+     {
+      "pathway": "E1",
+      "smiles": "CC(C)=C(C)C",
+      "name": "2,3-dimethylbut-2-ene",
+      "rank": "major",
+      "via": "methyl shift"
+     },
+     {
+      "pathway": "E1",
+      "smiles": "C=CC(C)(C)C",
+      "name": "3,3-dimethylbut-1-ene",
+      "rank": "minor",
+      "via": "no shift"
+     }
+    ]
+   }
+  },
+  {
+   "id": "W3c",
+   "note": "Worksheet 3c rule (confirmed): 2° allylic chloride + NaOCH3/THF → SN2 major, inversion, stereospecific Y; E2 competing. The worksheet's exact structure isn't recorded in the plan, so this uses (3R)-3-chlorobut-1-ene as a representative 2° allylic chloride.",
+   "substrate": "C=C[C@@H](C)Cl",
+   "substrateName": "(3R)-3-chlorobut-1-ene",
+   "steps": [
+    {
+     "reagent": "NaOCH3",
+     "solvent": "THF"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN2": "major",
+     "E2": "competing"
+    },
+    "stereospecific": {
+     "SN2": true
+    },
+    "products": [
+     {
+      "pathway": "SN2",
+      "smiles": "C=C[C@H](C)OC",
+      "name": "(3S)-3-methoxybut-1-ene",
+      "rank": "major",
+      "stereo": "inversion"
+     }
+    ]
+   }
+  },
+  {
+   "id": "W3d",
+   "note": "Worksheet 3d (confirmed): weak Nu in polar protic solvent with heat → SN1 major, racemic, stereospecific N; E1 competing.",
+   "substrate": "C[C@@H](Br)c1ccccc1",
+   "substrateName": "[(1R)-1-bromoethyl]benzene",
+   "steps": [
+    {
+     "reagent": "CH3OH",
+     "solvent": "MeOH",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN1": "major",
+     "E1": "competing"
+    },
+    "stereospecific": {
+     "SN1": false
+    },
+    "products": [
+     {
+      "pathway": "SN1",
+      "smiles": "CC(OC)c1ccccc1",
+      "name": "(1-methoxyethyl)benzene",
+      "rank": "major",
+      "stereo": "racemic"
+     },
+     {
+      "pathway": "E1",
+      "smiles": "C=Cc1ccccc1",
+      "name": "ethenylbenzene"
+     }
+    ]
+   }
+  },
+  {
+   "id": "W4",
+   "note": "Worksheet 4a–c (confirmed): three ethers via no shift, methyl shift and ring expansion. The answer key doesn't rank them, so no rank is checked.",
+   "substrate": "CC(Br)C1(C)CCCC1",
+   "substrateName": "1-(1-bromoethyl)-1-methylcyclopentane",
+   "steps": [
+    {
+     "reagent": "EtOH",
+     "solvent": "EtOH",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN1": "major",
+     "E1": "competing"
+    },
+    "products": [
+     {
+      "pathway": "SN1",
+      "smiles": "CCOC(C)C1(C)CCCC1",
+      "name": "1-(1-ethoxyethyl)-1-methylcyclopentane",
+      "via": "no shift"
+     },
+     {
+      "pathway": "SN1",
+      "smiles": "CCOC1(C(C)C)CCCC1",
+      "name": "1-ethoxy-1-(propan-2-yl)cyclopentane",
+      "via": "methyl shift"
+     },
+     {
+      "pathway": "SN1",
+      "smiles": "CCOC1(C)CCCCC1C",
+      "name": "1-ethoxy-1,2-dimethylcyclohexane",
+      "via": "ring expansion (5- to 6-membered ring)"
+     }
+    ]
+   }
+  },
+  {
+   "id": "S1-ring",
+   "note": "Spike S1: ring cis/trans with no R/S centre. SN2 inversion turns cis into trans.",
+   "substrate": "I[C@H]1CC[C@@H](C(C)C)CC1",
+   "substrateName": "cis-1-iodo-4-(propan-2-yl)cyclohexane",
+   "steps": [
+    {
+     "reagent": "NaN3",
+     "solvent": "DMF"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN2": "major"
+    },
+    "products": [
+     {
+      "pathway": "SN2",
+      "smiles": "[N-]=[N+]=N[C@@H]1CC[C@@H](C(C)C)CC1",
+      "rank": "major",
+      "stereo": "inversion"
+     }
+    ]
+   }
+  },
+  {
+   "id": "S1-noflip",
+   "note": "Spike S1: inversion where the R/S letter does not change (CH2OCH3 outranks CN but not Br).",
+   "substrate": "COC[C@H](C)Br",
+   "substrateName": "(2S)-2-bromo-1-methoxypropane",
+   "steps": [
+    {
+     "reagent": "NaCN",
+     "solvent": "DMSO"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN2": "major"
+    },
+    "products": [
+     {
+      "pathway": "SN2",
+      "smiles": "COC[C@@H](C)C#N",
+      "name": "(2S)-3-methoxy-2-methylpropanenitrile",
+      "rank": "major",
+      "stereo": "inversion"
+     }
+    ]
+   }
+  },
+  {
+   "id": "S4-pent",
+   "note": "Spike S4 on a longer chain: E major, Z minor, terminal alkene minor; no E/Z on pent-1-ene.",
+   "substrate": "CC(Br)CCC",
+   "substrateName": "2-bromopentane",
+   "steps": [
+    {
+     "reagent": "NaOEt",
+     "solvent": "EtOH",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "E2": "major",
+     "SN2": "minor"
+    },
+    "products": [
+     {
+      "pathway": "E2",
+      "smiles": "C/C=C/CC",
+      "name": "(2E)-pent-2-ene",
+      "rank": "major"
+     },
+     {
+      "pathway": "E2",
+      "smiles": "C/C=C\\CC",
+      "name": "(2Z)-pent-2-ene",
+      "rank": "minor"
+     },
+     {
+      "pathway": "E2",
+      "smiles": "C=CCCC",
+      "name": "pent-1-ene",
+      "rank": "minor"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alcohol-no-activator",
+   "substrate": "CCCCO",
+   "substrateName": "butan-1-ol",
+   "steps": [
+    {
+     "reagent": "NaBr",
+     "solvent": "acetone"
+    }
+   ],
+   "expect": {
+    "lamps": {}
+   }
+  },
+  {
+   "id": "drawn-unknown",
+   "note": "A drawn reagent not in the catalogue: box estimated by the three rules, nucleophile taken from the drawing.",
+   "substrate": "CBr",
+   "substrateName": "bromomethane",
+   "steps": [
+    {
+     "reagentDrawn": "CCC[O-].[Na+]",
+     "solvent": "THF"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN2": "major"
+    },
+    "products": [
+     {
+      "pathway": "SN2",
+      "smiles": "COCCC",
+      "name": "1-methoxypropane",
+      "rank": "major"
+     }
+    ]
+   }
+  }
+ ],
+ "ranking": [
+  {
+   "id": "R-SN2-class",
+   "mode": "SN2",
+   "note": "Textbook order: methyl > 1° > 2°; 3° doesn't react.",
+   "mols": [
+    "CC(C)(C)Br",
+    "CC(Br)CC",
+    "CBr",
+    "CCCCBr"
+   ],
+   "order": [
+    2,
+    3,
+    1,
+    null
+   ]
+  },
+  {
+   "id": "R-SN2-beta",
+   "mode": "SN2",
+   "note": "β-branching slows SN2; neopentyl slowest of the 1°.",
+   "mols": [
+    "CC(C)(C)CBr",
+    "CCCBr",
+    "CC(C)CBr"
+   ],
+   "order": [
+    1,
+    2,
+    0
+   ]
+  },
+  {
+   "id": "R-SN2-LG",
+   "mode": "SN2",
+   "note": "Leaving group: I > Br > Cl.",
+   "mols": [
+    "CC(Cl)C",
+    "CC(I)C",
+    "CC(Br)C"
+   ],
+   "order": [
+    1,
+    2,
+    0
+   ]
+  },
+  {
+   "id": "R-SN1-class",
+   "mode": "SN1",
+   "note": "Cation stability: 3° > 2°; 1° essentially no SN1.",
+   "mols": [
+    "CCCBr",
+    "CC(C)(C)Br",
+    "CC(Br)C"
+   ],
+   "order": [
+    1,
+    2,
+    null
+   ]
+  },
+  {
+   "id": "R-SN1-tie",
+   "mode": "SN1",
+   "note": "Same cation and same leaving group → a tie.",
+   "mols": [
+    "CC(C)(C)Br",
+    "CCC(C)(C)Br"
+   ],
+   "order": [
+    [
+     0,
+     1
+    ]
+   ]
+  }
+ ],
+ "reagentMatching": [
+  {
+   "drawn": "[Na+].[O-]CC",
+   "id": "ethoxide"
+  },
+  {
+   "drawn": "CCO[Na]",
+   "id": "ethoxide"
+  },
+  {
+   "drawn": "[K+].CC(C)(C)[O-]",
+   "id": "tert-butoxide"
+  },
+  {
+   "drawn": "[Na+].[C-]#N",
+   "id": "cyanide"
+  },
+  {
+   "drawn": "[Na+].[I-]",
+   "id": "iodide"
+  },
+  {
+   "drawn": "[Na+].[N-]=[N+]=[N-]",
+   "id": "azide"
+  },
+  {
+   "drawn": "C[S-].[Na+]",
+   "id": "methanethiolate"
+  },
+  {
+   "typed": "NaOEt",
+   "id": "ethoxide"
+  },
+  {
+   "typed": "sodium ethoxide",
+   "id": "ethoxide"
+  },
+  {
+   "typed": "EtONa",
+   "id": "ethoxide"
+  },
+  {
+   "typed": "CH₃SNa",
+   "id": "methanethiolate"
+  },
+  {
+   "typed": "sodium methanethiolate",
+   "id": "methanethiolate"
+  },
+  {
+   "typed": "potassium tert-butoxide",
+   "id": "tert-butoxide"
+  },
+  {
+   "typed": "NaN₃",
+   "id": "azide"
+  },
+  {
+   "guess": "CCC[O-].[Na+]",
+   "box": "nucbase"
+  },
+  {
+   "guess": "CCC(C)(C)[O-].[K+]",
+   "box": "bulky"
+  },
+  {
+   "guess": "CC[S-].[Na+]",
+   "box": "nuc"
+  },
+  {
+   "guess": "CCCO",
+   "box": "weak"
+  },
+  {
+   "solvent": "THF",
+   "type": "aprotic"
+  },
+  {
+   "solvent": "ethanol",
+   "type": "protic"
+  }
+ ]
+}

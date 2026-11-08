@@ -6,6 +6,7 @@
   "scripts": {
     "test": "node tests/run-all.mjs",
     "test:namer": "node tests/namer.test.mjs",
+    "test:reactions": "node tests/reactions.test.mjs",
     "test:chair-report": "node tests/chair.test.mjs",
     "serve": "python3 -m http.server 8765"
   },

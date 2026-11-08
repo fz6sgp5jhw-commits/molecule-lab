@@ -19,10 +19,13 @@ Live at https://fz6sgp5jhw-commits.github.io/molecule-lab/ (GitHub Pages serves 
 | `index.html` | The whole UI: styles, markup and the main module script (editor, facts, 2D/3D views, naming flow, Chair tab UI) |
 | `namer.js` | Built-in IUPAC 2013 namer. `nameMolecule(OCL, mol)` returns `{ name, steps, warnings }` or `{ error }` |
 | `chair.js` | Chair conformations: `findChairRings`, `buildChairs` (both chairs, MMFF energies, axial/equatorial labels), `flipFrames` |
+| `reactivity.js` | SN/E analyser: `analyse` (sites, roles, class, flags, β-H's, cation score), `cationPathways` (1,2-shifts, ring expansion, allylic), `alkenesFrom`, `buildProduct` (graph edits with stereo kept by OpenChemLib) |
+| `reagents.js`, `data/reagents.json` | Reagent catalogue: name/alias and drawn-structure matching (counter-ions stripped), solvents, unknown-reagent guess |
+| `predict.js`, `data/rules.json` | Decision table → lamps (SN1/SN2/E1/E2) + products, sequences, SN1/SN2 rate ranking |
 | `sw.js` | Service worker: precaches the app; PubChem and OPSIN are network-only |
 | `manifest.webmanifest`, `icons/` | Installable app (display: standalone) |
 | `fonts/` | Local Press Start 2P, Pixelify Sans, VT323 |
-| `tests/` | `namer.test.mjs` (Node, 193 cases), `app.test.mjs` and `chair-ui.test.mjs` (Playwright, with fake PubChem/OPSIN responses), `chair.test.mjs` (energy report) |
+| `tests/` | `namer.test.mjs` (Node, 193 cases), `app.test.mjs` and `chair-ui.test.mjs` (Playwright, with fake PubChem/OPSIN responses), `chair.test.mjs` (energy report), `reactions.test.mjs` (Node, table-driven from `seed-cases.json`) |
 | `docs/mechanisms-plan.md` | **Next feature:** SN1/SN2/E1/E2 learning mode. Read this before starting on it. |
 
 ## Useful OpenChemLib facts (learned the hard way)
@@ -33,6 +36,8 @@ Live at https://fz6sgp5jhw-commits.github.io/molecule-lab/ (GitHub Pages serves 
   - Ring cis/trans with no CIP centres shows as `isAtomParityPseudo()`.
 - Conformers: `new ConformerGenerator(seed)` with `initializeConformers(mol)`, then `getNextConformerAsMolecule()`. Minimise with `new ForceFieldMMFF94(mol, 'MMFF94s+').minimise()`.
 - Heavy atoms keep their indices in conformers; hydrogens are appended after them.
+- **Setting stereo by hand:** `getIDCode()` recomputes parities from 2D coordinates and ignores `setAtomParity`/`setBondParity`. To make a set parity stick: `setParitiesValid(0)`, `inventCoordinates()`, `setStereoBondsFromParity()`, then re-read via `Molecule.fromMolfile(m.toMolfile())` (see `buildProduct` in `reactivity.js`).
+- `addBond(a, b, type)` ignores `type`; use `setBondType(addBond(a, b), type)`.
 - Compare structures with ID codes: `getIDCode()`, or `Canonizer` with `CanonizerUtil.NOSTEREO` to ignore stereo.
 
 ## Style
