@@ -30,6 +30,7 @@
     { "when": { "cls": ["2", "3"], "box": "weak" }, "notCovered": "weak_aprotic" },
 
     { "when": { "cls": "3", "box": "nuc", "solvent": "protic" }, "lamps": { "SN1": "major", "E1": "minor" }, "reasons": ["tertiary_no_sn2", "weak_protic_sn1"] },
+    { "when": { "cls": "3", "ab": true, "box": "nuc", "solvent": "aprotic" }, "lamps": { "SN1": "major", "E1": "minor" }, "reasons": ["tertiary_no_sn2", "course_3_ab_aprotic_sn1"] },
     { "when": { "cls": "3", "box": "nuc" }, "notCovered": "tertiary_nuc_aprotic" },
     { "when": { "cls": "3", "box": ["nucbase", "bulky"] }, "lamps": { "E2": "major" }, "reasons": ["tertiary_no_sn2", "tertiary_strong_base"] }
   ],
@@ -51,6 +52,7 @@
     "weak_aprotic": "A weak nucleophile without a polar protic solvent to stabilise a carbocation isn't covered yet.",
     "tertiary_no_sn2": "A 3° carbon is too crowded for backside attack, so SN2 can't happen.",
     "tertiary_strong_base": "A strong base removes a β-hydrogen from the crowded 3° substrate: E2.",
+    "course_3_ab_aprotic_sn1": "Your course (Ch 6 test, 2a): a 3° benzylic or allylic carbon is too crowded for SN2, but its cation is so stable that SN1 happens even in a polar aprotic solvent like DMSO. The product is racemic. The same cation can also lose a β-H (E1); that is shown as minor because the good nucleophile traps the cation first. A plain 3° halide with a good nucleophile in an aprotic solvent is still not covered: textbooks disagree.",
     "tertiary_nuc_aprotic": "A 3° substrate with a good nucleophile in a polar aprotic solvent isn't covered yet: textbooks don't agree on one answer.",
     "oh_protonated": "OH⁻ is a poor leaving group, so the acid first protonates the OH; water (H₂O) is a good leaving group.",
     "hx_primary": "On a 1° alcohol, the halide then attacks from the back (SN2): a 1° carbocation is too unstable.",

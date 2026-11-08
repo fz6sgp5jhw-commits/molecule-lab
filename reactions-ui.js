@@ -434,12 +434,13 @@ export async function mountReactions(app){
     const Nu = r.box === 'activator' ? (nuAtom ? nuAtom + '⁻' : '') : r.id === 'custom' && !sp.endsWith('⁻') ? rLabel : sp;
     const nuCharged = Nu.endsWith('⁻');
     const R0 = r.id === 'water' ? 'H' : r.id === 'custom' ? 'R' : (r.label.replace(/OH$/, '') || r.label);
-    // base: E2 → the reagent; E1 → the solvent (a weak base), which is water for acid dehydration
+    // base: E2 → the reagent; E1 → the solvent (a weak base; water for acid dehydration). An aprotic
+    // solvent (DMSO…) isn't a base, so there the reagent's anion takes the β-H (course rule for 3° benzylic + CN⁻)
     const solv = findSolvent(cat, st.solvent) || { label: 'solvent' };
-    const e1Base = r.act === 'acid' ? 'H₂O' : solv.label;
-    const Base = pw === 'E2' ? speciesText(r) : e1Base;
-    const baseCharged = pw === 'E2' && Base.endsWith('⁻');
-    const baseAtom = pw === 'E2' ? (nuAtom || 'N') : 'O';
+    const reagentBase = pw === 'E2' || (pw === 'E1' && solv.type === 'aprotic' && r.nu && r.box !== 'activator');
+    const Base = reagentBase ? speciesText(r) : r.act === 'acid' ? 'H₂O' : solv.label;
+    const baseCharged = reagentBase && Base.endsWith('⁻');
+    const baseAtom = reagentBase ? (nuAtom || 'N') : 'O';
     // roles and flags
     const roles = { ca: site.ca, lg: site.lgAtom, c: site.ca, cb: null, n: null, g: null, ab: null, y: null };
     const flags = { major: p.rank === 'major', activated: !!act, nuNeutral: !nuCharged, e1: pw === 'E1', hofmann: pw === 'E2' && /Hofmann/.test(p.via || '') };

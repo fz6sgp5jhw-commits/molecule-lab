@@ -252,6 +252,14 @@ try {
   all = await walk();
   ok(/attacks phosphorus/.test(all) && /HOPBr₂/.test(all) && /backside attack/.test(all), 'PBr₃: activation, then SN2 with HOPBr₂ leaving');
 
+  // Ch 6 test 2a: 3° benzylic + NaCN in DMSO → SN1 major (course rule), E1 minor with CN⁻ as the base
+  await setup('CC[C@](C)(Br)c1ccccc1', 'NaCN', true);
+  ok(await page.getAttribute('.lamp[data-pw="SN1"]', 'class') === 'lamp major' && await page.getAttribute('.lamp[data-pw="E1"]', 'class') === 'lamp minor', 'test 2a: SN1 major, E1 minor');
+  await page.click('.lamp[data-pw="E1"]');
+  await page.waitForSelector('#mechDialog');
+  all = await walk();
+  ok(/weak base \(CN⁻\)/.test(all), 'E1 in DMSO: CN⁻ is the base, not the solvent');
+
   // TsCl: step 1 on its own (retention)
   await setup('CC[C@@H](C)O', 'TsCl', false);
   await page.click('#rxCards .rx-watch');
