@@ -221,7 +221,9 @@ function drawFrame(svg, ctx, f, t){
 
   const defs = el('defs', {}, svg);
   const grad = (id, c, a) => { const g = el('radialGradient', { id }, defs); el('stop', { offset: '0', 'stop-color': c, 'stop-opacity': a }, g); el('stop', { offset: '1', 'stop-color': c, 'stop-opacity': 0 }, g); };
-  grad('mvRich', '#ff2a2a', 0.85); grad('mvSome', '#ff5a5a', 0.55); grad('mvPoor', '#a8d0ff', 0.6);
+  // one colour (blue) for electron density: brighter = more electrons; an electron-poor C⁺/δ+ carbon only glows faintly,
+  // so the bond that breaks there stays easy to see
+  grad('mvRich', '#6cc4ff', 1); grad('mvSome', '#6cc4ff', 0.6); grad('mvPoor', '#6cc4ff', 0.2);
   const mk = el('marker', { id: 'mvHead', viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 9, markerHeight: 9, markerUnits: 'userSpaceOnUse', orient: 'auto-start-reverse' }, defs);
   el('path', { d: 'M0,0 L10,5 L0,10 z', fill: '#c00000' }, mk);
 
@@ -273,7 +275,7 @@ function drawForm(svg, ctx, f, { P, R, anyR, tok, show }){
   }
 
   // electron density clouds
-  const cloudR = { rich: 34, some: 27, poor: 24 };
+  const cloudR = { rich: 38, some: 30, poor: 20 };
   const cloudG = { rich: 'url(#mvRich)', some: 'url(#mvSome)', poor: 'url(#mvPoor)' };
   for (const [role, lvl] of Object.entries(f.clouds || {})){
     const x = R(role); if (!x || !lvl) continue;
@@ -506,7 +508,7 @@ export function openMechanism(host, opts){
   host.hidden = false;
   host.innerHTML = `
     <div class="mv-grid">
-      <div class="mv-stage"><svg class="mv-svg" role="img" aria-label="Mechanism drawing"></svg><div class="mv-result"></div></div>
+      <div class="mv-stage"><svg class="mv-svg" role="img" aria-label="Mechanism drawing"></svg><div class="mv-key">${esc(texts.ui.densityKey)}</div><div class="mv-result"></div></div>
       <div class="mv-sidecol">
         <div class="mv-side"></div>
         <div class="mv-dialog" id="mechDialog" role="button" tabindex="0" aria-live="polite">

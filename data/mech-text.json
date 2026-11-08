@@ -3,7 +3,7 @@
   "speaker": "LAB",
   "frames": {
     "sn2_meet": {
-      "text": "Meet the players. {Nu} is the [[nucleophile]]: it is rich in electrons (red cloud). The C–{LG} bond is polar, so the carbon is [[electrophile|electron-poor]] (δ+) and {LG} is δ−.",
+      "text": "Meet the players. {Nu} is the [[nucleophile]]: it is rich in electrons (bright blue glow: lots of electron density). The C–{LG} bond is polar, so the carbon is [[electrophile|electron-poor]] (δ+, only a faint glow) and {LG} is δ−.",
       "why": [
         "{LG} is more [[electronegativity|electronegative]] than carbon, so it pulls the shared electrons of the C–{LG} bond towards itself. That leaves the carbon slightly positive (δ+).",
         "Opposite charges attract: the electron-rich {Nu} is drawn to the δ+ carbon. That pull is the dashed line."
@@ -38,7 +38,7 @@
       ]
     },
     "sn2_meet_act": {
-      "text": "Step 2: the OH is now {LG}, a good [[leaving group]]. {Nu} is the [[nucleophile]] (red cloud). The C–O bond is very polar, so the carbon is [[electrophile|electron-poor]] (δ+).",
+      "text": "Step 2: the OH is now {LG}, a good [[leaving group]]. {Nu} is the [[nucleophile]] (bright blue glow). The C–O bond is very polar, so the carbon is [[electrophile|electron-poor]] (δ+).",
       "why": [
         "OH⁻ is a strong base, so it is a poor leaving group. After activation the group that leaves is {LGion}, a weak base, so the C–O bond can break."
       ]
@@ -414,7 +414,8 @@
     "offerMinor": "{other} also competes here. See it?",
     "offerMajor": "{other} is the major path here. See it?",
     "offerButton": "▶ See {other}",
-    "activationWatch": "▶ Watch step 1"
+    "activationWatch": "▶ Watch step 1",
+    "densityKey": "Blue glow = electron density: bright = electron-rich, faint = electron-poor."
   },
   "quiz": {
     "attack": {

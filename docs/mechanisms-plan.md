@@ -179,7 +179,7 @@ Agreed with Peter on 2026-11-07. This is a **visual learning tool**: every step 
 
 **Mechanism screen** (one pathway at a time; stacked on a phone, two columns on a laptop):
 - **Frames:** 2D drawing, arrows that draw themselves, bonds fading out or in, charges appearing. Short transitions between frames.
-- **Electron density layer:** red clouds where electrons are rich (Nu lone pair, LG), pale where poor (Cα), plus δ+/δ− labels. Updated every frame. A **pull line** from the Nu lone pair to Cα tightens over the frames into the new bond.
+- **Electron density layer:** one blue glow for electron density (Peter, 2026-11-08): bright where electrons are rich (Nu lone pair, LG), faint where poor (Cα, C⁺) so the breaking bond stays visible, plus δ+/δ− labels. Updated every frame. A **pull line** from the Nu lone pair to Cα tightens over the frames into the new bond.
 - **Energy:** a small **hill with a ball** (one hump for SN2/E2; two humps with a dip for the carbocation in SN1/E1) that moves with the frames, plus a **stability meter** for "how happy is the molecule now" (explains cation class and shifts). Qualitative, no numbers.
 - **Dialog box** in retro RPG style (pixel font, typewriter text, blinking ▼): tap to finish the text, tap again for the next step. **WHY?** adds 1–3 extra pages to the same box (e.g. "the 2° cation shifts a hydride because the 3° cation is stabilised by three neighbouring carbons (hyperconjugation)"). Plain wording, with exam terms highlighted; tap a term for its definition (glossary).
 - **Alcohol activation** (protonation, tosylate, PBr₃, SOCl₂) gets full frames of its own.
