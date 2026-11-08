@@ -35,7 +35,10 @@ try {
   await page.waitForFunction(() => document.querySelectorAll('#rxReagentChips .chip').length > 0, null, { timeout: 10000 });
   ok(await page.isHidden('#rxWin') && await page.isVisible('#viewer3d'), 'Molecule tab first: Reactions hidden');
   await page.click('.apptab[data-app="rx"]');
-  ok(await page.isVisible('#rxWin') && await page.isHidden('#viewer3d') && await page.isVisible('#editor'), 'Reactions tab: Reactions + editor shown, viewer hidden');
+  ok(await page.isVisible('#rxWin') && await page.isVisible('#viewer3d') && await page.isVisible('#editor'), 'Reactions tab: Reactions, editor and Viewer shown');
+  { const v = await page.locator('#viewerWin').boundingBox(), r = await page.locator('#rxWin').boundingBox();
+    ok(v && r && v.x + v.width <= r.x, 'Reactions tab: the Viewer sits in the left column'); }
+  ok(/Press Predict/.test(await text('#sceneAdd')), 'Viewer quick-add: hint before a prediction');
 
   // substrate: 2-bromobutane (SMILES through the Build box)
   await page.fill('#nameInput', 'CCC(C)Br');
@@ -148,12 +151,10 @@ try {
   ok(/benzylic carbocation/.test(all) && /oxonium/.test(all) && !/shift:/.test(all), 'SN1 (W3d): ionise → benzylic C⁺ → oxonium, no shift step');
   ok(/both configurations/.test(all) && /not stereospecific/.test(all), 'SN1 result: racemic, not stereospecific');
   await page.waitForTimeout(600);
-  const b3d = await page.locator('#prod3dWin').boundingBox(), bmech = await page.locator('#mechWin').boundingBox();
-  ok(await page.isVisible('#prod3dWin') && b3d && bmech && b3d.x + b3d.width <= bmech.x, 'last step (laptop): "Product in 3D" window in the left column');
-  ok(await page.locator('#prod3dWin .rx-3dview canvas').count() > 0 && /mirror images/.test(await text('#prod3dWin .rx-3dcap')), 'product 3D drawn; racemic caption');
-  await page.click('.mv-back');
-  ok(await page.isHidden('#prod3dWin'), 'product 3D window hides off the last step');
-  await page.click('.mv-next');
+  ok(await page.locator('#sceneChips .chip[aria-pressed="true"]').count() === 1 && /SN1 major/.test(await text('#sceneChips .chip[aria-pressed="true"]')), 'last step (laptop): the product is added to the Viewer\'s 3D scene');
+  ok(/reagent|CH₃OH/.test(await text('#sceneChips')) && /Br⁻/.test(await text('#sceneChips')), 'quick-add offers the reagent and the leaving group');
+  await page.locator('#sceneChips .chip', { hasText: 'Br⁻' }).click();
+  ok(await page.locator('#sceneChips .chip[aria-pressed="true"]').count() === 2, 'quick-add: a second molecule joins the scene');
   ok((await text('.mv-offer')).includes('E1 also competes'), 'SN1 end: offers the competing E1');
   await page.check('.mv-skipbox');
   ok(await steps() === n3d - 1, 'Skip proton transfers removes the oxonium deprotonation');
@@ -188,12 +189,10 @@ try {
   ok(quizzed === 2, `W4 SN1 asks two quiz questions (got ${quizzed})`);
   ok(/ring expansion/.test(all) && /New cation: 3°/.test(all), 'W4: ring expansion step, 2° → 3° cation');
   ok((await text('.mv-result')).includes('cyclohexane'), 'W4: product card is the cyclohexane ether');
-  // the product's 3D view: the mechanism stays on the Reactions tab, marked as for the earlier substrate
-  await page.click('.mv-result .rx-3d');
+  // Load into editor: the mechanism stays, marked as for the earlier substrate
+  await page.click('.mv-result .rx-load');
   await page.waitForTimeout(500);
-  ok(await page.isVisible('#viewer3d'), 'View in 3D: Molecule tab with the 3D viewer');
-  await page.click('.apptab[data-app="rx"]');
-  ok(await page.isVisible('#mechDialog') && /earlier substrate/.test(await text('#rxStale')), 'back on Reactions: mechanism kept, marked as the earlier substrate');
+  ok(await page.isVisible('#mechDialog') && /earlier substrate/.test(await text('#rxStale')), 'Load into editor: mechanism kept, marked as the earlier substrate');
   await page.click('.mv-back');
   ok(/./.test(await dialog()), 'kept mechanism still steps');
   await page.uncheck('.mv-quizbox');

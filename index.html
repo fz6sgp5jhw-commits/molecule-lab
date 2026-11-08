@@ -262,8 +262,8 @@
   @container (min-width:440px){.rx-final{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
   .rx-3dbox{background:#000;box-shadow:var(--sunken);padding:4px;min-width:0}
   .rx-3dview{position:relative;width:100%;height:240px}
-  #prod3dWin{position:sticky;top:12px}
-  #prod3dWin .rx-3dview{height:min(60vh,420px)}
+  .scene-add{padding:4px 2px 6px}
+  .scene-add .chips{margin-top:4px}
   .rx-3dview.none{height:auto;color:#33ff66;font:15px var(--crt);padding:8px}
   .rx-3dcap{color:#33ff66;font:14px/1.2 var(--crt);padding:4px 2px 0}
   .mv-sidecol{display:flex;flex-direction:column;gap:8px;min-width:0}
@@ -370,14 +370,10 @@
         <div class="note" id="aiNote">Formula, mass, stereo (R/S, E/Z) and SMILES are calculated in the page and are reliable. Names are looked up in <a href="https://pubchem.ncbi.nlm.nih.gov/" target="_blank" rel="noopener">PubChem</a> (NIH). For structures PubChem doesn’t have, the app names them with its own IUPAC 2013 rules (chains, rings, benzene and the common functional groups). Every name is checked with <a href="https://www.ebi.ac.uk/opsin/" target="_blank" rel="noopener">OPSIN</a>, which reads it back into a structure. When the app can’t name something, it says so rather than guessing.</div>
       </div>
     </section>
-    <section class="card rx-only" id="prod3dWin" hidden>
-      <div class="card-h"><h2>Product in 3D</h2></div>
-      <div class="card-b"><div id="prod3dMount"></div></div>
-    </section>
   </div>
 
   <div class="col">
-    <section class="card mol-only">
+    <section class="card" id="viewerWin">
       <div class="card-h"><h2>Viewer</h2><span class="wbtns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span></div>
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" data-view="v3d" aria-selected="true">3D model</button>
@@ -388,6 +384,7 @@
       </div>
       <div class="panel">
       <div class="view active" id="v3d">
+        <div class="rx-only scene-add" id="sceneAdd"><span class="rx-lab" id="sceneNote"></span><div class="chips" id="sceneChips"></div></div>
         <div id="viewer3d"><div class="overlay" id="overlay3d">Your molecule will appear here in 3D.</div></div>
         <div class="controls">
           <div class="seg" id="styleSeg">
@@ -624,10 +621,29 @@ function render2D(m){
   }
 }
 
+// Reaction molecules shown beside the main one (Reactions tab quick-add): [{ key, label, mol, conf? }]
+const scene = { extras: [], tags: [] };
+function conformerOf(m, seed){
+  let c = null;
+  try {
+    c = new OCL.ConformerGenerator(seed).getOneConformerAsMolecule(m.getCompactCopy());
+    if (c){ try { new OCL.ForceFieldMMFF94(c, 'MMFF94s+').minimise({ maxIts: 4000 }); } catch {} }
+  } catch (e) { console.warn(e); }
+  return c;
+}
+const centre = (c, ax) => { let t = 0; const n = c.getAllAtoms(); for (let a = 0; a < n; a++) t += ax === 'y' ? c.getAtomY(a) : c.getAtomZ(a); return t / (n || 1); };
+const plain = (t) => t.replace(/[₀-₉]/g, (d) => '0123456789'['₀₁₂₃₄₅₆₇₈₉'.indexOf(d)]).replace(/⁻/g, '-').replace(/⁺/g, '+');
+function xyzOf(c){
+  let t = `${c.getAllAtoms()}\n\n`;
+  for (let i = 0; i < c.getAllAtoms(); i++) t += `${c.getAtomLabel(i)} ${c.getAtomX(i).toFixed(4)} ${c.getAtomY(i).toFixed(4)} ${c.getAtomZ(i).toFixed(4)}\n`;
+  return t;
+}
+const xRange = (c) => { let lo = Infinity, hi = -Infinity; for (let a = 0; a < c.getAllAtoms(); a++){ lo = Math.min(lo, c.getAtomX(a)); hi = Math.max(hi, c.getAtomX(a)); } return [lo, hi]; };
+function set3DExtras(list){ scene.extras = list; build3D(state.mol); }
 function build3D(m){
   const v = getViewer();
   if (!v) return;
-  v.removeAllModels(); v.removeAllLabels();
+  v.removeAllModels(); v.removeAllLabels(); scene.tags = [];
   if (!m){ $('overlay3d').style.display='flex'; $('overlay3d').textContent='Your molecule will appear here in 3D.'; v.render(); return; }
   let conf = null;
   try {
@@ -636,7 +652,25 @@ function build3D(m){
   } catch (e) { console.warn(e); }
   if (!conf){ $('overlay3d').style.display='flex'; $('overlay3d').textContent='Couldn’t build a 3D shape for this structure. Check for impossible valences.'; v.render(); return; }
   $('overlay3d').style.display='none';
-  v.addModel(conf.toMolfile(), 'sdf');
+  // with reaction molecules beside it, every model is written as XYZ (same raw coordinates for all;
+  // toMolfile() rescales coordinates, which would misplace the row)
+  v.addModel(scene.extras.length ? xyzOf(conf) : conf.toMolfile(), scene.extras.length ? 'xyz' : 'sdf');
+  // extras go in a row to the right, 2.5 Å apart, each labelled underneath
+  if (scene.extras.length){
+    let [lo, right] = xRange(conf);
+    scene.tags.push({ text: 'substrate', x: (lo + right) / 2, z: centre(conf, 'z') });
+    for (const e of scene.extras){
+      e.conf = e.conf || conformerOf(e.mol, 1);
+      if (!e.conf) continue;
+      // in a row to the right, at the substrate's height and depth
+      const c = e.conf.getCompactCopy(), [a, b] = xRange(c), dx = right + 2.5 - a;
+      const dy = centre(conf, 'y') - centre(c, 'y'), dz = centre(conf, 'z') - centre(c, 'z');
+      for (let i = 0; i < c.getAllAtoms(); i++){ c.setAtomX(i, c.getAtomX(i) + dx); c.setAtomY(i, c.getAtomY(i) + dy); c.setAtomZ(i, c.getAtomZ(i) + dz); }
+      v.addModel(xyzOf(c), 'xyz');
+      scene.tags.push({ text: plain(e.label), x: right + 2.5 + (b - a) / 2, z: centre(conf, 'z') });
+      right += 2.5 + (b - a);
+    }
+  }
   apply3DStyle();
   v.zoomTo(); v.zoom(0.9); v.render();
 }
@@ -659,6 +693,10 @@ function apply3DStyle(){
       if (a.elem === 'H' && !$('showH').checked) continue;
       v.addLabel(a.elem, { position: { x:a.x, y:a.y, z:a.z }, fontSize: 12, fontColor: 'white', backgroundOpacity: 0.35, backgroundColor: 'black', inFront: true, alignment: 'center' });
     }
+  }
+  if (scene.tags.length){
+    const ys = v.selectedAtoms({}).map((a) => a.y), low = Math.min(...ys) - 1.6;
+    for (const t of scene.tags) v.addLabel(t.text, { position: { x: t.x, y: low, z: t.z }, fontSize: 12, fontColor: '#33ff66', backgroundColor: 'black', backgroundOpacity: 0.6, alignment: 'center' });
   }
   v.spin($('spin').checked ? 'y' : false);
   v.render();
@@ -1246,7 +1284,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:'){
 loadMolecule(OCL.Molecule.fromSmiles('CC(C)CCO'));
 
 // Reactions window + mechanism viewer (code lives in reactions-ui.js / mech-view.js)
-window.reactions = mountReactions({ OCL, editor, loadMolecule, getMol: () => state.mol, naming: { pubchemProps, opsin, compareMols, nameMolecule } })
+window.reactions = mountReactions({ OCL, editor, loadMolecule, set3DExtras, getMol: () => state.mol, naming: { pubchemProps, opsin, compareMols, nameMolecule } })
   .catch((e) => { console.error(e); const m = $('rxMsg'); m.hidden = false; m.className = 'msg bad'; m.textContent = 'The Reactions window couldn’t load: ' + e.message; });
 </script>
 </body>

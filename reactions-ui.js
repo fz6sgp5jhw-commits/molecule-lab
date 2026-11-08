@@ -37,7 +37,7 @@ export async function mountReactions(app){
   const { OCL } = app;
   const [rules, cat, texts] = await Promise.all(['./data/rules.json', './data/reagents.json', './data/mech-text.json']
     .map((u) => fetch(u).then((r) => r.json())));
-  const st = { key: null, mol: null, sites: [], site: 0, frags: [], reagent: null, drawn: null, guess: null, solvent: null, heat: false, res: null, ed: null, quiet: false, mech: null };
+  const st = { scene: [], sceneSig: '', sceneNames: {}, key: null, mol: null, sites: [], site: 0, frags: [], reagent: null, drawn: null, guess: null, solvent: null, heat: false, res: null, ed: null, quiet: false, mech: null };
   const reason = (k) => rules.reasons[k] || k;
 
   // ---------- naming (PubChem → built-in namer → OPSIN check), same order as the main window ----------
@@ -292,7 +292,7 @@ export async function mountReactions(app){
 
   // ---------- predict ----------
   function setMsg(t, kind = 'warn'){ const m = $('rxMsg'); m.hidden = !t; m.className = 'msg ' + kind; m.textContent = t; }
-  function clearOut(){ $('rxOut').hidden = true; $('rxStale').hidden = true; st.res = null; st.resAn = null; closeMech(); }
+  function clearOut(){ $('rxOut').hidden = true; $('rxStale').hidden = true; st.res = null; st.resAn = null; closeMech(); st.scene = []; renderScene(); }
   $('rxPredict').onclick = () => {
     if (!st.mol){ setMsg('Draw a substrate in the editor first.'); return; }
     if (!st.reagent){ setMsg('Pick a reagent first: type it, tap a chip, or draw it.'); return; }
@@ -303,7 +303,9 @@ export async function mountReactions(app){
     $('rxStale').hidden = true; closeMech();
     st.res = res;
     st.resAn = st.an; // the mechanism viewer keeps using this substrate even after a product is loaded
+    st.scene = [];
     renderResult(res);
+    renderScene();
   };
 
   function renderResult(res){
@@ -379,10 +381,9 @@ export async function mountReactions(app){
     nameLine(p.mol, div.querySelector('.rx-nameline'));
     const w = div.querySelector('.rx-watch'); if (w) w.onclick = () => (pw === 'activation' ? openActivation(p) : openPathway(pw, p));
     div.querySelector('.rx-load').onclick = () => { st.keepOut = true; app.loadMolecule(p.mol.getCompactCopy()); $('editor').scrollIntoView({ behavior: smooth(), block: 'center' }); };
-    // the product's own views (name, facts, 3D model) live on the Molecule tab; the reaction stays on the Reactions tab
+    // add this product to the Viewer's 3D scene, next to the substrate
     div.querySelector('.rx-3d').onclick = () => {
-      st.keepOut = true; app.loadMolecule(p.mol.getCompactCopy());
-      setApp('mol');
+      toggleScene(`${pw}:${p.idcode}`, true);
       const t = document.querySelector('.tab[data-view="v3d"]'); if (t) t.click();
       $('viewer3d').scrollIntoView({ behavior: smooth(), block: 'center' });
     };
@@ -390,9 +391,8 @@ export async function mountReactions(app){
   }
 
   // ---------- the mechanism's last step: product in 3D ----------
-  // Laptop (two columns): its own "Product in 3D" window in the left column's empty space, pinned while
-  // scrolling, shown only on the last step. Phone (one column): inside the last step, above the card.
-  // One 3D box per mechanism, moved between the two places. The shape is a computed conformer
+  // Laptop (two columns): the product joins the Viewer's 3D scene (left column), next to the substrate.
+  // Phone (one column): the Viewer is far above, so a small 3D box sits inside the last step instead. The shape is a computed conformer
   // (OpenChemLib + MMFF94s+), like the Molecule tab's 3D model.
   const finalHooks = (fv) => ({ resultCard: () => fv.card(), onResult: (on) => fv.shown(on) });
   const wide = () => typeof matchMedia === 'function' && matchMedia('(min-width: 981px)').matches;
@@ -424,23 +424,57 @@ export async function mountReactions(app){
     return {
       // the element for the mechanism's last step
       card(){
-        if (wide()){
-          $('prod3dMount').replaceChildren(box);
-          $('prod3dWin').hidden = false;
-          wrap.replaceChildren(cardEl);
-        } else {
-          $('prod3dWin').hidden = true;
-          wrap.replaceChildren(box, cardEl);
-        }
+        if (wide()){ toggleScene(`${pw}:${p.idcode}`, true); wrap.replaceChildren(cardEl); return wrap; }
+        wrap.replaceChildren(box, cardEl);
         requestAnimationFrame(build); // the viewer needs the box on the page, with its size
         return wrap;
       },
-      shown(onLast){ if (!onLast) $('prod3dWin').hidden = true; },
+      shown(){},
     };
   }
 
+  // ---------- quick-add: the reaction's other molecules in the Viewer's 3D scene ----------
+  // Shown beside the substrate (the editor's molecule), left to right in the order they were added.
+  // Groundwork for a 3D view of the whole reaction.
+  function sceneItems(){
+    const res = st.res, r = st.reagent, out = [];
+    if (!res || res.notCovered) return out;
+    if (r && r.smiles && r.smiles[0]){ try { out.push({ key: 'reagent', label: speciesText(r), mol: OCL.Molecule.fromSmiles(r.smiles[0]) }); } catch {} }
+    if (res.site && /^(Cl|Br|I|F)$/.test(res.site.lg)) out.push({ key: 'lg', label: res.site.lg + '⁻', mol: OCL.Molecule.fromSmiles(`[${res.site.lg}-]`) });
+    if (res.activation) out.push({ key: 'activation:' + res.activation.product.idcode, label: 'step 1 product', mol: res.activation.product.mol, p: res.activation.product });
+    for (const pw of PATHWAYS){
+      const o = res.pathways[pw];
+      if (!o || o.lamp === 'none') continue;
+      o.products.forEach((p, i) => out.push({ key: `${pw}:${p.idcode}`, label: st.sceneNames[p.idcode] ? `${pw} ${p.rank || ''}: ${st.sceneNames[p.idcode]}` : `${pw} ${p.rank || ''} #${i + 1}`, mol: p.mol, p }));
+    }
+    return out;
+  }
+  function renderScene(){
+    const items = sceneItems();
+    $('sceneNote').textContent = items.length ? texts.ui.sceneNote : texts.ui.sceneEmpty;
+    $('sceneChips').replaceChildren(...items.map((it) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.key = it.key;
+      b.textContent = it.label;
+      b.setAttribute('aria-pressed', String(st.scene.includes(it.key)));
+      if (it.p && !st.sceneNames[it.p.idcode]) nameOf(it.mol).then((n) => { if (n.name){ st.sceneNames[it.p.idcode] = n.name; b.textContent = `${it.label.replace(/ #\d+$/, '')}: ${n.name}`; } });
+      b.onclick = () => toggleScene(it.key);
+      return b;
+    }));
+    const byKey = new Map(items.map((it) => [it.key, it]));
+    const extras = st.scene.map((k) => byKey.get(k)).filter(Boolean);
+    const sig = extras.map((e) => e.key).join('|');
+    if (sig !== st.sceneSig){ st.sceneSig = sig; app.set3DExtras(extras); } // rebuild the 3D scene only when it changes
+  }
+  function toggleScene(key, on){
+    const has = st.scene.includes(key);
+    if (on === undefined) on = !has;
+    if (on === has) return;
+    st.scene = on ? [...st.scene, key] : st.scene.filter((k) => k !== key);
+    renderScene();
+  }
+
   // ---------- mechanism ----------
-  function closeMech(){ if (st.mech){ st.mech.close(); st.mech = null; } $('mechWin').hidden = true; $('prod3dWin').hidden = true; $('prod3dMount').replaceChildren(); }
+  function closeMech(){ if (st.mech){ st.mech.close(); st.mech = null; } $('mechWin').hidden = true; }
   $('mechClose').onclick = closeMech;
   // pw's mechanism for one product (default: its first, i.e. the major one). Several products of one
   // pathway (SN1 with/without a shift, E2 Zaitsev/Hofmann) each get a Watch button, so each can be followed.
@@ -597,7 +631,12 @@ export async function mountReactions(app){
   }
 
   // ---------- Molecule | Reactions sections (remembered per viewer; #reactions links straight here) ----------
+  // The Viewer window lives in the right column on the Molecule tab; on Reactions it moves under the
+  // Draw window (left column), so it stays visible beside the reaction. Moving it keeps the 3D canvas.
+  const viewerHome = $('viewerWin').parentElement;
   function setApp(tab, remember = true){
+    if (tab === 'rx') $('editor').closest('section').after($('viewerWin'));
+    else viewerHome.prepend($('viewerWin'));
     document.querySelector('main').dataset.app = tab;
     for (const b of document.querySelectorAll('.apptab')) b.setAttribute('aria-selected', String(b.dataset.app === tab));
     if (remember){
