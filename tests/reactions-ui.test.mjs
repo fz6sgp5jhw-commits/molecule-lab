@@ -181,6 +181,14 @@ try {
   ok(quizzed === 2, `W4 SN1 asks two quiz questions (got ${quizzed})`);
   ok(/ring expansion/.test(all) && /New cation: 3°/.test(all), 'W4: ring expansion step, 2° → 3° cation');
   ok((await text('.mv-result')).includes('cyclohexane'), 'W4: product card is the cyclohexane ether');
+  // the product's 3D view: the mechanism stays on the Reactions tab, marked as for the earlier substrate
+  await page.click('.mv-result .rx-3d');
+  await page.waitForTimeout(500);
+  ok(await page.isVisible('#viewer3d'), 'View in 3D: Molecule tab with the 3D viewer');
+  await page.click('.apptab[data-app="rx"]');
+  ok(await page.isVisible('#mechDialog') && /earlier substrate/.test(await text('#rxStale')), 'back on Reactions: mechanism kept, marked as the earlier substrate');
+  await page.click('.mv-back');
+  ok(/./.test(await dialog()), 'kept mechanism still steps');
   await page.uncheck('.mv-quizbox');
 
   // E2: 2-bromobutane + NaOEt, heat → Zaitsev, anti-periplanar H drawn, three arrows

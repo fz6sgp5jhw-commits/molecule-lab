@@ -415,7 +415,9 @@
     "offerMajor": "{other} is the major path here. See it?",
     "offerButton": "▶ See {other}",
     "activationWatch": "▶ Watch step 1",
-    "densityKey": "Blue glow = electron density: bright = electron-rich, faint = electron-poor."
+    "densityKey": "Blue glow = electron density: bright = electron-rich, faint = electron-poor.",
+    "stale": "These results and the mechanism are for the earlier substrate. The editor now holds the product: press Predict to react it (e.g. step 2), or open the Molecule tab to see its name and 3D model.",
+    "view3d": "View in 3D"
   },
   "quiz": {
     "attack": {

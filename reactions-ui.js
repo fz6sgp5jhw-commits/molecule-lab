@@ -131,10 +131,12 @@ export async function mountReactions(app){
   function onMolecule(m){
     // the editor also reports redraws as changes; only a different structure resets the window
     const key = m ? m.getIDCode() : '';
-    if (key === st.key) return;
+    if (key === st.key){ st.keepOut = false; return; }
     st.key = key;
     st.mol = m; st.site = 0; st.sites = []; st.an = null; st.frags = [];
-    clearOut();
+    // a product loaded from a result card keeps the results and mechanism on screen (marked as earlier)
+    if (st.keepOut && st.res){ st.keepOut = false; $('rxStale').textContent = texts.ui.stale; $('rxStale').hidden = false; }
+    else { st.keepOut = false; clearOut(); }
     if (m){
       try { st.frags = m.getFragments(); } catch { st.frags = [m]; }
       if (st.frags.length === 1){ st.an = analyse(OCL, m); st.sites = st.an.sites; }
@@ -290,7 +292,7 @@ export async function mountReactions(app){
 
   // ---------- predict ----------
   function setMsg(t, kind = 'warn'){ const m = $('rxMsg'); m.hidden = !t; m.className = 'msg ' + kind; m.textContent = t; }
-  function clearOut(){ $('rxOut').hidden = true; st.res = null; closeMech(); }
+  function clearOut(){ $('rxOut').hidden = true; $('rxStale').hidden = true; st.res = null; st.resAn = null; closeMech(); }
   $('rxPredict').onclick = () => {
     if (!st.mol){ setMsg('Draw a substrate in the editor first.'); return; }
     if (!st.reagent){ setMsg('Pick a reagent first: type it, tap a chip, or draw it.'); return; }
@@ -298,7 +300,9 @@ export async function mountReactions(app){
     let res;
     try { res = predict(OCL, st.mol, st.reagent, { solvent: st.solvent, heat: st.heat, site: st.sites.length > 1 ? st.site : undefined }, { rules, cat }); }
     catch (e) { console.error(e); setMsg('Something went wrong in the prediction: ' + e.message, 'bad'); return; }
+    $('rxStale').hidden = true; closeMech();
     st.res = res;
+    st.resAn = st.an; // the mechanism viewer keeps using this substrate even after a product is loaded
     renderResult(res);
   };
 
@@ -371,10 +375,17 @@ export async function mountReactions(app){
         ${p.via ? `<dt>Via</dt><dd>${esc(p.via)}</dd>` : ''}
       </dl>
       ${extra ? `<div class="note">${esc(extra)}</div>` : ''}
-      <div class="row"><button type="button" class="rx-load">Load into editor</button>${(out || pw === 'activation') && !inMech ? '<button type="button" class="rx-watch">▶ Watch</button>' : ''}</div>`;
+      <div class="row"><button type="button" class="rx-load">Load into editor</button><button type="button" class="rx-3d">${esc(texts.ui.view3d)}</button>${(out || pw === 'activation') && !inMech ? '<button type="button" class="rx-watch">▶ Watch</button>' : ''}</div>`;
     nameLine(p.mol, div.querySelector('.rx-nameline'));
     const w = div.querySelector('.rx-watch'); if (w) w.onclick = () => (pw === 'activation' ? openActivation(p) : openPathway(pw, p));
-    div.querySelector('.rx-load').onclick = () => { app.loadMolecule(p.mol.getCompactCopy()); $('editor').scrollIntoView({ behavior: smooth(), block: 'center' }); };
+    div.querySelector('.rx-load').onclick = () => { st.keepOut = true; app.loadMolecule(p.mol.getCompactCopy()); $('editor').scrollIntoView({ behavior: smooth(), block: 'center' }); };
+    // the product's own views (name, facts, 3D model) live on the Molecule tab; the reaction stays on the Reactions tab
+    div.querySelector('.rx-3d').onclick = () => {
+      st.keepOut = true; app.loadMolecule(p.mol.getCompactCopy());
+      setApp('mol');
+      const t = document.querySelector('.tab[data-view="v3d"]'); if (t) t.click();
+      $('viewer3d').scrollIntoView({ behavior: smooth(), block: 'center' });
+    };
     return div;
   }
 
@@ -405,7 +416,7 @@ export async function mountReactions(app){
 
   // The prepared substrate (same atom indices as the analysis), as a fresh copy: the viewer lays it out
   // and sets helper arrays on it, so the stored analysis isn't touched.
-  function subMol(){ const c = (st.an ? st.an.mol : analyse(OCL, st.mol).mol).getCompactCopy(); c.ensureHelperArrays(OCL.Molecule.cHelperRings); return c; }
+  function subMol(){ const c = (st.resAn || st.an || analyse(OCL, st.mol)).mol.getCompactCopy(); c.ensureHelperArrays(OCL.Molecule.cHelperRings); return c; }
   // Everything the viewer needs to follow this product: roles (atom indices), flags (which optional
   // frames apply), tokens (charges/labels that depend on the reagent) and the text variables.
   function mechOptions(pw, p, out){
