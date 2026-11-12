@@ -915,6 +915,8 @@ export async function mountReactions(app){
     $('rxPredict').click();
     $('rxWin').scrollIntoView({ behavior: smooth(), block: 'start' });
   }
+  // a Study sheet card's Try it (study.js): same as the grid's, on the Reactions tab
+  document.addEventListener('ml:try', (e) => { setApp('rx'); tryExample(e.detail); });
   mountGrid({ rules, cat, texts, tryIt: tryExample, svgOf, nameLocal: (m) => { try { return app.naming.nameMolecule(OCL, m).name || null; } catch { return null; } }, OCL });
 
   document.addEventListener('ml:molecule', (e) => onMolecule(e.detail));

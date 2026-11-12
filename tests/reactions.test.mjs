@@ -204,4 +204,23 @@ for (const row of data.rules.rows) for (const k of [...(row.reasons || []), row.
   }
 }
 
+// ---------- Study sheet (data/study.json): examples really give their card's pathway; text present ----------
+{
+  const { cardsOf, glossaryOf } = await import('../study.js');
+  const { predict } = await import('../predict.js');
+  const study = JSON.parse(readFileSync(here('../data/study.json'))), T = JSON.parse(readFileSync(here('../data/mech-text.json')));
+  const cards = cardsOf(T, study);
+  for (const c of cards){
+    if (!c.title || !c.rows.length || c.rows.some((r) => r.length !== 2 || !r[0] || !r[1])) fail('study', `card ${c.id}: empty title or bad row`);
+    if (!c.example) continue;
+    const e = c.example;
+    if (!findReagent(data.cat, e.reagent)) { fail('study', `card ${c.id}: reagent ${e.reagent} not in the catalogue`); continue; }
+    const res = predict(OCL, M.fromSmiles(e.smiles), e.reagent, { solvent: e.solvent, heat: e.heat }, data);
+    if (res.lamps[c.id] !== 'major') fail('study', `card ${c.id}: example ${e.smiles} + ${e.reagent} gives ${c.id} ${res.lamps[c.id] || 'none'}, not major`);
+  }
+  const g = glossaryOf(T, study);
+  if (g.length !== new Set(g.map((x) => x.term)).size || g.length < 50) fail('study', `glossary: ${g.length} terms (duplicates or too few)`);
+  for (const x of g) if (!/:\s/.test(x.text)) fail('study', `glossary ${x.term}: text should start "Term: …"`);
+}
+
 if (fails.length){ console.log(fails.join('\n')); process.exit(1); }

@@ -10,6 +10,8 @@ Legend: ✅ the app gives the key's answer · ⚠️ the app shows a warning or 
 
 ---
 
+
+**Quick lookup:** the **📖 Study sheet** button (top right, on both tabs) has a card for each of SN1, SN2, E1 and E2 (rate law, steps, substrate, reagent, solvent, stereo, shifts) plus cards for alkene stability, E2 geometry, leaving groups and reagent types, and a searchable glossary. Each mechanism card has **Try it**, and **Print** gives a two-column paper copy.
 ## Part 1: The five ideas that solve this whole worksheet
 
 1. **Alkene stability = how many carbons sit on the C=C.**

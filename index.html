@@ -192,6 +192,38 @@
   /* app sections: Molecule | Reactions */
   .apptabs{display:flex;flex-wrap:wrap;padding:4px 6px 0;border-bottom:2px solid var(--hi)}
   .apptab{font-size:15px}
+  .studybtn{margin-left:auto;align-self:center;font-size:14px;padding:4px 10px}
+  #studyWin{padding:0;border:0;background:var(--face);box-shadow:inset 1px 1px var(--hi),inset -1px -1px #000,inset 2px 2px var(--lite),inset -2px -2px var(--shadow);width:min(980px,100vw);max-width:100vw;max-height:92vh;overflow:hidden;display:none;flex-direction:column}
+  #studyWin[open]{display:flex}
+  #studyWin::backdrop{background:rgba(0,0,0,.45)}
+  #studyWin .card-h{display:flex;align-items:center;justify-content:space-between}
+  #studyClose{min-height:0;padding:0 7px;font-weight:700}
+  .st-body{overflow-y:auto;padding:8px 12px 14px}
+  .st-tools input{flex:1;min-width:0;font:18px var(--crt);padding:4px 6px}
+  .st-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px;margin-top:10px}
+  .st-card{background:#fff;box-shadow:var(--sunken);padding:8px 10px;font-size:14px;break-inside:avoid}
+  .st-card h3{margin:0;font:22px/1 var(--crt);color:var(--sel)}
+  .st-sub{margin:2px 0 6px;color:var(--muted)}
+  .st-card dl{display:grid;grid-template-columns:96px minmax(0,1fr);gap:3px 8px;margin:0}
+  .st-card dt{font-weight:600}
+  .st-card dd{margin:0}
+  .st-ex{margin:8px 0 0}
+  .st-h{margin:14px 0 4px}
+  .st-gloss{background:#fff;box-shadow:var(--sunken);padding:6px 10px;margin:0;font-size:14px}
+  .st-gloss dt{font-weight:600;margin-top:6px}
+  .st-gloss dd{margin:0 0 0 12px}
+  @media (max-width:600px){#studyWin{max-height:100vh;height:100vh;width:100vw}.st-card dl{grid-template-columns:84px minmax(0,1fr)}}
+  @media print{
+    body>*:not(#studyWin){display:none !important}
+    #studyWin,#studyWin[open]{display:block !important;position:static;max-height:none;width:auto;box-shadow:none;background:#fff}
+    #studyWin .card-h,.st-tools,.st-try,#studyIntro{display:none !important}
+    .st-body{overflow:visible;padding:0}
+    .st-cards{grid-template-columns:1fr 1fr;gap:6px}
+    .st-card{box-shadow:none;border:1px solid #000;font-size:10.5px;padding:4px 6px}
+    .st-card dl{grid-template-columns:72px minmax(0,1fr)}
+    .st-gloss{box-shadow:none;font-size:10px;columns:2;padding:0}
+    .st-gloss dt{break-after:avoid}
+  }
   main[data-app="mol"] .rx-only,main[data-app="rx"] .mol-only{display:none !important}
   /* reactions window */
   .rx-lab{font-size:14px;color:var(--muted);margin-top:8px}
@@ -408,6 +440,17 @@
 <svg id="ringGhost"></svg>
 <form id="ringPop"><div class="card-h"><h2>Ring size</h2></div><div class="rp-body"><label for="ringSize">Atoms:</label><input id="ringSize" type="number" min="3" max="40" value="6" inputmode="numeric"><button class="primary" type="submit">OK</button><button type="button" id="ringCancel">Cancel</button></div></form>
 <div id="boot">LOADING CHEMISTRY ENGINE...</div>
+<dialog id="studyWin" aria-labelledby="studyTitle">
+  <div class="card-h"><h2 id="studyTitle">Study sheet</h2><button type="button" id="studyClose" aria-label="Close">×</button></div>
+  <div class="st-body">
+    <p class="note" id="studyIntro"></p>
+    <div class="row st-tools"><input id="studySearch" type="search" placeholder="Search, e.g. Zaitsev, rate law, gauche" aria-label="Search the study sheet"><button type="button" id="studyPrint">Print</button></div>
+    <div class="st-cards" id="studyCards"></div>
+    <h3 class="st-h">Glossary</h3>
+    <dl class="st-gloss" id="studyGloss"></dl>
+    <p class="note" id="studyEmpty" hidden>Nothing matches that search.</p>
+  </div>
+</dialog>
 <header>
   <div class="appbar">
     <div class="titlebar"><h1>MOLECULE LAB</h1><span class="wbtns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span></div>
@@ -415,6 +458,7 @@
     <nav class="apptabs" role="tablist" aria-label="Sections">
       <button type="button" class="apptab" role="tab" data-app="mol" aria-selected="true">Molecule</button>
       <button type="button" class="apptab" role="tab" data-app="rx" aria-selected="false">Reactions (SN1/SN2/E1/E2)</button>
+      <button type="button" class="studybtn" id="studyBtn" title="Quick cards for SN1/SN2/E1/E2 and Ch 7, plus a glossary">📖 Study sheet</button>
     </nav>
     <div id="net" role="status">You’re offline. Drawing, 3D and the calculated facts still work; naming needs a connection.</div>
   </div>
@@ -625,6 +669,7 @@ import { findChairRings, buildChairs, toXYZ, flipFrames } from './chair.js';
 import { nameMolecule } from './namer.js';
 import { mountReactions } from './reactions-ui.js';
 import { mountNewman } from './newman-ui.js';
+import { mountStudy } from './study.js';
 import { checkOptions, courseStyle, compare as compareNames } from './name-check.js';
 import { watchChemText } from './chem-text.js';
 
@@ -1444,6 +1489,9 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:'){
 
 // start with a friendly example
 loadMolecule(OCL.Molecule.fromSmiles('CC(C)CCO'));
+
+// Study sheet (study.js): cards + glossary, opened from the header
+mountStudy().catch((e) => console.error('study sheet', e));
 
 // Reactions window + mechanism viewer (code lives in reactions-ui.js / mech-view.js)
 watchChemText(document.body);

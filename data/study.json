@@ -1,0 +1,126 @@
+{
+ "_about": "Study sheet: quick cards (shown in this order) and extra glossary terms live here; the other glossary terms come from data/mech-text.json (one copy only). Examples must work in Predict (tests/reactions.test.mjs checks each one gives its card's pathway as major). Rows are [label, text]. For which pathway wins, cards point to the grid built from rules.json instead of repeating the rules.",
+ "intro": "Quick cards for the four mechanisms and Ch 7 alkenes, then the glossary. Search finds both. “Which pathway wins?” on the Reactions tab has the full decision table.",
+ "cards": [
+  {
+   "id": "SN2", "title": "SN2", "sub": "Substitution, Nucleophilic, bimolecular",
+   "rows": [
+    ["Rate law", "Rate = k[substrate][Nu]: bimolecular (both in the slow step)."],
+    ["Steps", "One step, concerted: Nu bonds as the leaving group leaves. One transition state, no intermediate."],
+    ["Substrate", "Methyl > 1° > 2°. 3° doesn't react (backside blocked). Neopentyl is very slow. Vinyl/aryl: no."],
+    ["Reagent", "Strong nucleophile: I⁻, Br⁻, CN⁻, N₃⁻, RS⁻, HO⁻, RO⁻."],
+    ["Solvent", "Polar aprotic (DMSO, DMF, acetone, CH₃CN) is best: it doesn't cage the Nu."],
+    ["Stereo", "Inversion at the carbon (Walden, backside attack). Stereospecific: (R) gives the inverted product."],
+    ["Shifts?", "Never (no carbocation)."],
+    ["Watch out", "A strong base at 2° gives mostly E2. A bulky base (t-BuO⁻) gives E2 even at 1°."]
+   ],
+   "example": { "smiles": "CCCCBr", "reagent": "NaCN", "solvent": "DMSO", "heat": false, "text": "1-bromobutane + NaCN, DMSO → pentanenitrile" }
+  },
+  {
+   "id": "SN1", "title": "SN1", "sub": "Substitution, Nucleophilic, unimolecular",
+   "rows": [
+    ["Rate law", "Rate = k[substrate]: unimolecular (only the substrate in the slow step)."],
+    ["Steps", "1) LG leaves → carbocation (slow). 2) Nu attacks C⁺. 3) Proton transfer if the Nu was neutral (H₂O, ROH)."],
+    ["Substrate", "3° > 2°; allylic and benzylic are good (resonance). 1° and methyl: no (cation too unstable)."],
+    ["Reagent", "Weak nucleophile, often the solvent (H₂O, ROH): solvolysis."],
+    ["Solvent", "Polar protic (water, alcohols): stabilises the cation and the leaving anion."],
+    ["Stereo", "The flat C⁺ is attacked from both faces: racemic (or a mixture) at that carbon."],
+    ["Shifts?", "Yes: a 1,2-H or alkyl shift (or ring expansion) if it gives a more stable cation."],
+    ["Alcohols", "With HBr/HCl, OH is protonated to OH₂⁺ and water leaves (2° and 3°)."],
+    ["Watch out", "E1 always competes (same cation). Heat pushes it toward E1."]
+   ],
+   "example": { "smiles": "CC(C)(C)Br", "reagent": "H2O", "solvent": "H2O", "heat": false, "text": "2-bromo-2-methylpropane + H₂O → 2-methylpropan-2-ol" }
+  },
+  {
+   "id": "E2", "title": "E2", "sub": "Elimination, bimolecular",
+   "rows": [
+    ["Rate law", "Rate = k[substrate][base]: bimolecular."],
+    ["Steps", "One step, concerted: the base takes a β-H, the C=C forms and the LG leaves together."],
+    ["Substrate", "3° > 2° > 1° with a strong base. 1° needs a bulky base to beat SN2."],
+    ["Reagent", "Strong base: HO⁻, RO⁻ (EtO⁻, MeO⁻), t-BuO⁻, DBU."],
+    ["Geometry", "The β-H must be anti-periplanar (180°) to the LG. In a cyclohexane: both axial (trans-diaxial). Check it in the Newman and Chair tabs."],
+    ["Which alkene", "Small base → Zaitsev (more substituted). Bulky base (t-BuO⁻) → Hofmann (less substituted)."],
+    ["Stereo", "Stereospecific: if the β-carbon has one H, the configuration decides E or Z. Otherwise E (trans) is usually major."],
+    ["Shifts?", "Never (no carbocation)."],
+    ["Conditions", "Heat favours elimination over substitution."]
+   ],
+   "example": { "smiles": "CC(Br)CC", "reagent": "NaOEt", "solvent": "EtOH", "heat": true, "text": "2-bromobutane + NaOEt, EtOH, heat → (E)-but-2-ene (major)" }
+  },
+  {
+   "id": "E1", "title": "E1", "sub": "Elimination, unimolecular",
+   "rows": [
+    ["Rate law", "Rate = k[substrate]: unimolecular."],
+    ["Steps", "1) LG leaves → carbocation (slow). 2) A weak base (H₂O, ROH, HSO₄⁻) takes a β-H → C=C."],
+    ["Substrate", "3° > 2° (allylic/benzylic good). 1°: no. Alcohols: OH is protonated first by H₂SO₄ or H₃PO₄ (dehydration)."],
+    ["Reagent", "Weak base, or acid with heat (H₂SO₄, H₃PO₄, TsOH)."],
+    ["Geometry", "No anti-periplanar rule: the flat C⁺ can lose any β-H."],
+    ["Which alkene", "Zaitsev: the more substituted (more stable) alkene; trans over cis."],
+    ["Shifts?", "Yes: shifts to a more stable cation before the H⁺ is lost."],
+    ["Stereo", "Not stereospecific."],
+    ["Conditions", "Heat favours E1 over SN1 (more molecules made: entropy)."]
+   ],
+   "example": { "smiles": "CCC(C)(C)O", "reagent": "H2SO4", "solvent": "H2O", "heat": true, "text": "2-methylbutan-2-ol + H₂SO₄, heat → 2-methylbut-2-ene" }
+  },
+  {
+   "id": "stab", "title": "Alkene stability", "sub": "Ch 7: which alkene is more stable?",
+   "rows": [
+    ["1. Conjugation", "C=C–C=C (conjugated) is more stable than isolated C=C's."],
+    ["2. Substitution", "More carbons on the C=C is more stable: tetra > tri > di > mono. Each alkyl group donates a little electron density (hyperconjugation)."],
+    ["3. Ring strain", "A C=C in or on a 3- or 4-membered ring is strained (less stable)."],
+    ["4. In vs out", "A C=C inside a ring beats one sticking out of it (exocyclic), at equal substitution."],
+    ["5. Trans vs cis", "Trans (E, big groups apart) beats cis (crowded)."],
+    ["Measured by", "Heat of hydrogenation: the less heat released when adding H₂, the more stable the alkene (compare isomers only)."],
+    ["In the app", "Reactions tab, two or more alkenes in the editor → Rank alkenes by stability."]
+   ]
+  },
+  {
+   "id": "geom", "title": "E2 geometry", "sub": "Ch 7: Newman projections and chairs",
+   "rows": [
+    ["Open chain", "Look down Cα–Cβ. Turn the back carbon until an H is anti (180°) to the LG. Groups anti in that shape end up trans; gauche ones end up cis."],
+    ["Major E/Z", "If Cβ has two H's, both E and Z can form; the lower-energy shape (big groups apart) gives the major one, usually E."],
+    ["One β-H", "Only one shape can react, so only one alkene forms: draw the Newman projection to see which."],
+    ["Rings", "LG must be axial, with an axial H on the next ring carbon (trans-diaxial). A ring flip may be needed; if the flipped chair is very strained, E2 is slow."],
+    ["Not Zaitsev?", "If the only anti H is on the less substituted side, that alkene forms (e.g. menthyl chloride)."],
+    ["In the app", "Molecule tab → Newman (open chains) or Chair (rings). Predict's green note says which shape reacts."]
+   ]
+  },
+  {
+   "id": "lg", "title": "Leaving groups", "sub": "What leaves, and how to make OH leave",
+   "rows": [
+    ["Good LGs", "Weak bases: I⁻ > Br⁻ > Cl⁻ ≫ F⁻ (poor). TsO⁻, MsO⁻ (sulfonates) are excellent. H₂O is good."],
+    ["OH is poor", "HO⁻ is a strong base, so an alcohol must be activated first."],
+    ["Acid (HX, H₂SO₄)", "Protonates OH to OH₂⁺; water leaves. Gives a carbocation at 2°/3° (rearrangements possible)."],
+    ["PBr₃, SOCl₂ + pyridine", "Turn OH into Br or Cl by SN2 at 1°/2°: no carbocation, no rearrangement; inversion at the carbon."],
+    ["TsCl, pyridine", "Turns OH into OTs. The C–O bond isn't broken: retention. Then do SN2 or E2 on the OTs."]
+   ]
+  }
+ ],
+ "reagentCard": { "id": "types", "title": "Reagent types", "sub": "Spot the type, then you know what it does" },
+ "glossary": {
+  "Newman projection": "Newman projection: a view straight down one C–C bond. The front carbon is a dot with three bonds, the back carbon a circle with three bonds coming from its edge.",
+  "staggered": "Staggered: the back carbon's bonds sit halfway between the front carbon's (60° apart). Lower in energy.",
+  "eclipsed": "Eclipsed: the back carbon's bonds line up with the front carbon's (0°). Higher in energy (torsional strain).",
+  "gauche": "Gauche: two groups 60° apart in a staggered Newman projection. Slightly crowded.",
+  "anti": "Anti: two groups 180° apart in a Newman projection. For big groups, the most comfortable position.",
+  "torsional strain": "Torsional strain: extra energy from eclipsed bonds pushing against each other.",
+  "trans-diaxial": "Trans-diaxial: on neighbouring ring carbons, both bonds axial and pointing opposite ways (one up, one down). The ring version of anti-periplanar, needed for E2 in cyclohexanes.",
+  "axial": "Axial: a bond on a chair cyclohexane that points straight up or down, parallel to the ring's axis.",
+  "equatorial": "Equatorial: a bond on a chair cyclohexane that points out around the ring's equator. Big groups prefer it.",
+  "E/Z": "E/Z: names for C=C geometry using CIP priorities. Z (zusammen): the higher-priority groups on the same side. E (entgegen): opposite sides.",
+  "cis/trans": "Cis/trans: same side / opposite sides of a C=C or a ring. Fine for simple cases; E/Z is the general system.",
+  "CIP priority": "CIP priority: rank atoms by atomic number (higher wins). On a tie, compare the next atoms out, one layer at a time. Used for R/S and E/Z.",
+  "conjugated": "Conjugated: double bonds separated by exactly one single bond (C=C–C=C). The p orbitals overlap along the chain, which adds stability.",
+  "exocyclic": "Exocyclic double bond: a C=C with one carbon in a ring and the other outside it.",
+  "dehydration": "Dehydration: losing water (H and OH) from an alcohol to make an alkene, usually with H₂SO₄ or H₃PO₄ and heat (E1 at 2°/3°).",
+  "regioselective": "Regioselective: one constitutional isomer forms more than the others (e.g. the Zaitsev alkene over the Hofmann one).",
+  "stereoselective": "Stereoselective: one stereoisomer forms more than the others when several could (e.g. E over Z in E1).",
+  "heat of hydrogenation": "Heat of hydrogenation: the heat released when H₂ adds to a C=C. Less heat = a more stable alkene (compare isomers only).",
+  "β-hydrogen": "β-Hydrogen: an H on a carbon next to the carbon with the leaving group (the β-carbon). Elimination removes one.",
+  "α-carbon": "α-Carbon (Cα): the carbon that carries the leaving group.",
+  "substrate": "Substrate: the molecule that reacts (here, the one with the leaving group).",
+  "aprotic solvent": "Polar aprotic solvent: polar but with no O–H or N–H (DMSO, DMF, acetone, CH₃CN). Leaves anions free, so SN2 is fast.",
+  "molecularity": "Molecularity: how many species take part in the slow step: 1 = unimolecular (SN1, E1), 2 = bimolecular (SN2, E2).",
+  "rate law": "Rate law: how the rate depends on concentrations. SN1/E1: rate = k[substrate]. SN2/E2: rate = k[substrate][Nu or base].",
+  "concerted": "Concerted: all bond changes happen in one step, through one transition state (SN2, E2)."
+ }
+}
