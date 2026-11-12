@@ -41,6 +41,8 @@ for (const c of seed.cases){
     for (const f of e.flags || []) if (!res.flags.includes(f)) fail(c.id, `flag: expected ${f}, got [${res.flags}]`);
     for (const w of e.warnings || []) if (!res.warnings.includes(w)) fail(c.id, `warning: expected ${w}, got [${res.warnings}]`);
     for (const w of e.noWarnings || []) if (res.warnings.includes(w)) fail(c.id, `warning ${w} shown, but it shouldn't be`);
+    for (const [pw, ns] of Object.entries(e.notes || {})) for (const n of ns) if (!(res.pathways[pw]?.notes || []).includes(n)) fail(c.id, `${pw} note: expected ${n}, got [${res.pathways[pw]?.notes || ''}]`);
+    for (const [pw, ns] of Object.entries(e.noNotes || {})) for (const n of ns) if ((res.pathways[pw]?.notes || []).includes(n)) fail(c.id, `${pw} note ${n} shown, but it shouldn't be`);
     for (const [pw, n] of Object.entries(e.productCount || {})){ const l = res.pathways[pw]?.products || []; if (l.length !== n) fail(c.id, `${pw}: expected ${n} product(s), got [${l.map((x) => nameOf(x.mol)).join('; ')}]`); }
     // every elimination product has exactly one more C=C than the substrate (catches a dropped or misplaced double bond)
     if (steps.length === 1) for (const pw of ['E1', 'E2']) for (const p of res.pathways[pw]?.products || []) if (ccDouble(p.mol) !== ccDouble(sub) + 1) fail(c.id, `${pw}: ${p.smiles} doesn't have exactly one new C=C`);

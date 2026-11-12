@@ -60,7 +60,11 @@ Problem-by-problem results are in `ch7-study-guide.md`.
   - Keep "not covered" for fused or bridged rings.
 - **Tests:** 9i, 9j, 9k, 10d, 13c (SMILES and expected products are in the study guide), plus menthyl vs neomenthyl chloride (seed 22) once it's checked against the textbook.
 
-### P0‑3 Acyclic E2 where both carbons are stereocentres: "E/Z not covered"
+### P0‑3 Acyclic E2 where both carbons are stereocentres: "E/Z not covered": **FIXED 2026‑11‑11**
+- **Done:**
+  - New `anti.js`: `antiConformers()` takes OpenChemLib conformers, turns each β-H exactly anti to the LG, relaxes with MMFF94s+, keeps it if still within 25° of 180°, and records whether the two carbons' reference groups end up cis or trans (gauche → cis). The lowest-energy conformer per outcome is kept. `cis2D()` matches that to the E or Z product.
+  - `predict.js` `antiGeometry()`: used for every open-chain C=C that could be E or Z. One β-H with both centres wedged → only one isomer (stereospecific). Two β-H's → both, ranked by the reacting conformer's energy (gap < 0.15 kcal/mol falls back to the bulk rule). A stereocentre drawn without wedges and one β-H → both shown with the `e2_stereo_undrawn` note. The green `e2_anti_checked` note says which conformer reacts and its energy gap.
+  - Seed cases W7-5, W7-5-diast, W7-4b-RR, W7-4b-RS, e2-stereo-undrawn; seed 6 now checks the note.
 - **Symptom:** Q5 shows "(hept-3-en-4-yl)cyclohexane" with no E/Z.
 - **Plan:** use the same dihedral approach on the substrate's conformers. Because dihedral *differences* don't change with rotation, one conformer is enough:
   - E/Z = sign of [d(group₁‑Cβ‑Cα‑group₂) − d(H‑Cβ‑Cα‑LG) + 180°].
@@ -101,7 +105,7 @@ Problem-by-problem results are in `ch7-study-guide.md`.
 
 ## Proposed order of work (each step ends usable, with tests first)
 1. ~~Fix P0‑1~~ done.
-2. ~~P0‑2~~ done. Next: **P0‑3** (open-chain E2 E/Z from an anti conformer: Q4b, Q5) and the rest of P0‑4 (duplicate names in Q4c).
+2. ~~P0‑2~~ and ~~P0‑3~~ done. Next: the rest of P0‑4 (duplicate names in Q4c).
 3. **P1‑1 Newman tab**: reuses step 2's geometry. Playwright test: 2‑bromobutane, rotate, anti highlight, "gives (E)".
 4. **P1‑2 stability ranking** and **P1‑4 acid ranking**: both extend the existing ranking mode.
 5. **P1‑3 name checker** and course-style names.

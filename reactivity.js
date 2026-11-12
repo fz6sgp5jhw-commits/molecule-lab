@@ -314,20 +314,20 @@ export function alkeneProducts(OCL, sub, alkene, unknown = false){
   const M = OCL.Molecule;
   if (unknown){
     const u = buildProduct(OCL, sub, { ...alkene.ops, bondParity: [...(alkene.ops.bondParity || []), { a: alkene.centre, b: alkene.beta, p: M.cBondParityUnknown }] });
-    return [{ mol: u.mol, ez: null, trans: null }];
+    return [{ mol: u.mol, map: u.map, ez: null, trans: null }];
   }
   const one = buildProduct(OCL, sub, { ...alkene.ops, bondParity: [...(alkene.ops.bondParity || []), { a: alkene.centre, b: alkene.beta, p: 1 }] });
   const A = one.map[alkene.centre], B = one.map[alkene.beta];
   const bi = one.mol.getBond(A, B);
   const bp = one.mol.getBondParity(bi);
-  if (bp !== M.cBondParityEor1 && bp !== M.cBondParityZor2) return [{ mol: one.mol, ez: null, trans: null }];
+  if (bp !== M.cBondParityEor1 && bp !== M.cBondParityZor2) return [{ mol: one.mol, map: one.map, ez: null, trans: null }];
   // a C=C inside a ring of fewer than 8 atoms can only be cis, so it has no E/Z
-  if (one.mol.isRingBond(bi) && one.mol.getBondRingSize(bi) < 8) return [{ mol: one.mol, ez: null, trans: null }];
+  if (one.mol.isRingBond(bi) && one.mol.getBondRingSize(bi) < 8) return [{ mol: one.mol, map: one.map, ez: null, trans: null }];
   const two = buildProduct(OCL, sub, { ...alkene.ops, bondParity: [...(alkene.ops.bondParity || []), { a: alkene.centre, b: alkene.beta, p: 2 }] });
-  if (two.mol.getIDCode() === one.mol.getIDCode()) return [{ mol: one.mol, ez: null, trans: null }];
-  return [one, two].map(({ mol }) => {
+  if (two.mol.getIDCode() === one.mol.getIDCode()) return [{ mol: one.mol, map: one.map, ez: null, trans: null }];
+  return [one, two].map(({ mol, map }) => {
     const cip = mol.getBondCIPParity(mol.getBond(A, B));
-    return { mol, ez: cip === 1 ? 'E' : cip === 2 ? 'Z' : null, trans: transOf(mol, A, B) };
+    return { mol, map, ez: cip === 1 ? 'E' : cip === 2 ? 'Z' : null, trans: transOf(mol, A, B) };
   });
 }
 function transOf(m, A, B){

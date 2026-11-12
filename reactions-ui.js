@@ -522,6 +522,7 @@ export async function mountReactions(app){
     for (const pw of PATHWAYS) for (const n of (res.pathways[pw] && res.pathways[pw].notes) || []){
       if (/warning/.test(n)) continue;
       if (n === 'ring_e2_checked') notes.push(['ok', `${pw}: ${fill(reason(n), { detail: res.pathways[pw].chairCheck.text })}`]);
+      else if (n === 'e2_anti_checked') notes.push(['ok', `${pw}: ${fill(reason(n), { detail: res.pathways[pw].antiCheck.text })}`]);
       else notes.push(['warn', `${pw}: ${reason(n)}`]);
     }
     if (st.rx.reagent && st.rx.reagent.estimated) notes.push(['warn', 'The reagent’s role is estimated by the rules, not looked up.']);

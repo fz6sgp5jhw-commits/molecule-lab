@@ -6,6 +6,7 @@
 import { analyse, cationPathways, alkenesFrom, alkeneProducts, buildProduct, LG_LABEL } from './reactivity.js';
 import { findReagent, findSolvent } from './reagents.js';
 import { findChairRings, buildChairs } from './chair.js';
+import { antiConformers, cis2D } from './anti.js';
 
 export const PATHWAYS = ['SN1', 'SN2', 'E1', 'E2'];
 export const STEREOSPECIFIC = { SN2: true, E2: true, SN1: false, E1: false };
@@ -180,16 +181,30 @@ function e2(OCL, m, site, r, out){
   const hofmann = r.box === 'bulky';
   const list = [];
   m.ensureHelperArrays(OCL.Molecule.cHelperParities);
+  const antiTexts = [];
   for (const al of alkenes){
     const betaDefined = [1, 2].includes(m.getAtomParity(al.beta)) && m.isAtomStereoCenter(al.beta);
     let isomers = alkeneProducts(OCL, m, al);
-    // E and Z both possible, but the β-carbon's stereo + anti-periplanar geometry decides which: not covered yet
-    const ezNotCovered = isomers.length > 1 && betaDefined;
-    if (ezNotCovered){
-      isomers = [alkeneProducts(OCL, m, al, true)[0]];
-      if (!out.notes.includes('e2_beta_stereo')) out.notes.push('e2_beta_stereo');
+    let ezNotCovered = false, geo = null;
+    if (isomers.length > 1){
+      geo = antiGeometry(OCL, m, site, al, isomers);
+      if (geo && geo.isomers){ isomers = geo.isomers; antiTexts.push({ subs: al.zaitsev - (al.conj ? 2 : 0), text: geo.text }); }
+      else if (geo && geo.undrawn){ if (!out.notes.includes('e2_stereo_undrawn')) out.notes.push('e2_stereo_undrawn'); geo = null; }
+      else if (betaDefined){
+        // the 3D check failed: E and Z both possible on paper, but the β stereocentre decides; don't guess
+        geo = null; ezNotCovered = true;
+        isomers = [alkeneProducts(OCL, m, al, true)[0]];
+        if (!out.notes.includes('e2_beta_stereo')) out.notes.push('e2_beta_stereo');
+      }
     }
-    for (const iso of isomers) list.push(product(iso.mol, { key: [hofmann ? -al.zaitsev : al.zaitsev, iso.trans ? 1 : 0], ez: iso.ez, trans: iso.trans, zaitsev: al.zaitsev, conj: al.conj, beta: al.beta, via: onlyAnti ? 'trans-diaxial (the only anti-periplanar β-H)' : (hofmann ? 'Hofmann (bulky base)' : 'Zaitsev') + (checked ? ', trans-diaxial' : ''), ezNotCovered: ezNotCovered || undefined }));
+    for (const iso of isomers) list.push(product(iso.mol, { key: [hofmann ? -al.zaitsev : al.zaitsev, geo ? iso.ezScore : iso.trans ? 1 : 0], ez: iso.ez, trans: iso.trans, zaitsev: al.zaitsev, conj: al.conj, beta: al.beta, via: onlyAnti ? 'trans-diaxial (the only anti-periplanar β-H)' : (hofmann ? 'Hofmann (bulky base)' : 'Zaitsev') + (checked ? ', trans-diaxial' : ''), ezNotCovered: ezNotCovered || undefined, anti: iso.anti }));
+  }
+  if (antiTexts.length){
+    const SUBS = ['', 'monosubstituted', 'disubstituted', 'trisubstituted', 'tetrasubstituted'];
+    antiTexts.sort((a, b) => b.subs - a.subs);
+    const many = antiTexts.length > 1;
+    out.antiCheck = { text: antiTexts.map((t) => (many ? `${SUBS[t.subs] || ''} C=C: `.replace(/^./, (c) => c.toUpperCase()) : '') + t.text).join(' ') };
+    out.notes.push('e2_anti_checked');
   }
   out.products = rankProducts(list);
   if (site.inRing && !checked){
@@ -197,7 +212,41 @@ function e2(OCL, m, site, r, out){
     const flat = new Set(out.products.map((p) => { const c = p.mol.getCompactCopy(); c.stripStereoInformation(); return c.getIDCode(); }));
     if (flat.size > 1) out.notes.push('ring_e2_warning');
   }
-  if (out.products.some((p) => p.ez && p.trans === null)) out.notes.push('ez_tie');
+  if (out.products.some((p) => p.ez && p.trans === null && !p.anti)) out.notes.push('ez_tie');
+}
+
+// Open-chain E2 that can give E or Z: which one(s) the anti-periplanar geometry allows, from 3D conformers
+// (anti.js). Each option is the lowest-energy conformer with a β-H at ~180° to the LG; the groups' relation
+// in that shape (gauche → cis, anti → trans) picks the isomer. With one β-H and both carbons' configurations
+// drawn, E2 is stereospecific: one isomer only. With two β-H's both form; the one from the lower-energy
+// reacting conformer is major. → { isomers (with ezScore, anti), text } | { undrawn } | null (3D failed)
+function antiGeometry(OCL, m, site, al, isomers){
+  const nH = m.getAllHydrogens(al.beta);
+  const undrawnCentre = (x) => m.isAtomStereoCenter(x) && ![1, 2].includes(m.getAtomParity(x));
+  if (nH === 1 && (undrawnCentre(site.ca) || undrawnCentre(al.beta))) return { undrawn: true };
+  const a = antiConformers(OCL, m, site.ca, site.lgAtom, al.beta);
+  if (a.error || !a.ref) return null;
+  const tagged = isomers.map((iso) => {
+    const c = cis2D(iso.mol, iso.map[site.ca], iso.map[al.beta], iso.map[a.ref.ga], iso.map[a.ref.gb]);
+    const opt = a.options.find((o) => o.cis === c);
+    return opt ? { ...iso, anti: { dE: +opt.dE.toFixed(2), one: nH === 1 } } : null;
+  }).filter(Boolean);
+  if (!tagged.length) return null;
+  const lg = LG_LABEL[site.lg] || site.lg;
+  let text;
+  if (tagged.length === 1){
+    tagged[0].ezScore = 1;
+    const other = isomers.find((x) => x.ez !== tagged[0].ez);
+    text = `The β-carbon has only one H. In the conformer where that H is anti to ${lg}, the groups line up to give the (${tagged[0].ez}) alkene, so E2 makes only (${tagged[0].ez})${other ? `; (${other.ez}) would need the H and ${lg} on the same side (syn), which E2 can’t do` : ''}.`;
+  } else {
+    tagged.sort((x, y) => x.anti.dE - y.anti.dE);
+    const gap = tagged[1].anti.dE;
+    // a gap this small is within MMFF noise: fall back to the bulk rule (trans > cis)
+    const close = gap < 0.15;
+    tagged.forEach((t, i) => { t.ezScore = close ? (t.trans ? 1 : 0) : i === 0 ? 1 : 0; });
+    text = `Two conformers put a β-H anti to ${lg}. The one leading to (${tagged[0].ez}) is ${close ? 'about as stable as' : gap.toFixed(1) + ' kcal/mol more stable than'} the one leading to (${tagged[1].ez}), so ${close ? 'the bulk rule decides' : `(${tagged[0].ez}) is major`}.`;
+  }
+  return { isomers: tagged, text };
 }
 
 function cationic(OCL, m, site, r, pw, out){

@@ -19,6 +19,7 @@ Live at https://fz6sgp5jhw-commits.github.io/molecule-lab/ (GitHub Pages serves 
 | `index.html` | The whole UI: styles, markup and the main module script (editor, facts, 2D/3D views, naming flow, Chair tab UI) |
 | `namer.js` | Built-in IUPAC 2013 namer. `nameMolecule(OCL, mol)` returns `{ name, steps, warnings }` or `{ error }` |
 | `chair.js` | Chair conformations: `findChairRings`, `buildChairs` (both chairs, MMFF energies, axial/equatorial labels), `flipFrames` |
+| `anti.js` | Anti-periplanar geometry: `antiConformers` (conformers with a β-H turned 180° to the LG, MMFF energies, cis/trans outcome), `dihedral`, `cis2D`. Used by open-chain E2 E/Z in `predict.js` |
 | `reactivity.js` | SN/E analyser: `analyse` (sites, roles, class, flags, β-H's, cation score), `cationPathways` (1,2-shifts, ring expansion, allylic), `alkenesFrom`, `buildProduct` (graph edits with stereo kept by OpenChemLib) |
 | `reagents.js`, `data/reagents.json` | Reagent catalogue: name/alias and drawn-structure matching (counter-ions stripped), solvents, unknown-reagent guess |
 | `predict.js`, `data/rules.json` | Decision table → lamps (SN1/SN2/E1/E2) + products (ring E2 filtered by the trans-diaxial rule via `ringAntiCheck` + `chair.js`), sequences (`runSequence`: each step on the chosen product of the last), SN1/SN2 rate ranking. Rule rows may carry `tags: course / disagree` |

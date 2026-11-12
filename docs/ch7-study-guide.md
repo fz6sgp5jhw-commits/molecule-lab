@@ -62,12 +62,13 @@ Legend: ✅ the app gives the key's answer · ⚠️ the app shows a warning or 
 ### Q3 2‑Bromobutane → (E)‑2‑butene: which Newman conformation? (key: 4)
 - **How:** E2 needs H and Br anti (180°). For the **E** alkene, the two CH₃ groups must *also* be anti. Find the projection where Br and an H are opposite each other **and** the two CH₃ are opposite each other: that is 4.
 - **3D:** both (E)- and (Z)-but-2-ene (and but‑1‑ene) can form from some anti conformer. E wins because its conformer has the CH₃ groups apart, which is lower in energy.
+- **App:** ✅ the E2 note now says this: "two conformers put a β-H anti to Br; the one leading to (E) is 0.6 kcal/mol more stable".
 - **App:** ⚠️ there is no Newman view yet (the tab says "soon"). Use the 3D model with *Spin* off and look down the C2–C3 bond.
 
 ### Q4 Zaitsev predictions (key: a‑D, b‑F, c‑B)
 - **a.** 3‑ethyl‑2‑methylhexan‑3‑ol with H₂SO₄ and heat: E1 through a 3° cation. Losing the H from the isopropyl CH gives the **tetrasubstituted** 3‑ethyl‑2‑methylhex‑2‑ene. ✅ App.
-- **b.** 3‑chloro‑4‑methylhexane with NaOH: E2 Zaitsev gives 3‑methylhex‑3‑ene (trisubstituted beats disubstituted), and the key says **E**. ✅ App (it assumes the trans-type product because no stereo is drawn).
-  - **Deeper:** 3D shows that the (3R,4R)/(3S,4S) diastereomer can only give **E**, while (3R,4S)/(3S,4R) can only give **Z**. "E" is the right answer for an unspecified starting material, but on an exam with wedges, draw the Newman projection.
+- **b.** 3‑chloro‑4‑methylhexane with NaOH: E2 Zaitsev gives 3‑methylhex‑3‑ene (trisubstituted beats disubstituted), and the key says **E**. ✅ App. With no wedges it lists both (3E) and (3Z), with (3E) first by the bulk rule, and a note that E2 is stereospecific here, so you should add wedges for the one answer.
+  - **Deeper:** the (3R,4R)/(3S,4S) diastereomer can only give **E**, while (3R,4S)/(3S,4R) can only give **Z**. ✅ App: draw the wedges and it gives just that one, with a note saying why (the one β-H anti to Cl). "E" is the right answer for an unspecified starting material, but on an exam with wedges, draw the Newman projection.
 - **c.** 2,5‑dimethyl‑1‑propylcyclohexan‑1‑ol with acid: 3° cation; the ring H next to the methyl gives the tetrasubstituted ring alkene (B). ✅ App.
 
 ### Q5 Optically active 3‑chloro‑4‑cyclohexylheptane + NaOH (key: product B (E), rate law E, mechanism E2)
@@ -75,7 +76,7 @@ Legend: ✅ the app gives the key's answer · ⚠️ the app shows a warning or 
   - A strong base on a 2° halide gives **E2**, and rate = k[NaOH][substrate].
   - Both carbons are stereocentres, so the anti-periplanar shape fixes the geometry.
   - Put H (on C4) and Cl (on C3) anti in a Newman projection, and see where cyclohexyl and ethyl end up: on opposite sides → **(E)‑4‑cyclohexylhept‑3‑ene**.
-- **Check:** 3D ✅ gives (3E) in every conformer that can react. ⚠️ The app says "E vs Z not covered yet" here; it is honest, but not helpful yet.
+- **Check:** 3D ✅ gives (3E) in every conformer that can react. ✅ App (since P0‑3): draw (3S,4S) (SMILES `CCC[C@H]([C@H](CC)Cl)C1CCCCC1`) with NaOH and it gives [(3E)-hept-3-en-4-yl]cyclohexane as major, and the note explains that C4 has only one H, so only E can form. The (3S,4R) diastereomer gives only Z.
 - **Transition-state drawing (part e):** dotted C–H and C–Cl bonds, a dotted C=C forming, δ⁻ on the base's O and on Cl, all inside brackets marked ‡.
 - **Note:** options E and F on the worksheet are identical (a typo).
 

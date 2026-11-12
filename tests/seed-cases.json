@@ -178,8 +178,14 @@
       "rank": "minor",
       "order": 3
      }
-    ]
-   }
+    ],
+    "notes": {
+     "E2": [
+      "e2_anti_checked"
+     ]
+    }
+   },
+   "note": "Seed 6; since P0-3 the E/Z order comes from the anti conformers' MMFF energies (E-forming conformer ~0.6 kcal/mol lower)."
   },
   {
    "id": "7",
@@ -1200,6 +1206,156 @@
     "warnings": [
      "ring_e2_warning"
     ]
+   }
+  },
+  {
+   "id": "W7-5",
+   "note": "Ch 7 worksheet Q5 (key + 3D prototype): C4 has one H; anti to Cl it gives only the (E) trisubstituted alkene.",
+   "substrate": "CCC[C@H]([C@H](CC)Cl)C1CCCCC1",
+   "substrateName": "[(3S,4S)-3-chloroheptan-4-yl]cyclohexane",
+   "steps": [
+    {
+     "reagent": "NaOH",
+     "solvent": "H2O",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "productCount": {
+     "E2": 3
+    },
+    "notes": {
+     "E2": [
+      "e2_anti_checked"
+     ]
+    },
+    "noNotes": {
+     "E2": [
+      "e2_beta_stereo",
+      "e2_stereo_undrawn"
+     ]
+    },
+    "products": [
+     {
+      "pathway": "E2",
+      "smiles": "CCC/C(\\C1CCCCC1)=C\\CC",
+      "name": "[(3E)-hept-3-en-4-yl]cyclohexane",
+      "rank": "major"
+     }
+    ]
+   }
+  },
+  {
+   "id": "W7-5-diast",
+   "note": "The (3S,4R) diastereomer of Q5 can only give the Z alkene (anti-periplanar H).",
+   "substrate": "CCC[C@@H]([C@H](CC)Cl)C1CCCCC1",
+   "substrateName": "[(3S,4R)-3-chloroheptan-4-yl]cyclohexane",
+   "steps": [
+    {
+     "reagent": "NaOH",
+     "solvent": "H2O",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "productCount": {
+     "E2": 3
+    },
+    "products": [
+     {
+      "pathway": "E2",
+      "smiles": "CCC/C(\\C1CCCCC1)=C/CC",
+      "name": "[(3Z)-hept-3-en-4-yl]cyclohexane",
+      "rank": "major"
+     }
+    ]
+   }
+  },
+  {
+   "id": "W7-4b-RR",
+   "note": "Ch 7 worksheet Q4b (key): (3R,4R) gives (3E)-3-methylhex-3-ene.",
+   "substrate": "CC[C@@H](Cl)[C@H](C)CC",
+   "substrateName": "(3R,4R)-3-chloro-4-methylhexane",
+   "steps": [
+    {
+     "reagent": "NaOEt",
+     "solvent": "EtOH",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "productCount": {
+     "E2": 3
+    },
+    "products": [
+     {
+      "pathway": "E2",
+      "smiles": "CC/C=C(\\C)/CC",
+      "name": "(3E)-3-methylhex-3-ene",
+      "rank": "major"
+     },
+     {
+      "pathway": "E2",
+      "smiles": "CC[C@@H](C)/C=C/C",
+      "name": "(2E,4R)-4-methylhex-2-ene",
+      "rank": "minor"
+     },
+     {
+      "pathway": "E2",
+      "smiles": "CC[C@@H](C)/C=C\\C",
+      "name": "(2Z,4R)-4-methylhex-2-ene",
+      "rank": "minor"
+     }
+    ]
+   }
+  },
+  {
+   "id": "W7-4b-RS",
+   "note": "Ch 7 worksheet Q4b (key): (3R,4S) gives (3Z)-3-methylhex-3-ene.",
+   "substrate": "CC[C@@H](Cl)[C@@H](C)CC",
+   "substrateName": "(3R,4S)-3-chloro-4-methylhexane",
+   "steps": [
+    {
+     "reagent": "NaOEt",
+     "solvent": "EtOH",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "productCount": {
+     "E2": 3
+    },
+    "products": [
+     {
+      "pathway": "E2",
+      "smiles": "CC/C=C(/C)\\CC",
+      "name": "(3Z)-3-methylhex-3-ene",
+      "rank": "major"
+     }
+    ]
+   }
+  },
+  {
+   "id": "e2-stereo-undrawn",
+   "note": "No wedges: E2 is stereospecific but the configuration is unknown, so both E and Z are shown with a note.",
+   "substrate": "CCC(Cl)C(C)CC",
+   "substrateName": "3-chloro-4-methylhexane",
+   "steps": [
+    {
+     "reagent": "NaOEt",
+     "solvent": "EtOH",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "productCount": {
+     "E2": 4
+    },
+    "notes": {
+     "E2": [
+      "e2_stereo_undrawn"
+     ]
+    }
    }
   }
  ],
