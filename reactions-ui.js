@@ -6,6 +6,7 @@
 
 import { analyse, cationPathways, buildProduct, LG_LABEL } from './reactivity.js';
 import { findReagent, matchMolecule, guessBox, entryFromMolecule, findSolvent, parseSequence } from './reagents.js';
+import { plan as planRoutes } from './planner.js';
 import { predict, runSequence, rankSN1, rankSN2, rankE1, rankAlkenes, PATHWAYS } from './predict.js';
 import { mountGrid } from './pathway-grid-ui.js';
 import { TEMPLATES, PRELUDES, ACTIVATION } from './mech-templates.js';
@@ -156,7 +157,7 @@ export async function mountReactions(app){
   // ---------- ranking mode ----------
   function showRank(kind){
     const list = ({ SN1: rankSN1, SN2: rankSN2, E1: rankE1, Alk: rankAlkenes })[kind](OCL, st.frags);
-    for (const b of [$('rxRankSN1'), $('rxRankSN2'), $('rxRankE1'), $('rxRankAlk')]) b.setAttribute('aria-pressed', String(b.id.endsWith(kind)));
+    for (const b of [$('rxRankSN1'), $('rxRankSN2'), $('rxRankE1'), $('rxRankAlk'), $('rxPlan')]) b.setAttribute('aria-pressed', String(b.id.endsWith(kind)));
     const head = { SN1: 'SN1 rate, fastest first', SN2: 'SN2 rate, fastest first', E1: 'E1 rate with acid and heat (OH → OH₂⁺), fastest first', Alk: 'Alkene stability (rules, not energies), most stable first' }[kind];
     let prev = null;
     $('rxRankList').innerHTML = `<li class="rx-rankhead">${head}</li>` + list.map((x) => {
@@ -170,6 +171,40 @@ export async function mountReactions(app){
   $('rxRankSN2').onclick = () => showRank('SN2');
   $('rxRankE1').onclick = () => showRank('E1');
   $('rxRankAlk').onclick = () => showRank('Alk');
+
+  // ---------- reverse planner: first molecule → second, through the forward engine (planner.js) ----------
+  let planToken = 0;
+  async function showPlan(){
+    for (const b of [$('rxRankSN1'), $('rxRankSN2'), $('rxRankE1'), $('rxRankAlk'), $('rxPlan')]) b.setAttribute('aria-pressed', String(b.id === 'rxPlan'));
+    const list = $('rxRankList');
+    if (st.frags.length !== 2){ list.innerHTML = '<li class="rx-rankhead">The planner needs exactly two molecules: the start first, then the target.</li>'; return; }
+    const [A, B] = st.frags, token = ++planToken;
+    list.innerHTML = '<li class="rx-rankhead" id="rxPlanHead">Trying routes…</li>';
+    const res = await planRoutes(OCL, A, B, { rules, cat }, { onProgress: async (i, n) => { const h = $('rxPlanHead'); if (h) h.textContent = `Trying route ${i + 1} of ${n}…`; await new Promise((r) => setTimeout(r, 0)); } });
+    if (token !== planToken) return;
+    if (res.error){ list.innerHTML = '<li class="rx-rankhead">The first molecule has no leaving group or OH, so none of the routes can start.</li>'; return; }
+    const nm = async (m) => m ? String((await nameOf(m)).name || 'another product').replace(/\.$/, '') : '';
+    const rows = [`<li class="rx-rankhead">Get from <span class="rx-thumb">${svgOf(A, 160, 90)}</span> to <span class="rx-thumb">${svgOf(B, 160, 90)}</span></li>`];
+    rows.push(`<li class="rx-rankhead">${res.works.length ? `${res.works.length} route${res.works.length > 1 ? 's give' : ' gives'} the target as the major product:` : 'None of the routes tried gives the target as the major product.'}</li>`);
+    for (const r of res.works) rows.push(`<li class="plan"><b class="rx-place">✔</b><span><span class="rx-route">${esc(r.text)}</span><br>${esc(r.majorPw)}${r.via ? ' · ' + esc(r.via) : ''}${r.rank === 'competing' ? ' (competing with another product)' : ''}${r.stereoNote ? ' · ' + esc(r.stereoNote) : ''}</span></li>`);
+    if (res.misses.length) rows.push('<li class="rx-rankhead">Why the others miss:</li>');
+    for (const r of res.misses){
+      let why;
+      if (r.verdict === 'stopped') why = `stops at step ${(r.stopStep ?? 0) + 1}: ${reason(r.why)}`;
+      else {
+        const other = await nm(r.majorMol);
+        const how = `${r.majorPw}${r.via ? ', ' + r.via : ''}`;
+        why = r.verdict === 'competing' ? `the target forms, but only as one of two equal products (with ${other})`
+          : r.verdict === 'minor' ? `the target is only a minor product; the major is ${other} (${how})`
+          : `gives ${other} instead (${how})`;
+      }
+      if (token !== planToken) return;
+      rows.push(`<li class="plan none"><b class="rx-place">✗</b><span><span class="rx-route">${esc(r.text)}</span><br>${esc(why)}</span></li>`);
+    }
+    rows.push('<li class="rx-rankhead"><small>Only these short sequences are tried, each step on the major product of the step before; every verdict comes from the same forward predictions as Predict.</small></li>');
+    list.innerHTML = rows.join('');
+  }
+  $('rxPlan').onclick = () => showPlan();
 
   // ---------- reagent ----------
   function speciesText(r){

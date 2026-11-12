@@ -196,7 +196,7 @@
   /* reactions window */
   .rx-lab{font-size:14px;color:var(--muted);margin-top:8px}
   #rxReagentForm{margin-top:8px}
-  .chip[aria-pressed="true"],#rxHeat[aria-pressed="true"],#rxRankSN1[aria-pressed="true"],#rxRankSN2[aria-pressed="true"],#rxRankE1[aria-pressed="true"],#rxRankAlk[aria-pressed="true"]{box-shadow:var(--sunken);background:#d4d0c8;color:var(--sel);font-weight:600}
+  .chip[aria-pressed="true"],#rxHeat[aria-pressed="true"],#rxRankSN1[aria-pressed="true"],#rxRankSN2[aria-pressed="true"],#rxRankE1[aria-pressed="true"],#rxRankAlk[aria-pressed="true"],#rxPlan[aria-pressed="true"]{box-shadow:var(--sunken);background:#d4d0c8;color:var(--sel);font-weight:600}
   #rxHeat[aria-pressed="true"]{color:#b00000}
   .rx-drawbox{margin-top:8px}
   .rx-drawbox summary{cursor:pointer;font-size:15px}
@@ -246,6 +246,8 @@
   .rx-ranklist{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
   .rx-ranklist li{display:grid;grid-template-columns:34px 110px minmax(0,1fr);align-items:center;gap:8px;background:#fff;box-shadow:var(--sunken);padding:4px 6px;font-size:14px}
   .rx-ranklist li.none{color:var(--muted)}
+  .rx-ranklist li.plan{grid-template-columns:34px minmax(0,1fr)}
+  .rx-ranklist .rx-route{font:19px var(--crt)}
   .rx-ranklist .rx-rankhead{display:block;background:none;box-shadow:none;font-weight:600}
   .rx-place{font:26px/1 var(--crt);text-align:center}
   .rx-thumb svg{width:110px;height:auto}
@@ -546,7 +548,7 @@
       <div class="card-b">
         <div id="rxRank" hidden>
           <div class="msg warn" id="rxRankNote"></div>
-          <div class="row"><button type="button" id="rxRankSN1" aria-pressed="false">Rank by SN1 rate</button><button type="button" id="rxRankSN2" aria-pressed="false">Rank by SN2 rate</button><button type="button" id="rxRankE1" aria-pressed="false">Rank by E1 rate (acid)</button><button type="button" id="rxRankAlk" aria-pressed="false">Rank alkenes by stability</button></div>
+          <div class="row"><button type="button" id="rxRankSN1" aria-pressed="false">Rank by SN1 rate</button><button type="button" id="rxRankSN2" aria-pressed="false">Rank by SN2 rate</button><button type="button" id="rxRankE1" aria-pressed="false">Rank by E1 rate (acid)</button><button type="button" id="rxRankAlk" aria-pressed="false">Rank alkenes by stability</button><button type="button" id="rxPlan" aria-pressed="false" title="Two molecules: start (first) and target (second)">Plan: first → second</button></div>
           <ol class="rx-ranklist" id="rxRankList"></ol>
         </div>
         <div id="rxMain">

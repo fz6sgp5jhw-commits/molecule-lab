@@ -187,4 +187,21 @@ for (const row of data.rules.rows) for (const k of [...(row.reasons || []), row.
   }
 }
 
+// ---------- reverse planner (planner.js): which routes make the target as the major product ----------
+{
+  const { plan } = await import('../planner.js');
+  for (const c of seed.plans){
+    try {
+      const r = await plan(OCL, M.fromSmiles(c.a), M.fromSmiles(c.b), data);
+      if (r.error){ fail(c.id, `planner error ${r.error}`); continue; }
+      const works = r.works.map((x) => x.id);
+      for (const w of c.works) if (!works.includes(w)) fail(c.id, `expected route ${w} to work, got [${works}]`);
+      for (const [id, v] of Object.entries(c.misses)){
+        const m = r.misses.find((x) => x.id === id);
+        if (!m || m.verdict !== v) fail(c.id, `route ${id}: expected miss (${v}), got ${m ? m.verdict : works.includes(id) ? 'works' : 'not tried'}`);
+      }
+    } catch (err){ fail(c.id, `threw ${String(err && err.message || err).split('\n')[0]}`); }
+  }
+}
+
 if (fails.length){ console.log(fails.join('\n')); process.exit(1); }

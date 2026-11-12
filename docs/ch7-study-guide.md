@@ -130,6 +130,7 @@ Legend: ✅ the app gives the key's answer · ⚠️ the app shows a warning or 
 - The tBu group makes the other chair very costly. The reaction still goes through it, just slowly.
 
 ### Q10 Pick the reagents (key: a D; b A then B; c A then B; d A then B)
+- **App (Q10 and Q13):** type the start and the target joined with a dot (start first), e.g. `CC1(C)CCCCC1O.CC1(C)CCCC=C1`, open **Reactions** and press **Plan: first → second**. It runs 16 short reagent sequences through the normal predictions and lists every one whose major product is the target, then says why each other one misses (a rearrangement, Hofmann instead of Zaitsev, SN2 instead of E2, or a step that stops). Rings take a few seconds per route because each E2 checks both chairs.
 - **a.** 2,2‑dimethylcyclohexanol needs the alkene *between* the old C–OH carbon and the CMe₂ carbon, with a methyl moved. That requires a carbocation and a **methyl shift** → H₂SO₄ and heat (D). ✅ App (after the 9l fix).
 - **b.** Same starting material, but this time *no* methyl shift is wanted → SOCl₂/pyridine (Cl, no cation), then KOtBu (E2). ✅ App gives 3,3‑dimethylcyclohexene.
 - **c.** Primary alcohol: no cation is possible → SOCl₂, then KOtBu, the bulky base that prefers E2 over SN2. ✅ App: E2 major.

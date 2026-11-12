@@ -1906,5 +1906,49 @@
     1.2
    ]
   }
+ ],
+ "plans": [
+  {
+   "id": "P-10b",
+   "note": "Q10b: no methyl shift wanted: make a leaving group then E2; acid rearranges (target only minor)",
+   "a": "CC1(C)CCCCC1O",
+   "b": "CC1(C)CCCC=C1",
+   "works": [
+    "socl2-kotbu",
+    "socl2-naoet",
+    "tscl-kotbu"
+   ],
+   "misses": {
+    "acid": "minor"
+   }
+  },
+  {
+   "id": "P-10c",
+   "note": "Q10c: 1° alcohol → terminal alkene: bulky base after SOCl2; NaOEt gives SN2 ether; acid stops (1°)",
+   "a": "CC(C)CCO",
+   "b": "C=CC(C)C",
+   "works": [
+    "socl2-kotbu",
+    "tscl-kotbu"
+   ],
+   "misses": {
+    "socl2-naoet": "minor",
+    "acid": "stopped"
+   }
+  },
+  {
+   "id": "P-13b",
+   "note": "Q13b: Zaitsev alkene without acid needs NaOEt; KOtBu gives Hofmann (target only minor)",
+   "a": "CCCC(O)C(C)C",
+   "b": "CCCC=C(C)C",
+   "works": [
+    "socl2-naoet",
+    "tscl-naoet"
+   ],
+   "misses": {
+    "socl2-kotbu": "minor",
+    "tscl-kotbu": "minor"
+   }
+  }
  ]
 }

@@ -418,6 +418,14 @@ try {
   ok(/1.*allylic.*2.*2°.*1°: the carbocation is too unstable/s.test(await text('#rxRankList')), 'ranking mode: E1 with acid, 3° allylic > 2° > 1° none');
   await page.click('#rxRankAlk');
   ok(/most stable first/.test(await text('#rxRankList')) && /no C=C/.test(await text('#rxRankList')), 'ranking mode: alkene stability runs (alcohols have no C=C)');
+  // reverse planner: 1° alcohol → terminal alkene (Q10c)
+  await page.fill('#nameInput', 'CC(C)CCO.C=CC(C)C');
+  await page.click('#nameBtn');
+  await page.waitForFunction(() => !document.querySelector('#rxRank').hidden, null, { timeout: 10000 });
+  await page.click('#rxPlan');
+  await page.waitForFunction(() => /Why the others miss/.test(document.querySelector('#rxRankList').textContent), null, { timeout: 60000 });
+  const planText = await text('#rxRankList');
+  ok(/route.* give.*major product/.test(planText) && /SOCl.*KOtBu/.test(planText) && /only a minor product; the major is 1-ethoxy-3-methylbutane/.test(planText), 'planner: SOCl2 then KOtBu works; NaOEt route explained (SN2 ether)');
 } catch (e) {
   if (process.env.ERRLINES) console.log('STATE', JSON.stringify(await page.evaluate(() => ({ mech: !document.querySelector('#mechWin').hidden, nexts: document.querySelectorAll('.mv-next').length, title: document.querySelector('#mechTitle').textContent, mount: document.querySelector('#mechMount').textContent.slice(0, 200), step: document.querySelector('.mv-step') && document.querySelector('.mv-step').textContent, mlog: (window.__mlog || []).slice(-3) }))));
   ok(false, 'test crashed after "' + lastOk + '": ' + e.message.split('\n').slice(0, +(process.env.ERRLINES || 12)).join(' | '));
