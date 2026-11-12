@@ -137,6 +137,17 @@
   #ringSel{font:15px var(--ui);background:#fff;border:none;box-shadow:var(--field);padding:5px 6px;min-height:30px;color:#000}
   .chairinfo{margin-top:8px;padding:8px 10px;background:#fff;box-shadow:var(--sunken);font-size:15px}
   .chairinfo:empty{display:none}
+  #newmanBox{position:relative;background:#000;box-shadow:var(--sunken);height:380px;display:flex;align-items:center;justify-content:center}
+  @media (max-width:600px){#newmanBox{height:320px}}
+  #newmanSvg{width:100%;max-width:380px;height:100%;cursor:pointer}
+  #newmanBox .overlay[hidden]{display:none}
+  .nw-key{top:auto;bottom:6px;right:auto;left:10px;text-align:left}
+  .nw-lab{font:22px var(--crt);text-anchor:middle;dominant-baseline:middle}
+  .nw-e2{margin-top:6px}
+  .nw-e2.ok b{color:#006000}
+  .nw-name{font:19px var(--crt)}
+  .nw-quiz{margin-top:8px;padding:8px 10px;background:#ffffe1;border:1px solid #000;font-size:15px}
+  .nw-good{color:#006000;font-weight:600}.nw-bad{color:#a00000}
   .chairinfo .energy{font:20px/1.15 var(--crt)}
   .chairinfo table{border-collapse:collapse;width:100%;margin-top:8px;font-size:14px}
   .chairinfo th,.chairinfo td{text-align:left;padding:3px 6px;border-bottom:1px solid #c0c0c0;vertical-align:top}
@@ -455,7 +466,7 @@
         <button class="tab" role="tab" data-view="v3d" aria-selected="true">3D model</button>
         <button class="tab" role="tab" data-view="v2d" aria-selected="false">Line drawing</button>
         <button class="tab" role="tab" data-view="vchair" aria-selected="false">Chair</button>
-        <button class="tab" role="tab" data-view="vnewman" aria-selected="false">Newman<span class="soon">· soon</span></button>
+        <button class="tab" role="tab" data-view="vnewman" aria-selected="false">Newman</button>
         <button class="tab" role="tab" data-view="vfischer" aria-selected="false">Fischer<span class="soon">· soon</span></button>
       </div>
       <div class="panel">
@@ -497,7 +508,21 @@
       </div>
 
       <div class="view" id="vnewman">
-        <div class="soon-view"><strong>Newman projections are coming in stage 2</strong>Pick a C–C bond, look down it, and rotate the back carbon to compare staggered, eclipsed, gauche and anti.</div>
+        <div id="newmanBox">
+          <svg id="newmanSvg" viewBox="-165 -150 330 300" role="img" aria-label="Newman projection: tap to turn the back carbon 60°"></svg>
+          <div class="overlay" id="newmanOverlay">Draw or name a molecule with a C–C single bond (not in a ring) to look along it.</div>
+          <div class="chairtag" id="newmanTag"></div>
+          <div class="chairkey nw-key"><span style="color:#7dff7d">front C = dot</span> · <span style="color:#2fbf2f">back C = circle</span></div>
+        </div>
+        <div class="controls">
+          <select id="nwBond" hidden aria-label="Which C–C bond to look along"></select>
+          <button id="nwLeft" type="button" disabled title="Turn the back carbon 60° one way">⟲ 60°</button>
+          <button id="nwRight" type="button" disabled title="Turn the back carbon 60° the other way">60° ⟳</button>
+          <button id="nwAnti" type="button" disabled title="Jump to the lowest-energy shape where E2 can happen">Show anti H</button>
+          <button id="nwQuiz" type="button" disabled>Quiz me</button>
+        </div>
+        <div class="nw-quiz" id="nwQuizBox" hidden><span id="nwQuizQ"></span> <button id="nwCheck" type="button" class="primary">Check</button> <span id="nwQuizMsg"></span></div>
+        <div class="chairinfo" id="newmanInfo"></div>
       </div>
       <div class="view" id="vfischer">
         <div class="soon-view"><strong>Fischer projections are coming in stage 3</strong>For open chains with stereocentres, like sugars, amino acids and 2,3-dibromobutane, with R/S labels.</div>
@@ -586,10 +611,13 @@ import * as OCL from './openchemlib.js';
 import { findChairRings, buildChairs, toXYZ, flipFrames } from './chair.js';
 import { nameMolecule } from './namer.js';
 import { mountReactions } from './reactions-ui.js';
+import { mountNewman } from './newman-ui.js';
 import { watchChemText } from './chem-text.js';
 
 const $ = (id) => document.getElementById(id);
 const state = { mol: null, smiles: '', style: 'ballstick', seed: 1, nameFor: null, busyToken: 0 };
+// Newman tab (newman-ui.js); defined early because refresh() calls it
+const newman = mountNewman({ OCL, getMol: () => state.mol, nameMolecule });
 
 // ---------- engine ----------
 try { await OCL.Resources.registerFromUrl('./resources.json'); } catch (e) { console.warn('resources', e); }
@@ -862,6 +890,7 @@ function refresh(){
     render2D(m);
     build3D(m);
     if (chairTabOpen()) updateChair();
+    if (newman.isOpen()) newman.update();
     document.dispatchEvent(new CustomEvent('ml:molecule', { detail: m }));
     if (!m) resetName('Draw or build a molecule to start.');
     else if (state.nameFor !== idcode(m)) resetName('Press “Get IUPAC name” to name this structure.');
@@ -1202,6 +1231,7 @@ document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === t.dataset.view));
   if (t.dataset.view === 'v3d' && viewer){ viewer.resize(); viewer.render(); }
   if (t.dataset.view === 'vchair') updateChair();
+  if (t.dataset.view === 'vnewman') newman.update();
 }));
 window.addEventListener('resize', () => { if (viewer){ viewer.resize(); viewer.render(); } });
 

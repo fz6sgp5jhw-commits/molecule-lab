@@ -163,4 +163,28 @@ for (const row of data.rules.rows) for (const k of [...(row.reasons || []), row.
   for (const p of res.pathways.E1.products) if (p.beta == null || p.centre == null) fail('W4', 'E1 product without beta/centre');
 }
 
+// ---------- Newman projections (newman.js): which staggered shape E2 can go from, and what it gives ----------
+{
+  const N = await import('../newman.js');
+  for (const c of seed.newman){
+    try {
+      const nb = N.newmanBonds(OCL, M.fromSmiles(c.smiles));
+      const bond = nb.bonds.find((b) => b.label.startsWith(c.bond));
+      if (!bond){ fail(c.id, `no bond ${c.bond} in [${nb.bonds.map((b) => b.label)}]`); continue; }
+      const md = N.buildNewman(OCL, nb.mol, bond);
+      if (c.noE2){ if (md.alkene) fail(c.id, 'expected no E2 along this bond'); }
+      for (const ez of ['E', 'Z']){
+        if (c[ez] === undefined) continue;
+        const st = N.stepFor(md, ez);
+        if (c[ez] === null){ if (st !== null) fail(c.id, `expected no ${ez} shape, got step ${st}`); continue; }
+        if (st === null){ fail(c.id, `expected a shape giving ${c[ez]}, got none`); continue; }
+        const got = nameOf(N.newmanAt(md, st).e2.product.mol);
+        if (got !== c[ez]) fail(c.id, `${ez} shape: expected ${c[ez]}, got ${got}`);
+      }
+      if (c.best && N.newmanAt(md, N.stepFor(md)).e2.ez !== c.best) fail(c.id, `lowest-energy E2 shape: expected ${c.best}`);
+      if (c.gauche){ const g = Math.max(md.energies[2], md.energies[4]); if (g < c.gauche[0] || g > c.gauche[1]) fail(c.id, `gauche energy ${g.toFixed(2)} outside ${c.gauche}`); }
+    } catch (err){ fail(c.id, `threw ${String(err && err.message || err).split('\n')[0]}`); }
+  }
+}
+
 if (fails.length){ console.log(fails.join('\n')); process.exit(1); }

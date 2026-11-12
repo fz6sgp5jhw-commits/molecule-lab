@@ -1750,5 +1750,51 @@
    "text": "NaOEt",
    "steps": null
   }
+ ],
+ "newman": [
+  {
+   "id": "N1",
+   "note": "Q3: 2-bromobutane along C2–C3: an anti shape gives E (lowest energy), another gives Z",
+   "smiles": "CC(Br)CC",
+   "bond": "CHBr–CH2",
+   "E": "(2E)-but-2-ene",
+   "Z": "(2Z)-but-2-ene",
+   "best": "E"
+  },
+  {
+   "id": "N2",
+   "note": "Q5 (3S,4S): only one β-H, so only the E alkene from any anti shape",
+   "smiles": "CCC[C@H]([C@H](CC)Cl)C1CCCCC1",
+   "bond": "CHCl–CH",
+   "E": "[(3E)-hept-3-en-4-yl]cyclohexane",
+   "Z": null
+  },
+  {
+   "id": "N3",
+   "note": "Q5 diastereomer (3S,4R): only Z",
+   "smiles": "CCC[C@@H]([C@H](CC)Cl)C1CCCCC1",
+   "bond": "CHCl–CH",
+   "E": null,
+   "Z": "[(3Z)-hept-3-en-4-yl]cyclohexane"
+  },
+  {
+   "id": "N4",
+   "note": "Q4b (3R,4S): only Z",
+   "smiles": "CC[C@@H](Cl)[C@@H](C)CC",
+   "bond": "CHCl–CH",
+   "E": null,
+   "Z": "(3Z)-3-methylhex-3-ene"
+  },
+  {
+   "id": "N5",
+   "note": "butane: no leaving group, gauche ~0.8 kcal/mol above anti",
+   "smiles": "CCCC",
+   "bond": "CH2–CH2",
+   "noE2": true,
+   "gauche": [
+    0.5,
+    1.2
+   ]
+  }
  ]
 }

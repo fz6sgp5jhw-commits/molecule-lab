@@ -63,7 +63,7 @@ Legend: ✅ the app gives the key's answer · ⚠️ the app shows a warning or 
 - **How:** E2 needs H and Br anti (180°). For the **E** alkene, the two CH₃ groups must *also* be anti. Find the projection where Br and an H are opposite each other **and** the two CH₃ are opposite each other: that is 4.
 - **3D:** both (E)- and (Z)-but-2-ene (and but‑1‑ene) can form from some anti conformer. E wins because its conformer has the CH₃ groups apart, which is lower in energy.
 - **App:** ✅ the E2 note now says this: "two conformers put a β-H anti to Br; the one leading to (E) is 0.6 kcal/mol more stable".
-- **App:** ⚠️ there is no Newman view yet (the tab says "soon"). Use the 3D model with *Spin* off and look down the C2–C3 bond.
+- **App:** ✅ type `CC(Br)CC`, open the **Newman** tab (Molecule side). It looks along CHBr–CH2. Press **60° ⟳** (or tap the drawing) to turn the back carbon. When an H is anti to Br, the H turns cyan, Br turns pink, and the box says which alkene E2 gives from that shape: (2E) when the CH₃ groups are anti, (2Z) when they are gauche. **Quiz me** asks you to find the (E) shape.
 
 ### Q4 Zaitsev predictions (key: a‑D, b‑F, c‑B)
 - **a.** 3‑ethyl‑2‑methylhexan‑3‑ol with H₂SO₄ and heat: E1 through a 3° cation. Losing the H from the isopropyl CH gives the **tetrasubstituted** 3‑ethyl‑2‑methylhex‑2‑ene. ✅ App.
@@ -169,7 +169,7 @@ Legend: ✅ the app gives the key's answer · ⚠️ the app shows a warning or 
 
 ## Part 4: Study plan for this chapter
 1. **Day 1:** stability (Q8) and naming (Q2). Draw each Q8 pair; count the substituents out loud.
-2. **Day 2:** E2 geometry. Q3 and Q5 with Newman projections drawn by hand. Then 9i–k in the **Chair** tab: find the axial Br and its axial H neighbours.
+2. **Day 2:** E2 geometry. Q3 and Q5 with Newman projections drawn by hand, then checked in the **Newman** tab. Then 9i–k in the **Chair** tab: find the axial Br and its axial H neighbours.
 3. **Day 3:** E1 and rearrangements: Q6, 7, 9l–m. Use ▶ Watch in the Reactions tab.
 4. **Day 4:** strategy: Q10 and 13. For each, say *why* acid would fail (rearrangement, wrong regiochemistry) before choosing reagents.
 5. **Mistakes list:** write down each rule you missed, and redo those problems 2 days later.

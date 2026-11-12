@@ -82,7 +82,7 @@
     "ring_e2_checked": "Trans-diaxial rule checked in both chairs (3D shapes, MMFF94s+): E2 needs the leaving group and the β-H both axial. {detail} Open the Chair tab and press Ring flip to see it.",
     "ring_e2_no_anti": "In neither chair is the leaving group axial with an axial H on a neighbouring ring carbon, so E2 can't happen here.",
     "e2_beta_stereo": "Here the anti-periplanar geometry decides E vs Z (the β-carbon is a defined stereocentre), but the 3D shape couldn’t be built, so E/Z is left open.",
-    "e2_anti_checked": "Anti-periplanar check (3D conformers, MMFF94s+): E2 needs the β-H at 180° to the leaving group. {detail}",
+    "e2_anti_checked": "Anti-periplanar check (3D conformers, MMFF94s+): E2 needs the β-H at 180° to the leaving group. {detail} Open the Molecule tab’s Newman view to turn it yourself.",
     "e2_stereo_undrawn": "E2 is stereospecific here: which alkene (E or Z) forms depends on the configuration of both carbons, and at least one stereocentre is drawn without wedges. Both are shown; add wedges to get the one answer.",
     "allylic_e1": "E1 from an allylic cation (dienes) isn't covered yet.",
     "promoted": "The pathway above can't happen here, so the next one becomes the major path.",
