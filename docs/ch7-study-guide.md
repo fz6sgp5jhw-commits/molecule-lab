@@ -69,7 +69,7 @@ Legend: ✅ the app gives the key's answer · ⚠️ the app shows a warning or 
 - **a.** 3‑ethyl‑2‑methylhexan‑3‑ol with H₂SO₄ and heat: E1 through a 3° cation. Losing the H from the isopropyl CH gives the **tetrasubstituted** 3‑ethyl‑2‑methylhex‑2‑ene. ✅ App.
 - **b.** 3‑chloro‑4‑methylhexane with NaOH: E2 Zaitsev gives 3‑methylhex‑3‑ene (trisubstituted beats disubstituted), and the key says **E**. ✅ App. With no wedges it lists both (3E) and (3Z), with (3E) first by the bulk rule, and a note that E2 is stereospecific here, so you should add wedges for the one answer.
   - **Deeper:** the (3R,4R)/(3S,4S) diastereomer can only give **E**, while (3R,4S)/(3S,4R) can only give **Z**. ✅ App: draw the wedges and it gives just that one, with a note saying why (the one β-H anti to Cl). "E" is the right answer for an unspecified starting material, but on an exam with wedges, draw the Newman projection.
-- **c.** 2,5‑dimethyl‑1‑propylcyclohexan‑1‑ol with acid: 3° cation; the ring H next to the methyl gives the tetrasubstituted ring alkene (B). ✅ App.
+- **c.** 2,5‑dimethyl‑1‑propylcyclohexan‑1‑ol with acid: 3° cation; the ring H next to the methyl gives the tetrasubstituted ring alkene (B). ✅ App. The two minor exocyclic alkenes are now named (2E)- and (2Z)-1,4-dimethyl-2-propylidenecyclohexane; they used to share one name.
 
 ### Q5 Optically active 3‑chloro‑4‑cyclohexylheptane + NaOH (key: product B (E), rate law E, mechanism E2)
 - **How:**

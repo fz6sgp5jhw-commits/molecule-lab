@@ -26,6 +26,9 @@ const cases = [
   ['C=C', 'ethene'], ['C#C', 'ethyne'], ['C=CC', ['prop-1-ene', 'propene']], ['CC=CC', 'but-2-ene'], ['C=CC=C', 'buta-1,3-diene'],
   ['C=CCC#C', 'pent-1-en-4-yne'], ['CC(C)=CC', '2-methylbut-2-ene'], ['C/C=C/C', ['(2E)-but-2-ene', '(E)-but-2-ene']], ['C/C=C\\C', ['(2Z)-but-2-ene', '(Z)-but-2-ene']],
   ['CC/C=C/C(C)C', ['(3E)-2-methylhex-3-ene', '(E)-2-methylhex-3-ene']], ['ClC=C', 'chloroethene'],
+  // exocyclic C=C (…ylidene): E/Z with the ring atom's locant (checked with OPSIN, Ch 7 Q4c)
+  ['CC/C=C1/C(C)CCC(C)C/1', '(2E)-1,4-dimethyl-2-propylidenecyclohexane'], ['CC/C=C1\\C(C)CCC(C)C\\1', '(2Z)-1,4-dimethyl-2-propylidenecyclohexane'],
+  ['C/C=C1\\CCCC(=O)C1', '(3E)-3-ethylidenecyclohexan-1-one'], ['C/C=C1/CCCC1', 'ethylidenecyclopentane'],
   // rings
   ['C1CCCCC1', 'cyclohexane'], ['CC1CCCCC1', 'methylcyclohexane'], ['CC1CCCC(C)C1', '1,3-dimethylcyclohexane'],
   ['CCC1CCCC1C', '1-ethyl-2-methylcyclopentane'], ['C1CC=CCC1', 'cyclohexene'], ['ClC1CCCC=C1', ['3-chlorocyclohexene', '3-chlorocyclohex-1-ene']],

@@ -1357,6 +1357,44 @@
      ]
     }
    }
+  },
+  {
+   "id": "W7-4c",
+   "note": "Ch 7 worksheet Q4c (key B): the two exocyclic E1 alkenes are E/Z isomers and must have different names (they used to share one).",
+   "substrate": "CCCC1(O)CC(C)CCC1C",
+   "substrateName": "2,5-dimethyl-1-propylcyclohexan-1-ol",
+   "steps": [
+    {
+     "reagent": "H2SO4",
+     "solvent": "H2O",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "productCount": {
+     "E1": 4
+    },
+    "products": [
+     {
+      "pathway": "E1",
+      "smiles": "CCCC1=C(C)CCC(C)C1",
+      "name": "1,4-dimethyl-2-propylcyclohexene",
+      "rank": "major"
+     },
+     {
+      "pathway": "E1",
+      "smiles": "CC/C=C1/C(C)CCC(C)C/1",
+      "name": "(2E)-1,4-dimethyl-2-propylidenecyclohexane",
+      "rank": "minor"
+     },
+     {
+      "pathway": "E1",
+      "smiles": "CC/C=C1\\C(C)CCC(C)C\\1",
+      "name": "(2Z)-1,4-dimethyl-2-propylidenecyclohexane",
+      "rank": "minor"
+     }
+    ]
+   }
   }
  ],
  "ranking": [

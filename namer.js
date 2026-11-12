@@ -376,6 +376,9 @@ class Namer {
       const a = order[i], b = order[(i + 1) % nP];
       if (this.bondOrder(a, b) === 2){ const d = this.cipBond(a, b); if (d) stereo.push({ loc: i + 1, d }); }
     }
+    // a C=C from the parent to a substituent (…ylidene): its E/Z takes the parent atom's locant, e.g. (2E)-2-propylidene…
+    const inOrder = new Set(order);
+    order.forEach((a, i) => { for (const x of this.nb[a]) if (!inOrder.has(x.atom) && x.atom !== ctx.from && this.bondOrder(a, x.atom) === 2){ const d = this.cipBond(a, x.atom); if (d) stereo.push({ loc: i + 1, d }); } });
     stereo.sort((p, q) => p.loc - q.loc);
     const fvLoc = ctx.fv !== undefined ? [loc.get(ctx.fv)] : [];
     return { ctx, order, loc, principalLocs, mult, dbl, tri, prefixes, prefixLocs, alphaLocs, stereo, fvLoc, consumed,

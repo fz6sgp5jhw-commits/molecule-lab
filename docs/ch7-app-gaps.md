@@ -74,7 +74,8 @@ Problem-by-problem results are in `ch7-study-guide.md`.
   - Q4b (3R,4R) → E and (3R,4S) → Z;
   - 2‑bromobutane gives E as major (from the lower-energy anti conformer).
 
-### P0‑4 Small labelling errors
+### P0‑4 Small labelling errors: **FIXED 2026‑11‑11**
+- **Done:** the ring-alkene `ezNotCovered` text went with P0‑2. For Q4c, `namer.js` now gives E/Z for a C=C from the parent to a substituent (…ylidene), with the parent atom's locant: (2E)- and (2Z)-1,4-dimethyl-2-propylidenecyclohexane, both checked with OPSIN. Namer tests and seed case W7-4c added.
 - A ring alkene with no possible E/Z gets the `ezNotCovered` "E/Z not decided by geometry" text (Q9i–k cards): `e2()` sets it whenever `betaDefined`, even when the alkene has no E/Z at all.
 - Q4c lists two products with the identical name "1,4‑dimethyl‑2‑propylidenecyclohexane". These are E/Z isomers of an exocyclic C=C on a ring with stereocentres, and the namer drops the descriptor. Either name them properly or merge them as "E/Z mixture".
 
@@ -105,7 +106,7 @@ Problem-by-problem results are in `ch7-study-guide.md`.
 
 ## Proposed order of work (each step ends usable, with tests first)
 1. ~~Fix P0‑1~~ done.
-2. ~~P0‑2~~ and ~~P0‑3~~ done. Next: the rest of P0‑4 (duplicate names in Q4c).
+2. ~~P0‑2~~, ~~P0‑3~~ and ~~P0‑4~~ done.
 3. **P1‑1 Newman tab**: reuses step 2's geometry. Playwright test: 2‑bromobutane, rotate, anti highlight, "gives (E)".
 4. **P1‑2 stability ranking** and **P1‑4 acid ranking**: both extend the existing ranking mode.
 5. **P1‑3 name checker** and course-style names.
