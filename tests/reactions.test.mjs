@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import * as OCL from '../openchemlib.js';
 import { nameMolecule } from '../namer.js';
-import { predictSequence, runSequence, rankSN1, rankSN2, PATHWAYS } from '../predict.js';
+import { predictSequence, runSequence, rankSN1, rankSN2, rankE1, rankAlkenes, PATHWAYS } from '../predict.js';
 import { findReagent, parseSequence, matchMolecule, guessBox, solventType, entryFromMolecule } from '../reagents.js';
 
 const here = (p) => new URL(p, import.meta.url).pathname;
@@ -68,7 +68,7 @@ for (const c of seed.cases){
 
 for (const r of seed.ranking){
   try {
-    const out = (r.mode === 'SN1' ? rankSN1 : rankSN2)(OCL, r.mols.map((s) => M.fromSmiles(s)));
+    const out = ({ SN1: rankSN1, SN2: rankSN2, E1: rankE1, alkene: rankAlkenes })[r.mode](OCL, r.mols.map((s) => M.fromSmiles(s)));
     // order: list of indices fastest first; null = "doesn't react"; [a, b] = a tie
     const want = r.order.map((x) => Array.isArray(x) ? [...x].sort().join('=') : x === null ? 'none' : String(x));
     const groups = [];

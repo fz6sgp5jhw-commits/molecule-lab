@@ -411,6 +411,13 @@ try {
   await page.click('#rxRankSN2');
   const rank = await text('#rxRankList');
   ok(/1.*1°.*3°: backside attack blocked/s.test(rank), 'ranking mode: SN2 order 1° first, 3° none');
+  await page.fill('#nameInput', 'CCCC(C)O.C=CC(C)(C)O.CCCCCO');
+  await page.click('#nameBtn');
+  await page.waitForFunction(() => !document.querySelector('#rxRank').hidden, null, { timeout: 10000 });
+  await page.click('#rxRankE1');
+  ok(/1.*allylic.*2.*2°.*1°: the carbocation is too unstable/s.test(await text('#rxRankList')), 'ranking mode: E1 with acid, 3° allylic > 2° > 1° none');
+  await page.click('#rxRankAlk');
+  ok(/most stable first/.test(await text('#rxRankList')) && /no C=C/.test(await text('#rxRankList')), 'ranking mode: alkene stability runs (alcohols have no C=C)');
 } catch (e) {
   if (process.env.ERRLINES) console.log('STATE', JSON.stringify(await page.evaluate(() => ({ mech: !document.querySelector('#mechWin').hidden, nexts: document.querySelectorAll('.mv-next').length, title: document.querySelector('#mechTitle').textContent, mount: document.querySelector('#mechMount').textContent.slice(0, 200), step: document.querySelector('.mv-step') && document.querySelector('.mv-step').textContent, mlog: (window.__mlog || []).slice(-3) }))));
   ok(false, 'test crashed after "' + lastOk + '": ' + e.message.split('\n').slice(0, +(process.env.ERRLINES || 12)).join(' | '));

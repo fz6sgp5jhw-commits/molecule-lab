@@ -1474,6 +1474,116 @@
      1
     ]
    ]
+  },
+  {
+   "id": "W7-8a",
+   "mode": "alkene",
+   "note": "Q8a: tri > di",
+   "mols": [
+    "CC=CCCC",
+    "CC=C(C)CC"
+   ],
+   "order": [
+    1,
+    0
+   ]
+  },
+  {
+   "id": "W7-8b",
+   "mode": "alkene",
+   "note": "Q8b: ethylidenecyclopentane (tri, exocyclic) > 4-methylcyclohexene (di)",
+   "mols": [
+    "CC1CCC=CC1",
+    "CC=C1CCCC1"
+   ],
+   "order": [
+    1,
+    0
+   ]
+  },
+  {
+   "id": "W7-8c",
+   "mode": "alkene",
+   "note": "Q8c: cyclohexene > methylenecyclopentane (both di; exocyclic on a 5-ring)",
+   "mols": [
+    "C=C1CCCC1",
+    "C1CCC=CC1"
+   ],
+   "order": [
+    1,
+    0
+   ]
+  },
+  {
+   "id": "W7-8d",
+   "mode": "alkene",
+   "note": "Q8d: 1-methylcyclopentene (tri) > methylenecyclopentane (1,1-di)",
+   "mols": [
+    "C=C1CCCC1",
+    "CC1=CCCC1"
+   ],
+   "order": [
+    1,
+    0
+   ]
+  },
+  {
+   "id": "W7-8e",
+   "mode": "alkene",
+   "note": "Q8e: (E)-3,4-dimethylhex-3-ene > (Z)",
+   "mols": [
+    "CC/C(C)=C(/C)CC",
+    "CC/C(C)=C(\\C)CC"
+   ],
+   "order": [
+    1,
+    0
+   ]
+  },
+  {
+   "id": "W7-8f",
+   "mode": "alkene",
+   "note": "Q8f: 1-ethylcyclopentene > propylidenecyclobutane (strained)",
+   "mols": [
+    "CCC=C1CCC1",
+    "CCC1=CCCC1"
+   ],
+   "order": [
+    1,
+    0
+   ]
+  },
+  {
+   "id": "alk-conj",
+   "mode": "alkene",
+   "note": "conjugated diene > isolated diene",
+   "mols": [
+    "C=CCC=C",
+    "C=CC=CC"
+   ],
+   "order": [
+    1,
+    0
+   ]
+  },
+  {
+   "id": "W7-12",
+   "mode": "E1",
+   "note": "Q12 pattern: 3° allylic > 3° > 2° that can hydride-shift > plain 2° > 1° (no E1)",
+   "mols": [
+    "CCCC(C)O",
+    "CCCCCO",
+    "C=CC(C)(C)O",
+    "CCC(C)(C)O",
+    "CC(C)C(C)O"
+   ],
+   "order": [
+    2,
+    3,
+    4,
+    0,
+    null
+   ]
   }
  ],
  "reagentMatching": [

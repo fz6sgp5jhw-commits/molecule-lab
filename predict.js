@@ -348,3 +348,93 @@ export function rankSN2(OCL, mols){
     return { index, key: [STERIC[s.cls], s.ab ? 1 : 0, -s.betaBranching, s.lgRank], reason: `${CLS_TEXT[s.cls]}${s.ab ? ' (' + (s.allylic ? 'allylic' : 'benzylic') + ' boost)' : ''}, ${s.betaBranching} extra carbon(s) on the β-carbons${s.neopentyl ? ' (neopentyl: very slow)' : ''}, leaving group ${LG_LABEL[s.lg]}` };
   }));
 }
+
+// ---------- E1 ranking under acid (worksheet Ch 7 Q12) ----------
+// With H₂SO₄/H₃PO₄ an alcohol's OH is protonated to OH₂⁺, a good leaving group (water). The slow step is
+// forming the first carbocation, so its score decides; a 1,2-shift to a better cation (after the slow
+// step) is only the tie-break. 1° (and methyl) cations essentially don't form: no E1. Needs a β-H.
+export function rankE1(OCL, mols){
+  return rank(mols.map((mol, index) => {
+    const an = analyse(OCL, mol);
+    const sites = an.sites;
+    if (!sites.length) return { index, none: true, reason: 'no leaving group (and no OH to protonate)' };
+    const s = [...sites].sort((a, b) => (b.cationScore ?? -1) - (a.cationScore ?? -1) || b.lgRank - a.lgRank)[0];
+    const lgText = s.lg === 'OH' ? 'OH → OH₂⁺ with acid (leaves as water)' : `leaving group ${LG_LABEL[s.lg]}`;
+    if (s.cationScore === null) return { index, none: true, reason: 'vinyl/aryl: no carbocation' };
+    if (s.cationScore < 2) return { index, none: true, reason: `${CLS_TEXT[s.cls]}: the carbocation is too unstable, so no E1 (${lgText})` };
+    if (!s.betaH) return { index, none: true, reason: 'no β-H: no E1' };
+    const { pathways } = cationPathways(OCL, an.mol, s);
+    const best = pathways.reduce((x, p) => p.score > x.score ? p : x, pathways[0]);
+    const shift = best.shift && best.shift !== 'allylic' && best.score > s.cationScore ? best : null;
+    const kind = `${CLS_TEXT[s.cls]}${s.allylic ? ' allylic (resonance)' : s.benzylic ? ' benzylic (resonance)' : ''}`;
+    return { index, key: [s.cationScore, shift ? shift.score : s.cationScore, s.lg === 'OH' ? 0 : s.lgRank],
+      reason: `${kind} carbocation forms in the slow step (score ${s.cationScore})${shift ? `; it can then ${shift.label === 'hydride shift' ? 'do a hydride shift' : 'do a ' + shift.label} to a better cation (score ${shift.score})` : ''}; ${lgText}` };
+  }));
+}
+
+// ---------- alkene stability (worksheet Ch 7 Q8) ----------
+// Rule-based, never MMFF (energies of different constitutional isomers can't be compared that way).
+// Key, compared in order: conjugated C=C's > more alkyl groups on the C=C > no small-ring strain (C=C in or
+// on a 3/4-membered ring) > endocyclic over exocyclic > trans (or no cis/trans) over cis.
+const SUBS = ['unsubstituted', 'monosubstituted', 'disubstituted', 'trisubstituted', 'tetrasubstituted'];
+export function rankAlkenes(OCL, mols){
+  const M = OCL.Molecule;
+  return rank(mols.map((mol, index) => {
+    const m = mol.getCompactCopy(); m.removeExplicitHydrogens(); m.ensureHelperArrays(M.cHelperCIP);
+    const cc = [];
+    for (let b = 0; b < m.getBonds(); b++){
+      const x = m.getBondAtom(0, b), y = m.getBondAtom(1, b);
+      if (m.getBondOrder(b) === 2 && !m.isAromaticBond(b) && m.getAtomicNo(x) === 6 && m.getAtomicNo(y) === 6) cc.push({ b, x, y });
+    }
+    if (!cc.length) return { index, none: true, reason: 'no C=C' };
+    const rs = m.getRingSet();
+    const smallest = (a) => { let s = 0; for (let r = 0; r < rs.getSize(); r++) if (rs.getRingAtoms(r).includes(a)) s = s ? Math.min(s, rs.getRingSize(r)) : rs.getRingSize(r); return s; };
+    let subs = 0, strain = 0, exo = 0, cis = 0, conj = false;
+    const why = [];
+    for (const { b, x, y } of cc){
+      const carbonsOn = (a, other) => { let n = 0; for (let i = 0; i < m.getConnAtoms(a); i++){ const z = m.getConnAtom(a, i); if (z !== other && m.getAtomicNo(z) === 6) n++; } return n; };
+      subs += carbonsOn(x, y) + carbonsOn(y, x);
+      const inRing = m.isRingBond(b);
+      if (inRing && m.getBondRingSize(b) <= 4){ strain++; why.push(`C=C inside a ${m.getBondRingSize(b)}-membered ring (strained)`); }
+      if (!inRing){
+        const ringEnd = [x, y].map(smallest).filter((s) => s > 0);
+        if (ringEnd.length){
+          exo++;
+          const s = Math.min(...ringEnd);
+          if (s <= 4){ strain++; why.push(`C=C on a ${s}-membered ring (strained)`); }
+          else why.push(`exocyclic C=C (sticks out of a ${s}-membered ring)`);
+        }
+      }
+      const p = m.getBondCIPParity(b);
+      if (p === 1 || p === 2){
+        // cis = the bigger groups on the same side
+        const big = (a, other) => { let best = -1, size = -1, tie = false; for (let i = 0; i < m.getConnAtoms(a); i++){ const z = m.getConnAtom(a, i); if (z === other) continue; const s = reach(m, a, z); if (s > size){ best = z; size = s; tie = false; } else if (s === size) tie = true; } return tie ? -1 : best; };
+        const ga = big(x, y), gb = big(y, x);
+        if (ga >= 0 && gb >= 0 && sameSide(m, x, y, ga, gb)){ cis++; why.push('cis: the bigger groups are on the same side (crowded)'); }
+        else if (ga >= 0 && gb >= 0) why.push('trans: the bigger groups are apart');
+      }
+    }
+    for (let i = 0; i < cc.length; i++) for (let j = i + 1; j < cc.length; j++){
+      const a = cc[i], c = cc[j];
+      if ([a.x, a.y].some((u) => [c.x, c.y].some((v) => m.getBond(u, v) >= 0))) conj = true;
+    }
+    const head = cc.length > 1 ? `${cc.length} C=C${conj ? ', conjugated (extra stable)' : ''}; ${subs} alkyl groups on them in all` : `${SUBS[subs] || subs + ' groups'} C=C`;
+    return { index, key: [conj ? 1 : 0, subs, -strain, -exo, -cis], reason: [head, ...why].join('; '), cc: cc.length };
+  }).map((x, i, all) => {
+    // only isomers are compared fairly by heat of hydrogenation; flag a mixed set
+    const f = (k) => { const c = mols[k].getCompactCopy(); return c.getMolecularFormula().formula; };
+    if (!x.none && new Set(all.map((_, k) => f(k))).size > 1) x.reason += ' (note: these aren’t isomers, so the comparison is rough)';
+    return x;
+  }));
+}
+function reach(m, from, start){
+  const seen = new Set([from, start]), st = [start];
+  while (st.length){ const a = st.pop(); for (let i = 0; i < m.getConnAtoms(a); i++){ const z = m.getConnAtom(a, i); if (!seen.has(z)){ seen.add(z); st.push(z); } } }
+  return seen.size - 1;
+}
+// same side of the A=B bond in the molecule's own 2D drawing (coordinates follow the bond's parity)
+function sameSide(m, A, B, x, y){
+  const ax = m.getAtomX(A), ay = m.getAtomY(A), bx = m.getAtomX(B), by = m.getAtomY(B);
+  const side = (i) => Math.sign((bx - ax) * (m.getAtomY(i) - ay) - (by - ay) * (m.getAtomX(i) - ax));
+  return side(x) * side(y) > 0;
+}

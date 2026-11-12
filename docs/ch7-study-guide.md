@@ -104,7 +104,7 @@ Legend: ✅ the app gives the key's answer · ⚠️ the app shows a warning or 
 | e | (E)‑3,4‑dimethylhex‑3‑ene | both tetra; E keeps the two ethyls apart |
 | f | 1‑ethylcyclopentene | the C=C on a cyclobutane is strained |
 
-- **App:** ⚠️ there is no "compare stability" tool yet. The app names both isomers correctly, but you have to judge stability yourself.
+- **App:** ✅ put both alkenes in the editor at once (type them with a dot, e.g. `CCC=C1CCC1.CCC1=CCCC1`, or draw both), open **Reactions** and press **Rank alkenes by stability**. It ranks by rules (conjugation, number of alkyl groups on the C=C, small-ring strain, exocyclic vs inside the ring, trans vs cis) and says which rule decided. All six parts match the key.
 
 ### Q9 Major elimination products
 | | Substrate → product | How | App |
@@ -145,7 +145,7 @@ Legend: ✅ the app gives the key's answer · ⚠️ the app shows a warning or 
 - 4 is 3°.
 - 5 and 1 are both 2°, but 5 can hydride-shift to a 3° cation.
 - 2 is 1°, so no E1.
-- **App:** ⚠️ ranking can't treat OH as protonated yet, so every alcohol comes back "no leaving group".
+- **App:** ✅ draw all five alcohols (or type them joined with dots), open **Reactions** and press **Rank by E1 rate (acid)**. It treats OH as OH₂⁺, ranks by the first carbocation (the slow step), and uses a possible hydride or methyl shift as the tie-break, so 5 comes before 1. A 1° alcohol shows "no E1".
 
 ### Q13 Syntheses
 - **a.** 2,2‑dimethylcyclopentanol → 1,2‑dimethylcyclopentene: H₂SO₄ and heat (methyl shift). ✅ App (after the 9l fix).

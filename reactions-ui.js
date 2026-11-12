@@ -6,7 +6,7 @@
 
 import { analyse, cationPathways, buildProduct, LG_LABEL } from './reactivity.js';
 import { findReagent, matchMolecule, guessBox, entryFromMolecule, findSolvent, parseSequence } from './reagents.js';
-import { predict, runSequence, rankSN1, rankSN2, PATHWAYS } from './predict.js';
+import { predict, runSequence, rankSN1, rankSN2, rankE1, rankAlkenes, PATHWAYS } from './predict.js';
 import { mountGrid } from './pathway-grid-ui.js';
 import { TEMPLATES, PRELUDES, ACTIVATION } from './mech-templates.js';
 import { openMechanism } from './mech-view.js';
@@ -155,10 +155,11 @@ export async function mountReactions(app){
 
   // ---------- ranking mode ----------
   function showRank(kind){
-    const list = (kind === 'SN1' ? rankSN1 : rankSN2)(OCL, st.frags);
-    for (const b of [$('rxRankSN1'), $('rxRankSN2')]) b.setAttribute('aria-pressed', String(b.id.endsWith(kind)));
+    const list = ({ SN1: rankSN1, SN2: rankSN2, E1: rankE1, Alk: rankAlkenes })[kind](OCL, st.frags);
+    for (const b of [$('rxRankSN1'), $('rxRankSN2'), $('rxRankE1'), $('rxRankAlk')]) b.setAttribute('aria-pressed', String(b.id.endsWith(kind)));
+    const head = { SN1: 'SN1 rate, fastest first', SN2: 'SN2 rate, fastest first', E1: 'E1 rate with acid and heat (OH → OH₂⁺), fastest first', Alk: 'Alkene stability (rules, not energies), most stable first' }[kind];
     let prev = null;
-    $('rxRankList').innerHTML = `<li class="rx-rankhead">${kind} rate, fastest first</li>` + list.map((x) => {
+    $('rxRankList').innerHTML = `<li class="rx-rankhead">${head}</li>` + list.map((x) => {
       const tie = x.place !== null && list.filter((y) => y.place === x.place).length > 1;
       const place = x.place === null ? '—' : (tie ? '=' : '') + x.place;
       prev = x.place;
@@ -167,6 +168,8 @@ export async function mountReactions(app){
   }
   $('rxRankSN1').onclick = () => showRank('SN1');
   $('rxRankSN2').onclick = () => showRank('SN2');
+  $('rxRankE1').onclick = () => showRank('E1');
+  $('rxRankAlk').onclick = () => showRank('Alk');
 
   // ---------- reagent ----------
   function speciesText(r){
