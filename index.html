@@ -137,6 +137,11 @@
   #ringSel{font:15px var(--ui);background:#fff;border:none;box-shadow:var(--field);padding:5px 6px;min-height:30px;color:#000}
   .chairinfo{margin-top:8px;padding:8px 10px;background:#fff;box-shadow:var(--sunken);font-size:15px}
   .chairinfo:empty{display:none}
+  #mcText{width:100%;box-sizing:border-box;font:18px var(--crt);margin-top:6px}
+  .mc-out{list-style:none;padding:0;margin:8px 0 0}
+  .mc-out li{padding:4px 0;border-bottom:1px solid #c0c0c0}
+  .mc-out .nm{font:19px var(--crt)}
+  .mc-out .same{color:#006000}.mc-out .stereo{color:#8a5a00}.mc-out .different,.mc-out .unread{color:#a00000}
   #newmanBox{position:relative;background:#000;box-shadow:var(--sunken);height:380px;display:flex;align-items:center;justify-content:center}
   @media (max-width:600px){#newmanBox{height:320px}}
   #newmanSvg{width:100%;max-width:380px;height:100%;cursor:pointer}
@@ -440,9 +445,15 @@
       <div class="card-h"><h2>Name &amp; properties</h2><span class="wbtns" aria-hidden="true"><i>_</i><i>□</i><i>×</i></span></div>
       <div class="card-b">
         <div class="namebox"><div id="iupac" class="result-name empty">Draw or build a molecule to start.</div>
-        <div id="common" class="common"></div></div>
+        <div id="common" class="common"></div><div id="course" class="common"></div></div>
         <div id="verify"></div>
         <details class="howto" id="explain" hidden><summary>How this name was built</summary><ol id="explainSteps"></ol></details>
+        <details class="howto" id="mcBox"><summary>Check multiple-choice names</summary>
+          <p class="note">Paste the answer choices, one per line. Each one is read by OPSIN and compared with your drawing, stereo included.</p>
+          <textarea id="mcText" rows="4" aria-label="Answer choices, one per line" placeholder="A. (E)-3-heptene&#10;B. (Z)-3-heptene&#10;C. 4-heptene"></textarea>
+          <div class="row"><button type="button" id="mcBtn">Check against my drawing</button></div>
+          <ol id="mcOut" class="mc-out"></ol>
+        </details>
         <dl class="facts" id="facts" hidden>
           <dt>Formula</dt><dd id="fFormula"></dd>
           <dt>Molar mass</dt><dd id="fMass"></dd>
@@ -612,6 +623,7 @@ import { findChairRings, buildChairs, toXYZ, flipFrames } from './chair.js';
 import { nameMolecule } from './namer.js';
 import { mountReactions } from './reactions-ui.js';
 import { mountNewman } from './newman-ui.js';
+import { checkOptions, courseStyle, compare as compareNames } from './name-check.js';
 import { watchChemText } from './chem-text.js';
 
 const $ = (id) => document.getElementById(id);
@@ -849,6 +861,7 @@ function resetName(text){
   el.className = 'result-name empty';
   el.textContent = text;
   $('common').textContent = '';
+  $('course').textContent = '';
   $('verify').innerHTML = '';
   hideExplain();
   setMsg($('nameItMsg'), '');
@@ -865,7 +878,23 @@ function showName(iupac, common, forId){
   $('iupac').className = 'result-name';
   $('iupac').textContent = iupac || '(no name returned)';
   $('common').textContent = common && common.toLowerCase() !== (iupac||'').toLowerCase() ? 'Also known as ' + common : '';
+  // the older course style (isopropyl, 3-heptene …), shown only once OPSIN reads it back to this structure
+  $('course').textContent = '';
+  const cs = courseStyle(iupac);
+  const mol = state.mol;
+  if (cs && mol) opsin(cs).then((r) => {
+    if (r && r.mol && state.mol === mol && state.nameFor === forId && compareNames(OCL, mol, r.mol) === 'same') $('course').textContent = 'Course style: ' + cs;
+  }).catch(() => {});
 }
+const escapeHtml = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+$('mcBtn').onclick = async () => {
+  const out = $('mcOut');
+  if (!state.mol){ out.innerHTML = '<li>Draw or build the molecule first.</li>'; return; }
+  out.innerHTML = '<li>Checking with OPSIN…</li>';
+  const ICON = { same: '✔', stereo: '≈', different: '✗', unread: '?', offline: '…' };
+  const res = await checkOptions(OCL, state.mol, $('mcText').value, opsin);
+  out.innerHTML = res.length ? res.map((r) => `<li class="${r.verdict}"><b>${ICON[r.verdict]} ${escapeHtml(r.label)}.</b> <span class="nm">${escapeHtml(r.name)}</span><br><small>${escapeHtml(r.text)}</small></li>`).join('') : '<li>Paste at least one name.</li>';
+};
 function badge(kind, html, btnText, onBtn){
   $('verify').innerHTML = `<div class="badge ${kind}"><span>${html}</span></div>`;
   if (btnText){

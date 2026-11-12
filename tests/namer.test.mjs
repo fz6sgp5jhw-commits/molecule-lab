@@ -104,5 +104,29 @@ for (const smi of refuse){
   const r = nameMolecule(OCL, OCL.Molecule.fromSmiles(smi));
   if (r.error) pass++; else { failN++; console.log(`FAIL should refuse ${smi}: got ${r.name}`); }
 }
+// course-style names (each "want" was read back to the same structure by OPSIN, 2026-11-11) and the multiple-choice checker
+{
+  const { courseStyle, checkOptions, parseOptions } = await import('../name-check.js');
+  const course = [
+    ['(3E)-3-ethyl-2,6,6-trimethyl-4-(propan-2-yl)hept-3-ene', '(3E)-3-ethyl-4-isopropyl-2,6,6-trimethyl-3-heptene'],
+    ['(3E)-4-ethyl-2,2,5-trimethyl-3-(propan-2-yl)hex-3-ene', '(3E)-4-ethyl-3-isopropyl-2,2,5-trimethyl-3-hexene'],
+    ['4-(propan-2-yl)octane', '4-isopropyloctane'], ['5-(2-methylpropyl)nonane', '5-isobutylnonane'], ['4-(butan-2-yl)-3-methylheptane', '4-sec-butyl-3-methylheptane'],
+    ['buta-1,3-diene', '1,3-butadiene'], ['butan-2-ol', '2-butanol'], ['but-2-ene', '2-butene'],
+    ['2-methylbutane', null], ['5-tert-butylnonane', null], ['pent-1-en-4-yne', null], ['3,5-dimethyl-4-propylheptane', null],
+  ];
+  for (const [n, want] of course){ const got = courseStyle(n); if (got === want) pass++; else { failN++; console.log(`FAIL course style ${n}: got ${got}, want ${want}`); } }
+  const opts = parseOptions('A. (E)-3-heptene\n(b) (Z)-3-heptene\nc) 4-heptene\nD: 3-heptyne\nE. hept-3-zzz');
+  if (opts.map((o) => o.label + ':' + o.name).join('|') === 'A:(E)-3-heptene|B:(Z)-3-heptene|C:4-heptene|D:3-heptyne|E:hept-3-zzz') pass++; else { failN++; console.log('FAIL parseOptions ' + JSON.stringify(opts)); }
+  const fake = { '(E)-3-heptene': 'CC/C=C/CCC', '(Z)-3-heptene': 'CC/C=C\\CCC', '4-heptene': 'CC/C=C/CCC', '3-heptyne': 'CCC#CCCC' };
+  const opsin = async (n) => fake[n] ? { mol: OCL.Molecule.fromSmiles(fake[n]) } : { mol: null, message: 'unparsable' };
+  const res = await checkOptions(OCL, OCL.Molecule.fromSmiles('CC/C=C/CCC'), opts.map((o) => o.label + '. ' + o.name).join('\n'), opsin);
+  const got = res.map((r) => r.verdict).join(' ');
+  if (got === 'same stereo same different unread') pass++; else { failN++; console.log(`FAIL checkOptions verdicts: ${got}`); }
+  const undrawn = await checkOptions(OCL, OCL.Molecule.fromSmiles('CCC=CCCC'), 'A. (E)-3-heptene', opsin);
+  if (undrawn[0].verdict === 'stereo' && /doesn’t show/.test(undrawn[0].text)) pass++; else { failN++; console.log('FAIL checkOptions: undrawn C=C should say the drawing has no stereo'); }
+  const off = await checkOptions(OCL, OCL.Molecule.fromSmiles('CC'), 'ethane', async () => { throw new Error('offline'); });
+  if (off[0].verdict === 'offline') pass++; else { failN++; console.log('FAIL checkOptions offline'); }
+}
+
 console.log(`\n${pass} passed, ${failN} failed`);
 process.exit(failN ? 1 : 0);

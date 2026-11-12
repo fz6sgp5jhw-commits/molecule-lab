@@ -52,7 +52,7 @@ Legend: ✅ the app gives the key's answer · ⚠️ the app shows a warning or 
   - Number so the C=C gets the lowest locant.
   - Then E/Z: compare CIP priorities on each alkene carbon.
   - In ring alkenes, C1 and C2 are the alkene carbons, numbered so the substituents get low numbers. In Q2d the OH gets C1 (in "‑ol" names it outranks the ene), giving 3‑methylcyclohex‑2‑en‑1‑ol.
-- **App:** draw it, then read the name. ✅ All four structures and stereo descriptors match. The app writes 2013 IUPAC style, so you have to translate:
+- **App:** draw it, then read the name. ✅ All four structures and stereo descriptors match. Faster: open **Check multiple-choice names** under the name, paste the answer choices (one per line), and press **Check against my drawing**. Each choice gets ✔ (same structure, stereo included), ≈ (right atoms, wrong or missing E/Z or R/S), ✗ or ? (OPSIN can't read it). The name box also shows a **Course style** line (isopropyl, 3‑heptene …) once OPSIN confirms it. The 2013 style differs from the course style like this:
   - `propan-2-yl` = isopropyl, `2-methylpropyl` = isobutyl;
   - `hept-3-ene` = 3‑heptene;
   - and the order of substituents changes (alphabetical by the full prefix name).

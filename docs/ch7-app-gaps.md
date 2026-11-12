@@ -87,7 +87,7 @@ Problem-by-problem results are in `ch7-study-guide.md`.
 |---|---|---|---|
 | 1 | ✅ **DONE 2026‑11‑11** (`newman.js`, `newman-ui.js`; seed N1–N5, `newman-ui.test.mjs`). **Newman projection tab** (replace "soon"): look along any chosen C–C from the 3D conformer, rotate in 60° steps, highlight the anti H/LG pair, and label "E2 from here gives (E)/(Z)/…" | 3, 5e, 4b | Reuses the P0‑3 dihedral code. Make the drawn Newman tappable as a quiz ("which conformation gives E?") |
 | 2 | ✅ **DONE 2026‑11‑11** (`rankAlkenes` in `predict.js`, *Rank alkenes by stability* in ranking mode; seeds W7‑8a–f, alk-conj). **Alkene stability meter + compare** (draw two or more alkenes, then *Rank by stability*) | 8, all "major product" reasoning | Rule-based key: substitution count; trans > cis; ring strain (C=C in or on a 3/4 ring, exocyclic on a 5 ring); conjugation. Show the reasons, as in SN1 ranking. MMFF energies are **not** valid between constitutional isomers; don't use them |
-| 3 | **Check multiple-choice names**: paste the options; each is read by OPSIN (already used) and compared with the drawn structure by ID code, stereo included | 2, 4, 5b, 6b | OPSIN reads course-style names ("3‑heptene", "isopropyl", "sec‑butyl"). Also show a "course style" name next to the 2013 name (isopropyl/isobutyl/sec/tert, ene locant first) |
+| 3 | ✅ **DONE 2026‑11‑11** (`name-check.js`; *Check multiple-choice names* in the Name card; a "Course style:" line shown only after OPSIN reads it back; Node tests in `namer.test.mjs`, `names-ui.test.mjs`). **Check multiple-choice names**: paste the options; each is read by OPSIN (already used) and compared with the drawn structure by ID code, stereo included | 2, 4, 5b, 6b | OPSIN reads course-style names ("3‑heptene", "isopropyl", "sec‑butyl"). Also show a "course style" name next to the 2013 name (isopropyl/isobutyl/sec/tert, ene locant first) |
 | 4 | ✅ **DONE 2026‑11‑11** (`rankE1`, *Rank by E1 rate (acid)*; seed W7‑12). **E1 ranking under acid**: OH counts as OH₂⁺; include hydride-shift potential and allylic stabilisation in the key | 12 | Today every alcohol is "no leaving group" |
 | 5 | **Reverse planner ("get from A to B")**: draw start and target; brute-force a short list of 1–2 step sequences through `runSequence` (H₂SO₄/Δ; SOCl₂→NaOEt / KOtBu; TsCl→NaOEt / KOtBu; PBr₃→…; TsCl→NaI→base) and report every sequence whose **major** product matches the target, with why the others fail (rearrangement, Hofmann vs Zaitsev, trans-diaxial) | 10, 13 | Uses only the forward engine, so no new chemistry rules. Depends on P0‑1 and P0‑2 |
 | 6 | **Heat favours elimination**: with heat and a weak nucleophile on 3°/2°, E1 should be major (or at least competing) and SN1 minor; allow "Δ only" (no reagent) as solvolysis | 7 | Check the rule against the course key; tag rows `course` |
@@ -109,7 +109,7 @@ Problem-by-problem results are in `ch7-study-guide.md`.
 2. ~~P0‑2~~, ~~P0‑3~~ and ~~P0‑4~~ done.
 3. ~~**P1‑1 Newman tab**~~ done: reuses step 2's geometry. Playwright test: 2‑bromobutane, rotate, anti highlight, "gives (E)".
 4. ~~**P1‑2 stability ranking** and **P1‑4 acid ranking**~~ done: both extend the existing ranking mode.
-5. **P1‑3 name checker** and course-style names.
+5. ~~**P1‑3 name checker** and course-style names~~ done.
 6. **P1‑5 reverse planner**, then P1‑6 to P1‑10 as small follow-ups.
 7. Update `docs/ch7-study-guide.md` (flip ❌ to ✅) and CLAUDE.md's file table, and bump `sw.js` VERSION with each shipped step.
 
