@@ -981,6 +981,226 @@
      }
     ]
    }
+  },
+  {
+   "id": "W7-9l",
+   "note": "Ch 7 worksheet 9l / 13a (confirmed): methyl shift inside a ring. Regression for the stale getBond() in buildProduct, which made this product an alkane.",
+   "substrate": "CC1(C)CCCC1O",
+   "substrateName": "2,2-dimethylcyclopentan-1-ol",
+   "steps": [
+    {
+     "reagent": "H2SO4",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "E1": "major"
+    },
+    "products": [
+     {
+      "pathway": "E1",
+      "smiles": "CC1=C(C)CCC1",
+      "name": "1,2-dimethylcyclopentene",
+      "rank": "major",
+      "via": "methyl shift"
+     }
+    ]
+   }
+  },
+  {
+   "id": "W7-10a",
+   "note": "Ch 7 worksheet 10a (confirmed): same in a six-membered ring.",
+   "substrate": "CC1(C)CCCCC1O",
+   "substrateName": "2,2-dimethylcyclohexan-1-ol",
+   "steps": [
+    {
+     "reagent": "H2SO4",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "E1": "major"
+    },
+    "products": [
+     {
+      "pathway": "E1",
+      "smiles": "CC1=C(C)CCCC1",
+      "name": "1,2-dimethylcyclohexene",
+      "rank": "major",
+      "via": "methyl shift"
+     }
+    ]
+   }
+  },
+  {
+   "id": "W7-9i",
+   "note": "Ch 7 worksheet 9i (confirmed): cis; tBu equatorial puts Br axial with axial H on both sides, so Zaitsev.",
+   "substrate": "CC(C)(C)[C@@H](CCCC1)[C@@H]1Br",
+   "substrateName": "(1R,2R)-1-bromo-2-tert-butylcyclohexane",
+   "steps": [
+    {
+     "reagent": "NaOEt",
+     "solvent": "EtOH",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "products": [
+     {
+      "pathway": "E2",
+      "smiles": "CC(C)(C)C1=CCCCC1",
+      "name": "1-tert-butylcyclohexene",
+      "rank": "major"
+     },
+     {
+      "pathway": "E2",
+      "smiles": "CC(C)(C)[C@@H]1C=CCCC1",
+      "name": "(3S)-3-tert-butylcyclohexene",
+      "rank": "minor"
+     }
+    ],
+    "productCount": {
+     "E2": 2
+    },
+    "noWarnings": [
+     "ring_e2_warning"
+    ]
+   }
+  },
+  {
+   "id": "W7-9j",
+   "note": "Ch 7 worksheet 9j (confirmed): trans; only C6 has an axial H anti to axial Br, so NOT Zaitsev.",
+   "substrate": "CC(C)(C)[C@@H](CCCC1)[C@H]1Br",
+   "substrateName": "(1S,2R)-1-bromo-2-tert-butylcyclohexane",
+   "steps": [
+    {
+     "reagent": "NaOEt",
+     "solvent": "EtOH",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "products": [
+     {
+      "pathway": "E2",
+      "smiles": "CC(C)(C)[C@@H]1C=CCCC1",
+      "name": "(3S)-3-tert-butylcyclohexene",
+      "rank": "major"
+     }
+    ],
+    "productCount": {
+     "E2": 1
+    }
+   }
+  },
+  {
+   "id": "W7-9k",
+   "note": "Ch 7 worksheet 9k (confirmed): Br equatorial in the locked chair; in the flipped chair the axial group on C2 is CH3, so the C=C forms away from it.",
+   "substrate": "C[C@H](C[C@@H](CC1)C(C)(C)C)[C@@H]1Br",
+   "substrateName": "(1R,2R,4R)-1-bromo-4-tert-butyl-2-methylcyclohexane",
+   "steps": [
+    {
+     "reagent": "NaOEt",
+     "solvent": "EtOH",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "products": [
+     {
+      "pathway": "E2",
+      "smiles": "C[C@H](C1)C=CC[C@H]1C(C)(C)C",
+      "name": "(3R,5R)-5-tert-butyl-3-methylcyclohexene",
+      "rank": "major"
+     }
+    ],
+    "productCount": {
+     "E2": 1
+    }
+   }
+  },
+  {
+   "id": "W7-10d",
+   "note": "Ch 7 worksheet 10d (confirmed): SOCl2 inverts, Cl axial; only the tBu side has an anti axial H.",
+   "substrate": "C[C@H](CCC[C@H]1C(C)(C)C)[C@H]1O",
+   "substrateName": "(1R,2S,6R)-2-tert-butyl-6-methylcyclohexan-1-ol",
+   "steps": [
+    {
+     "reagent": "SOCl2"
+    },
+    {
+     "reagent": "KOtBu"
+    }
+   ],
+   "expect": {
+    "products": [
+     {
+      "pathway": "E2",
+      "smiles": "C[C@@H]1CCCC(C(C)(C)C)=C1",
+      "name": "(3R)-1-tert-butyl-3-methylcyclohexene",
+      "rank": "major"
+     }
+    ],
+    "productCount": {
+     "E2": 1
+    }
+   }
+  },
+  {
+   "id": "W7-13c",
+   "note": "Ch 7 worksheet 13c (confirmed): SOCl2 inverts, Cl axial and trans to CH3; C2 has no axial H, so the C=C forms toward C4.",
+   "substrate": "C[C@H]([C@@H](CCC1)C(C)(C)C)[C@H]1O",
+   "substrateName": "(1S,2R,3R)-3-tert-butyl-2-methylcyclohexan-1-ol",
+   "steps": [
+    {
+     "reagent": "SOCl2"
+    },
+    {
+     "reagent": "KOtBu"
+    }
+   ],
+   "expect": {
+    "products": [
+     {
+      "pathway": "E2",
+      "smiles": "C[C@H]1C=CCC[C@H]1C(C)(C)C",
+      "name": "(3S,4R)-4-tert-butyl-3-methylcyclohexene",
+      "rank": "major"
+     }
+    ],
+    "productCount": {
+     "E2": 1
+    }
+   }
+  },
+  {
+   "id": "ring-e2-undefined",
+   "note": "Two ring stereocentres drawn without wedges: the chair would be a guess, so the trans-diaxial check must not run and the warning stays.",
+   "substrate": "CC1CCCCC1Br",
+   "substrateName": "1-bromo-2-methylcyclohexane",
+   "steps": [
+    {
+     "reagent": "NaOEt",
+     "solvent": "EtOH",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "products": [
+     {
+      "pathway": "E2",
+      "smiles": "CC1=CCCCC1",
+      "name": "1-methylcyclohexene",
+      "rank": "major"
+     }
+    ],
+    "productCount": {},
+    "warnings": [
+     "ring_e2_warning"
+    ]
+   }
   }
  ],
  "ranking": [

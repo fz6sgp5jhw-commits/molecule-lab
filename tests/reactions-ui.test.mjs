@@ -387,6 +387,16 @@ try {
   all = await walk();
   ok(/weak base \(CN⁻\)/.test(all), 'E1 in DMSO: CN⁻ is the base, not the solvent');
 
+  // Ch 7 worksheet 9j: ring E2 decided by the trans-diaxial rule (both chairs from chair.js), not by Zaitsev
+  await setup('CC(C)(C)[C@@H](CCCC1)[C@H]1Br', 'NaOEt', true);
+  {
+    await page.waitForFunction(() => /cyclohex/.test(document.querySelector('#rxCards').textContent), null, { timeout: 15000 }).catch(() => {});
+    const notes = await text('#rxNotes .badge.ok'), cards = await text('#rxCards');
+    ok(/Trans-diaxial rule checked/.test(notes) && /equatorial/.test(notes) && /axial H anti/.test(notes) && /Zaitsev would prefer/.test(notes), '9j: green trans-diaxial note explains both chairs');
+    ok(!/isn.t checked/.test(await text('#rxNotes')), '9j: no "not checked" warning');
+    ok(/3-tert-butylcyclohex/.test(cards) && !/1-tert-butylcyclohex/.test(cards), '9j: 3-tBu-cyclohexene only, not the Zaitsev alkene');
+  }
+
   // TsCl: step 1 on its own (retention)
   await setup('CC[C@@H](C)O', 'TsCl', false);
   await page.click('#rxCards .rx-watch');

@@ -13,6 +13,7 @@ const seed = JSON.parse(readFileSync(here('seed-cases.json')));
 const M = OCL.Molecule;
 const nameOf = (m) => { const r = nameMolecule(OCL, m); return r.name || `(no name: ${r.error})`; };
 const idOf = (smi) => M.fromSmiles(smi).getIDCode();
+const ccDouble = (m) => { let n = 0; m.ensureHelperArrays(M.cHelperRings); for (let b = 0; b < m.getBonds(); b++) if (m.getBondOrder(b) === 2 && !m.isAromaticBond(b) && m.getAtomicNo(m.getBondAtom(0, b)) === 6 && m.getAtomicNo(m.getBondAtom(1, b)) === 6) n++; return n; };
 
 const fails = [];
 const fail = (id, msg) => fails.push(`#${id} ${msg}`);
@@ -38,6 +39,11 @@ for (const c of seed.cases){
       if (res.notCovered !== e.notCovered) fail(c.id, `notCovered: expected ${e.notCovered}, got ${res.notCovered}`);
     }
     for (const f of e.flags || []) if (!res.flags.includes(f)) fail(c.id, `flag: expected ${f}, got [${res.flags}]`);
+    for (const w of e.warnings || []) if (!res.warnings.includes(w)) fail(c.id, `warning: expected ${w}, got [${res.warnings}]`);
+    for (const w of e.noWarnings || []) if (res.warnings.includes(w)) fail(c.id, `warning ${w} shown, but it shouldn't be`);
+    for (const [pw, n] of Object.entries(e.productCount || {})){ const l = res.pathways[pw]?.products || []; if (l.length !== n) fail(c.id, `${pw}: expected ${n} product(s), got [${l.map((x) => nameOf(x.mol)).join('; ')}]`); }
+    // every elimination product has exactly one more C=C than the substrate (catches a dropped or misplaced double bond)
+    if (steps.length === 1) for (const pw of ['E1', 'E2']) for (const p of res.pathways[pw]?.products || []) if (ccDouble(p.mol) !== ccDouble(sub) + 1) fail(c.id, `${pw}: ${p.smiles} doesn't have exactly one new C=C`);
     if (e.lamps){
       for (const pw of PATHWAYS){
         const want = e.lamps[pw] || 'none', got = res.lamps[pw] || 'none';

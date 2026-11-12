@@ -519,7 +519,11 @@ export async function mountReactions(app){
     if (res.notCovered) notes.push(['bad', 'Not covered yet: ' + reason(res.notCovered)]);
     if (res.reasons.includes('vinyl_aryl')) notes.push(['warn', reason('vinyl_aryl')]);
     for (const w of res.warnings) notes.push(['warn', reason(w)]);
-    for (const pw of PATHWAYS) for (const n of (res.pathways[pw] && res.pathways[pw].notes) || []) if (!/warning/.test(n)) notes.push(['warn', `${pw}: ${reason(n)}`]);
+    for (const pw of PATHWAYS) for (const n of (res.pathways[pw] && res.pathways[pw].notes) || []){
+      if (/warning/.test(n)) continue;
+      if (n === 'ring_e2_checked') notes.push(['ok', `${pw}: ${fill(reason(n), { detail: res.pathways[pw].chairCheck.text })}`]);
+      else notes.push(['warn', `${pw}: ${reason(n)}`]);
+    }
     if (st.rx.reagent && st.rx.reagent.estimated) notes.push(['warn', 'The reagent’s role is estimated by the rules, not looked up.']);
     $('rxNotes').innerHTML = notes.map(([k, t]) => `<div class="badge ${k}"><span>${esc(t)}</span></div>`).join('');
     // result cards

@@ -5,6 +5,7 @@
 
 import { analyse, cationPathways, alkenesFrom, alkeneProducts, buildProduct, LG_LABEL } from './reactivity.js';
 import { findReagent, findSolvent } from './reagents.js';
+import { findChairRings, buildChairs } from './chair.js';
 
 export const PATHWAYS = ['SN1', 'SN2', 'E1', 'E2'];
 export const STEREOSPECIFIC = { SN2: true, E2: true, SN1: false, E1: false };
@@ -113,23 +114,85 @@ function sn2(OCL, m, site, r, out){
   out.products = rankProducts([product(p.mol, { key: [0], stereo, via: 'backside attack' })]);
 }
 
+// Ring E2: the leaving group and the β-H must both be axial (trans-diaxial = anti-periplanar).
+// Both chairs come from chair.js (3D + MMFF94s+); on adjacent ring carbons two axial bonds always point
+// opposite ways, so "LG axial + axial H on a neighbouring ring carbon" is exactly the anti-periplanar pair.
+// Returns null when the check can't run (no chair ring, fused/bridged rings, 3D failed), { undefinedStereo }
+// when a ring stereocentre is drawn without wedges (the chair would be a guess), else
+// { ring, chairs: [{ label, dE, lgAxial, anti: [β ring atoms] }] }.
+export function ringAntiCheck(OCL, m, site){
+  const ring = findChairRings(OCL, m).find((rg) => rg.includes(site.ca));
+  if (!ring) return null;
+  m.ensureHelperArrays(OCL.Molecule.cHelperParities);
+  // Axial/equatorial depends on the *relative* configuration, so with two or more ring stereocentres every one
+  // must be drawn with wedges. A single undrawn stereocentre is fine: both mirror images react the same way.
+  const centres = ring.filter((a) => m.isAtomStereoCenter(a));
+  if (centres.length > 1 && centres.some((a) => ![1, 2].includes(m.getAtomParity(a)))) return { undefinedStereo: true };
+  const r = buildChairs(OCL, m, ring);
+  if (r.error || r.fused) return null;
+  let good = r.chairs.filter((c) => c.isChair);
+  if (!good.length) return null;
+  const min = Math.min(...good.map((c) => c.energy));
+  good = good.map((c) => ({ label: c.label, subs: c.subs, dE: c.energy - min }));
+  if (good.length === 1){
+    // the other chair is so strained that MMFF relaxes it out of the chair (twist-boat). A ring flip
+    // swaps every axial/equatorial position and keeps each group on its face, so derive it exactly.
+    const c = good[0];
+    good.push({ label: c.label === 'A' ? 'B' : 'A', subs: c.subs.map((s) => ({ ...s, axial: !s.axial })), dE: null });
+  }
+  const nextToCa = new Set(ring.filter((a) => a !== site.ca && m.getBond(a, site.ca) >= 0));
+  const chairs = good.map((c) => {
+    const lg = c.subs.find((s) => s.ringAtom === site.ca && s.atom === site.lgAtom);
+    const anti = new Set();
+    if (lg && lg.axial) for (const s of c.subs) if (s.isH && s.axial && s.up !== lg.up && nextToCa.has(s.ringAtom)) anti.add(s.ringAtom);
+    return { label: c.label, dE: c.dE, lgAxial: !!(lg && lg.axial), anti: [...anti] };
+  }).sort((a, b) => (a.dE ?? Infinity) - (b.dE ?? Infinity));
+  return { ring, chairs };
+}
+
+function chairText(chk, lg, blockedBetter){
+  const lgName = LG_LABEL[lg] || lg;
+  const parts = chk.chairs.map((c) => `chair ${c.label} (${c.dE === null ? 'much less stable: it twists out of the chair' : c.dE < 0.05 ? 'more stable' : '+' + c.dE.toFixed(1) + ' kcal/mol'}):${lgName} ${c.lgAxial ? 'axial' : 'equatorial'}, ${!c.lgAxial ? 'so no E2 from this chair' : c.anti.length ? `${c.anti.length === 1 ? 'one neighbouring ring carbon has' : 'both neighbouring ring carbons have'} an axial H anti to it` : 'but no neighbouring ring carbon has an axial H'}`);
+  return parts.join('; ') + '.' + (blockedBetter ? ' So the C=C can’t form toward the more substituted carbon, even though Zaitsev would prefer it.' : '');
+}
+
 function e2(OCL, m, site, r, out){
-  const alkenes = alkenesFrom(OCL, m, site.ca, { del: site.lgAtoms });
+  let alkenes = alkenesFrom(OCL, m, site.ca, { del: site.lgAtoms });
   if (!alkenes.length){ out.notes.push('no_beta_h'); return; }
+  let checked = false, onlyAnti = false;
+  if (site.inRing){
+    const chk = ringAntiCheck(OCL, m, site);
+    if (chk && chk.chairs){
+      checked = true;
+      const ok = new Set(chk.chairs.flatMap((c) => c.anti));
+      const inRing = new Set(chk.ring);
+      // a β-carbon outside the ring can always turn an H anti to the leaving group (free rotation)
+      const allowed = alkenes.filter((al) => !inRing.has(al.beta) || ok.has(al.beta));
+      const blocked = alkenes.filter((al) => !allowed.includes(al));
+      const best = (l) => Math.max(-Infinity, ...l.map((al) => al.zaitsev));
+      out.chairCheck = { chairs: chk.chairs, blocked: blocked.map((al) => al.beta), text: chairText(chk, site.lg, r.box !== 'bulky' && best(blocked) > best(allowed)) };
+      out.notes.push('ring_e2_checked');
+      alkenes = allowed;
+      if (!alkenes.length){ out.notes.push('ring_e2_no_anti'); return; }
+      if (blocked.length && alkenes.length === 1) onlyAnti = true;
+    }
+  }
   const hofmann = r.box === 'bulky';
   const list = [];
   m.ensureHelperArrays(OCL.Molecule.cHelperParities);
   for (const al of alkenes){
     const betaDefined = [1, 2].includes(m.getAtomParity(al.beta)) && m.isAtomStereoCenter(al.beta);
     let isomers = alkeneProducts(OCL, m, al);
-    if (isomers.length > 1 && betaDefined){
+    // E and Z both possible, but the β-carbon's stereo + anti-periplanar geometry decides which: not covered yet
+    const ezNotCovered = isomers.length > 1 && betaDefined;
+    if (ezNotCovered){
       isomers = [alkeneProducts(OCL, m, al, true)[0]];
-      out.notes.push('e2_beta_stereo');
+      if (!out.notes.includes('e2_beta_stereo')) out.notes.push('e2_beta_stereo');
     }
-    for (const iso of isomers) list.push(product(iso.mol, { key: [hofmann ? -al.zaitsev : al.zaitsev, iso.trans ? 1 : 0], ez: iso.ez, trans: iso.trans, zaitsev: al.zaitsev, conj: al.conj, beta: al.beta, via: hofmann ? 'Hofmann (bulky base)' : 'Zaitsev', ezNotCovered: isomers.length === 1 && betaDefined || undefined }));
+    for (const iso of isomers) list.push(product(iso.mol, { key: [hofmann ? -al.zaitsev : al.zaitsev, iso.trans ? 1 : 0], ez: iso.ez, trans: iso.trans, zaitsev: al.zaitsev, conj: al.conj, beta: al.beta, via: onlyAnti ? 'trans-diaxial (the only anti-periplanar β-H)' : (hofmann ? 'Hofmann (bulky base)' : 'Zaitsev') + (checked ? ', trans-diaxial' : ''), ezNotCovered: ezNotCovered || undefined }));
   }
   out.products = rankProducts(list);
-  if (site.inRing){
+  if (site.inRing && !checked){
     const M = OCL.Molecule;
     const flat = new Set(out.products.map((p) => { const c = p.mol.getCompactCopy(); c.stripStereoInformation(); return c.getIDCode(); }));
     if (flat.size > 1) out.notes.push('ring_e2_warning');

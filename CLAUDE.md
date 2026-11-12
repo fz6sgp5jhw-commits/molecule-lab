@@ -21,7 +21,7 @@ Live at https://fz6sgp5jhw-commits.github.io/molecule-lab/ (GitHub Pages serves 
 | `chair.js` | Chair conformations: `findChairRings`, `buildChairs` (both chairs, MMFF energies, axial/equatorial labels), `flipFrames` |
 | `reactivity.js` | SN/E analyser: `analyse` (sites, roles, class, flags, β-H's, cation score), `cationPathways` (1,2-shifts, ring expansion, allylic), `alkenesFrom`, `buildProduct` (graph edits with stereo kept by OpenChemLib) |
 | `reagents.js`, `data/reagents.json` | Reagent catalogue: name/alias and drawn-structure matching (counter-ions stripped), solvents, unknown-reagent guess |
-| `predict.js`, `data/rules.json` | Decision table → lamps (SN1/SN2/E1/E2) + products, sequences (`runSequence`: each step on the chosen product of the last), SN1/SN2 rate ranking. Rule rows may carry `tags: course / disagree` |
+| `predict.js`, `data/rules.json` | Decision table → lamps (SN1/SN2/E1/E2) + products (ring E2 filtered by the trans-diaxial rule via `ringAntiCheck` + `chair.js`), sequences (`runSequence`: each step on the chosen product of the last), SN1/SN2 rate ranking. Rule rows may carry `tags: course / disagree` |
 | `pathway-grid.js`, `pathway-grid-ui.js` | "Which pathway wins?" grid on the Reactions tab: class × reagent type cells generated from `rules.json` with the same lookup `predict()` uses (never a second copy of the rules); table on a laptop, row picker on a phone; Try it |
 | `reactions-ui.js` | Reactions window: reagent entry (type/chip/draw, unknown → estimated role), solvent + heat, Predict, decision path, lamps, result cards, Reactivity facts, site chips, ranking mode. Mounted from `index.html`; listens for the `ml:molecule` event; also switches the Molecule / Reactions app tabs (`.mol-only` / `.rx-only` cards) |
 | `mech-view.js`, `mech-templates.js`, `data/mech-text.json` | Mechanism viewer (SVG frames on fixed atom positions, drawn in layers that each have a Show checkbox: bond density, atom glow, orbitals, skeleton, dipoles, labels, arrows; pull line, hill + ball, stability meter, RPG dialog with WHY pages and glossary); templates per mechanism as data (SN2, SN1, E1, E2 + alcohol activation preludes; optional frames by flag: shifts, allylic resonance, proton transfers; quiz points; `orbitals` per frame); all teaching text and orbital captions |
@@ -32,6 +32,7 @@ Live at https://fz6sgp5jhw-commits.github.io/molecule-lab/ (GitHub Pages serves 
 | `manifest.webmanifest`, `icons/` | Installable app (display: standalone) |
 | `fonts/` | Local Press Start 2P, Pixelify Sans, VT323 |
 | `tests/` | `namer.test.mjs` (Node, 193 cases), `app.test.mjs` and `chair-ui.test.mjs` (Playwright, with fake PubChem/OPSIN responses), `chair.test.mjs` (energy report), `reactions.test.mjs` (Node, table-driven from `seed-cases.json`), `mech-logic.test.mjs` (Node: density rules, placement, orbital data), `reactions-ui.test.mjs` (Playwright: SN2 walkthrough with density/orbital/layer checks, then SN1 (W3d), W4 ring expansion with the quiz, E2, E1 with acid, PBr₃, SOCl₂, TsCl, a drawn reagent; every frame is checked for overlapping labels with `overlaps.js`; `SHOTS=1` refreshes `docs/screens/`), `sequence-ui.test.mjs` (Playwright: typed sequence, chain strip, Watch all steps, minor pick, stop; the grid at desktop and 390 px) |
+| `docs/ch7-study-guide.md`, `docs/ch7-app-gaps.md` | Ch 7 (alkenes) worksheet: how to solve each problem with the app, checked against Peter's key; and the audit of app gaps with the plan (P0/P1/P2) |
 | `docs/worksheet-guide.md` | How to solve each Ch 6 worksheet problem with the Reactions tab (for Peter; update when behaviour changes) |
 | `docs/mechanisms-plan.md` | **Next feature:** SN1/SN2/E1/E2 learning mode. Read this before starting on it. |
 
@@ -45,6 +46,8 @@ Live at https://fz6sgp5jhw-commits.github.io/molecule-lab/ (GitHub Pages serves 
 - Heavy atoms keep their indices in conformers; hydrogens are appended after them.
 - **Setting stereo by hand:** `getIDCode()` recomputes parities from 2D coordinates and ignores `setAtomParity`/`setBondParity`. To make a set parity stick: `setParitiesValid(0)`, `inventCoordinates()`, `setStereoBondsFromParity()`, then re-read via `Molecule.fromMolfile(m.toMolfile())` (see `buildProduct` in `reactivity.js`).
 - `addBond(a, b, type)` ignores `type`; use `setBondType(addBond(a, b), type)`.
+- **`getBond(a, b)` goes stale after `deleteBond()`/`addBond()`**: it reads cached neighbour arrays, and `deleteBond` renumbers the bond table, so it can return a *different* bond's index. Inside an edit sequence use `bondBetween(m, a, b)` from `reactivity.js` (a plain scan). This bug once made ring methyl-shift E1 products into alkanes.
+- `buildChairs` can return a non-chair (twist-boat) for a very strained flip (e.g. tBu axial). A ring flip only swaps axial and equatorial, so derive that chair from the good one (`ringAntiCheck` in `predict.js`).
 - Compare structures with ID codes: `getIDCode()`, or `Canonizer` with `CanonizerUtil.NOSTEREO` to ignore stereo.
 
 ## Style

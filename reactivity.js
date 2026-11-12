@@ -236,9 +236,15 @@ export function buildProduct(OCL, sub, ops = {}){
   };
   for (const r of ops.replace || []) addFrag(r.frag, r.atom, true);
   for (const r of ops.attach || []) addFrag(r.frag, r.to, false);
-  for (const [a, b] of ops.removeBonds || []) m.deleteBond(m.getBond(a, b));
+  // getBond() reads cached neighbour arrays that go stale after deleteBond()/addBond() renumber
+  // the bond table (it then returns another bond's index), so look bonds up by scanning instead.
+  for (const [a, b] of ops.removeBonds || []) m.deleteBond(bondBetween(m, a, b));
   for (const [a, b, o] of ops.addBonds || []) m.setBondType(m.addBond(a, b), typeOf(o || 1));
-  for (const [a, b, o] of ops.setOrder || []) m.setBondType(m.getBond(a, b), typeOf(o));
+  for (const [a, b, o] of ops.setOrder || []){
+    const bi = bondBetween(m, a, b);
+    if (bi < 0) throw new Error(`buildProduct: no bond ${a}-${b} to set`);
+    m.setBondType(bi, typeOf(o));
+  }
 
   const del = new Set(ops.del || []);
   const total = m.getAllAtoms();
@@ -285,6 +291,15 @@ export function buildProduct(OCL, sub, ops = {}){
   return { mol: out, map };
 }
 
+// Bond index between atoms a and b without OpenChemLib's helper caches (safe right after edits); −1 if none.
+export function bondBetween(m, a, b){
+  for (let i = 0; i < m.getAllBonds(); i++){
+    const x = m.getBondAtom(0, i), y = m.getBondAtom(1, i);
+    if ((x === a && y === b) || (x === b && y === a)) return i;
+  }
+  return -1;
+}
+
 // The heavy-atom size of the branch starting at `start`, not going back through `from`.
 function branchSize(m, from, start){
   const seen = new Set([from]), st = [start]; let n = 0;
@@ -306,7 +321,10 @@ export function alkeneProducts(OCL, sub, alkene, unknown = false){
   const bi = one.mol.getBond(A, B);
   const bp = one.mol.getBondParity(bi);
   if (bp !== M.cBondParityEor1 && bp !== M.cBondParityZor2) return [{ mol: one.mol, ez: null, trans: null }];
+  // a C=C inside a ring of fewer than 8 atoms can only be cis, so it has no E/Z
+  if (one.mol.isRingBond(bi) && one.mol.getBondRingSize(bi) < 8) return [{ mol: one.mol, ez: null, trans: null }];
   const two = buildProduct(OCL, sub, { ...alkene.ops, bondParity: [...(alkene.ops.bondParity || []), { a: alkene.centre, b: alkene.beta, p: 2 }] });
+  if (two.mol.getIDCode() === one.mol.getIDCode()) return [{ mol: one.mol, ez: null, trans: null }];
   return [one, two].map(({ mol }) => {
     const cip = mol.getBondCIPParity(mol.getBond(A, B));
     return { mol, ez: cip === 1 ? 'E' : cip === 2 ? 'Z' : null, trans: transOf(mol, A, B) };
