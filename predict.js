@@ -6,9 +6,11 @@
 import { analyse, cationPathways, alkenesFrom, alkeneProducts, buildProduct, LG_LABEL } from './reactivity.js';
 import { findReagent, findSolvent } from './reagents.js';
 import { findChairRings, buildChairs } from './chair.js';
+import { predictAddition, alkeneBonds } from './addition.js';
 import { antiConformers, cis2D } from './anti.js';
 
 export const PATHWAYS = ['SN1', 'SN2', 'E1', 'E2'];
+export const LAMPS = [...PATHWAYS, 'Addition'];
 export const STEREOSPECIFIC = { SN2: true, E2: true, SN1: false, E1: false };
 const BOX_TEXT = { nuc: 'strong nucleophile, weak base', nucbase: 'strong nucleophile and strong base', bulky: 'strong, bulky base (poor nucleophile)', weak: 'weak nucleophile, weak base', activator: 'turns OH into a leaving group' };
 const CLS_TEXT = { methyl: 'methyl', 1: '1°', 2: '2°', 3: '3°', vinyl: 'vinyl', aryl: 'aryl' };
@@ -32,8 +34,31 @@ export function flagStop(flags){
 
 function resolveReagent(cat, reagent){ return typeof reagent === 'string' ? findReagent(cat, reagent) : reagent; }
 
-// predict(OCL, mol, reagent, { solvent, heat, site }, { rules, cat })
+// predict(OCL, mol, reagent, { solvent, heat, light, peroxide, site }, { rules, cat, additions })
+// An addition reagent (catalogue `add`) on a substrate with no SN/E site, or a reagent that is only an addition
+// reagent (no SN/E box), goes to the addition engine (addition.js). Otherwise SN1/SN2/E1/E2 as before; if the
+// substrate also has a C=C away from the reacting carbon and the reagent adds to alkenes, a warning says so (P0‑3).
+const ALSO_ADDS = ['HX', 'X2', 'H3O'];
 export function predict(OCL, mol, reagent, opts = {}, data){
+  const r = resolveReagent(data.cat, reagent);
+  if (r && r.add && data.additions){
+    const an = analyse(OCL, mol);
+    if (!an.sites.length || !r.box){
+      const a = predictAddition(OCL, mol, r, opts, data);
+      if (a) return a;
+    }
+    const res = predictSNE(OCL, mol, r, opts, data);
+    if (ALSO_ADDS.includes(r.add) && !res.notCovered && res.site){
+      const ca = res.site.ca, m = an.mol;
+      const near = (a) => a === ca || m.getBond(a, ca) >= 0;
+      if (alkeneBonds(OCL, m).cc.some(([x, y]) => !near(x) && !near(y))) res.warnings.push('alkene_also_reacts');
+    }
+    return res;
+  }
+  return predictSNE(OCL, mol, r || reagent, opts, data);
+}
+
+function predictSNE(OCL, mol, reagent, opts = {}, data){
   const { rules, cat } = data;
   const r = resolveReagent(cat, reagent);
   const res = { lamps: {}, reasons: [], pathways: {}, warnings: [], flags: [], path: [] };
@@ -309,11 +334,11 @@ export function runSequence(OCL, mol, steps, data, picks = []){
 export function stepOptions(res){
   if (res.activation) return [{ pw: 'activation', product: res.activation.product }];
   const order = { major: 0, competing: 1, minor: 2 };
-  const pws = PATHWAYS.filter((p) => res.lamps && res.lamps[p] && res.lamps[p] !== 'none' && res.pathways[p]).sort((a, b) => order[res.lamps[a]] - order[res.lamps[b]]);
+  const pws = LAMPS.filter((p) => res.lamps && res.lamps[p] && res.lamps[p] !== 'none' && res.pathways[p]).sort((a, b) => order[res.lamps[a]] - order[res.lamps[b]]);
   return pws.flatMap((pw) => res.pathways[pw].products.map((product) => ({ pw, product })));
 }
 export function majorProduct(res){
-  const pw = PATHWAYS.find((p) => res.lamps[p] === 'major');
+  const pw = LAMPS.find((p) => res.lamps[p] === 'major');
   return pw && res.pathways[pw] && res.pathways[pw].products[0] || null;
 }
 

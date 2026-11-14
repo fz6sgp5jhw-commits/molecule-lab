@@ -21,7 +21,7 @@ const run = (f) => new Promise((ok) => {
   p.on('exit', (code) => ok(code));
 });
 const only = process.argv[2];
-const suites = ['namer.test.mjs', 'reactions.test.mjs', 'mech-logic.test.mjs', 'app.test.mjs', 'chair-ui.test.mjs', 'newman-ui.test.mjs', 'names-ui.test.mjs', 'study-ui.test.mjs', 'reactions-ui.test.mjs', 'sequence-ui.test.mjs'].filter(s => !only || s.startsWith(only));
+const suites = ['namer.test.mjs', 'reactions.test.mjs', 'mech-logic.test.mjs', 'app.test.mjs', 'chair-ui.test.mjs', 'newman-ui.test.mjs', 'names-ui.test.mjs', 'study-ui.test.mjs', 'reactions-ui.test.mjs', 'sequence-ui.test.mjs', 'addition-ui.test.mjs'].filter(s => !only || s.startsWith(only));
 let failed = 0;
 for (const s of suites){ console.log(`\n=== ${s} ===`); if (await run(s)) failed++; }
 server.close();

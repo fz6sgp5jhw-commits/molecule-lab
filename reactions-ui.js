@@ -5,9 +5,9 @@
 // passed in from index.html so there is one implementation.
 
 import { analyse, cationPathways, buildProduct, LG_LABEL } from './reactivity.js';
-import { findReagent, matchMolecule, guessBox, entryFromMolecule, findSolvent, parseSequence } from './reagents.js';
+import { findReagent, matchMolecule, guessBox, notSNEReason, entryFromMolecule, findSolvent, parseSequence, parseStep } from './reagents.js';
 import { plan as planRoutes } from './planner.js';
-import { predict, runSequence, rankSN1, rankSN2, rankE1, rankAlkenes, PATHWAYS } from './predict.js';
+import { predict, runSequence, rankSN1, rankSN2, rankE1, rankAlkenes, PATHWAYS, LAMPS } from './predict.js';
 import { mountGrid } from './pathway-grid-ui.js';
 import { TEMPLATES, PRELUDES, ACTIVATION } from './mech-templates.js';
 import { openMechanism } from './mech-view.js';
@@ -37,13 +37,16 @@ const PARTNER = { SN1: 'E1', E1: 'SN1', SN2: 'E2', E2: 'SN2' };
 
 export async function mountReactions(app){
   const { OCL } = app;
-  const [rules, cat, texts] = await Promise.all(['./data/rules.json', './data/reagents.json', './data/mech-text.json']
+  const [rules, cat, texts, additions] = await Promise.all(['./data/rules.json', './data/reagents.json', './data/mech-text.json', './data/additions.json']
     .map((u) => fetch(u).then((r) => r.json())));
+  const data = { rules, cat, additions };
+  // addition-only reagents (Br₂, O₃, HBr/ROOR…) have no SN/E box and need no solvent choice
+  const addOnly = (r) => !!(r && r.add && !r.box);
   const st = { scene: [], sceneSig: '', drawnKey: '', hideSub: false, sceneNamesOn: true, sceneNames: {}, key: null, mol: null, sites: [], site: 0, frags: [], reagent: null, drawn: null, guess: null, solvent: null, heat: false, res: null, rx: null, ed: null, quiet: false, mech: null,
     // multistep sequences: the steps being entered (the current one is edited by the normal reagent controls),
     // the chain result, which step's results are shown, and the student's product picks per step
     steps: [{ reagent: null, drawn: null, guess: null, solvent: null, heat: false, text: '' }], cur: 0, chain: null, chainView: 0, picks: [] };
-  const reason = (k) => rules.reasons[k] || k;
+  const reason = (k) => rules.reasons[k] || additions.reasons[k] || k;
 
   // ---------- naming (PubChem → built-in namer → OPSIN check), same order as the main window ----------
   const names = new Map();
@@ -180,7 +183,7 @@ export async function mountReactions(app){
     if (st.frags.length !== 2){ list.innerHTML = '<li class="rx-rankhead">The planner needs exactly two molecules: the start first, then the target.</li>'; return; }
     const [A, B] = st.frags, token = ++planToken;
     list.innerHTML = '<li class="rx-rankhead" id="rxPlanHead">Trying routes…</li>';
-    const res = await planRoutes(OCL, A, B, { rules, cat }, { onProgress: async (i, n) => { const h = $('rxPlanHead'); if (h) h.textContent = `Trying route ${i + 1} of ${n}…`; await new Promise((r) => setTimeout(r, 0)); } });
+    const res = await planRoutes(OCL, A, B, data, { onProgress: async (i, n) => { const h = $('rxPlanHead'); if (h) h.textContent = `Trying route ${i + 1} of ${n}…`; await new Promise((r) => setTimeout(r, 0)); } });
     if (token !== planToken) return;
     if (res.error){ list.innerHTML = '<li class="rx-rankhead">The first molecule has no leaving group or OH, so none of the routes can start.</li>'; return; }
     const nm = async (m) => m ? String((await nameOf(m)).name || 'another product').replace(/\.$/, '') : '';
@@ -219,6 +222,7 @@ export async function mountReactions(app){
     return 'Nu';
   }
   function setReagent(r, how){
+    st.extra = {};
     st.reagent = r;
     $('rxRoles').hidden = !st.drawn || how !== 'drawn';
     if (r && r.solvent) setSolvent(r.solvent);
@@ -227,7 +231,7 @@ export async function mountReactions(app){
     else if (r.id === 'custom'){
       info.innerHTML = `<b>Drawn reagent</b>: ${esc(ROLE_TEXT[r.box])}${r.estimated ? ` <span class="rx-est">${esc(texts.ui.estimated)}</span>` : ''}`;
     } else {
-      info.innerHTML = `<b>${esc(r.label)}</b>: ${esc(texts.path.reagent[r.box] || '')}`;
+      info.innerHTML = `<b>${esc(r.label)}</b>: ${esc(texts.path.reagent[r.box] || (r.add ? texts.ui.additionReagent : ''))}`;
       if (how !== 'drawn') showInEditor(r.smiles[0]);
     }
     for (const b of $('rxReagentChips').children) b.setAttribute('aria-pressed', String(!!r && findReagent(cat, b.dataset.q) === r));
@@ -236,8 +240,12 @@ export async function mountReactions(app){
   }
   function typedReagent(text){
     st.drawn = null;
+    st.extra = {};
     const r = findReagent(cat, text);
     if (r){ setReagent(r, 'typed'); setMsg(''); return; }
+    // "HBr, ROOR", "Br2, hν", "O3 then DMS": one step with conditions or two parts
+    const ps = parseStep(cat, text);
+    if (!ps.error){ setReagent(ps.reagent, 'typed'); st.extra = { light: ps.light, peroxide: ps.peroxide }; if (ps.heat && !st.heat) $('rxHeat').click(); setMsg(''); return; }
     setReagent(null);
     setMsg('');
     // an organic name with a leaving group (bromo…, …yl tosylate) is the substrate typed in the wrong box.
@@ -309,6 +317,11 @@ export async function mountReactions(app){
       substrateHint(fill(texts.reagentTypes.substrateDrawn, { lg: 'C–' + (LG_LABEL[lgSite.lg] || lgSite.lg) }), () => app.loadMolecule(mol.getCompactCopy()));
       return;
     }
+    if (notSNEReason(OCL, mol)){ // oxidant, X₂, H₂, BH₃ that isn't in the catalogue: never estimate an SN/E role
+      st.drawn = null; setReagent(null); $('rxRoles').hidden = true;
+      $('rxReagentInfo').innerHTML = `<div class="msg warn">${esc(reason('not_sn_e_reagent'))}</div>`;
+      return;
+    }
     st.drawn = mol;
     st.guess = guessBox(OCL, mol);
     setReagent(st.guess ? entryFromMolecule(OCL, mol, st.guess.box) : null, 'drawn');
@@ -364,9 +377,9 @@ export async function mountReactions(app){
     if (!st.mol){ setMsg('Draw a substrate in the editor first.'); return; }
     if (st.steps.length > 1){ predictChain(); return; }
     if (!st.reagent){ setMsg('Pick a reagent first: type it, tap a chip, or draw it.'); return; }
-    if (!st.solvent){ setMsg('Pick a solvent.'); return; }
+    if (!st.solvent && !addOnly(st.reagent)){ setMsg('Pick a solvent.'); return; }
     let res;
-    try { res = predict(OCL, st.mol, st.reagent, { solvent: st.solvent, heat: st.heat, site: st.sites.length > 1 ? st.site : undefined }, { rules, cat }); }
+    try { res = predict(OCL, st.mol, st.reagent, { solvent: st.solvent, heat: st.heat, ...(st.extra || {}), site: st.sites.length > 1 ? st.site : undefined }, data); }
     catch (e) { console.error(e); setMsg('Something went wrong in the prediction: ' + e.message, 'bad'); return; }
     $('rxStale').hidden = true; closeMech();
     st.res = res;
@@ -380,11 +393,11 @@ export async function mountReactions(app){
   // ---------- multistep sequences (1) TsCl, pyridine 2) NaCN, DMF) ----------
   // The reagent controls above edit the current step; each step keeps its own reagent, solvent and heat.
   const blankStep = () => ({ reagent: null, drawn: null, guess: null, solvent: null, heat: false, text: '' });
-  function saveStep(){ st.steps[st.cur] = { reagent: st.reagent, drawn: st.drawn, guess: st.guess, solvent: st.solvent, heat: st.heat, text: $('rxReagentInput').value }; }
+  function saveStep(){ const x = st.extra || {}; st.steps[st.cur] = { reagent: st.reagent, drawn: st.drawn, guess: st.guess, solvent: st.solvent, heat: st.heat, light: x.light, peroxide: x.peroxide, text: $('rxReagentInput').value }; }
   function loadStep(i){
     st.cur = i; st.loading = true;
     const s = st.steps[i];
-    st.drawn = s.drawn; st.guess = s.guess;
+    st.drawn = s.drawn; st.guess = s.guess; st.extra = { light: s.light, peroxide: s.peroxide };
     setReagent(s.reagent, s.drawn ? 'drawn' : 'chip');
     if (s.drawn){ showMolInEditor(s.drawn); renderRoles(); }
     else if (!s.reagent) showMolInEditor(null);
@@ -430,7 +443,7 @@ export async function mountReactions(app){
   // the tab labels show the current step's live choices
   function saveStepQuiet(){ const s = st.steps[st.cur]; Object.assign(s, { reagent: st.reagent, drawn: st.drawn, guess: st.guess, solvent: st.solvent, heat: st.heat }); }
   function setSequence(steps){
-    st.steps = steps.map((x) => ({ ...blankStep(), reagent: x.reagent, solvent: x.solvent, heat: x.heat, text: x.reagent.label }));
+    st.steps = steps.map((x) => ({ ...blankStep(), reagent: x.reagent, solvent: x.solvent, heat: x.heat, light: x.light, peroxide: x.peroxide, text: x.reagent.label }));
     st.picks = [];
     loadStep(0);
   }
@@ -438,11 +451,11 @@ export async function mountReactions(app){
     saveStep();
     for (const [i, s] of st.steps.entries()){
       if (!s.reagent){ setMsg(fill(texts.sequence.needReagent, { n: i + 1 })); return; }
-      if (!s.solvent){ setMsg(fill(texts.sequence.needSolvent, { n: i + 1 })); return; }
+      if (!s.solvent && !addOnly(s.reagent)){ setMsg(fill(texts.sequence.needSolvent, { n: i + 1 })); return; }
     }
-    const steps = st.steps.map((s, k) => ({ reagent: s.reagent, solvent: s.solvent, heat: s.heat, site: k === 0 && st.sites.length > 1 ? st.site : undefined }));
+    const steps = st.steps.map((s, k) => ({ reagent: s.reagent, solvent: s.solvent, heat: s.heat, light: s.light, peroxide: s.peroxide, site: k === 0 && st.sites.length > 1 ? st.site : undefined }));
     let out;
-    try { out = runSequence(OCL, st.mol, steps, { rules, cat }, st.picks); }
+    try { out = runSequence(OCL, st.mol, steps, data, st.picks); }
     catch (e) { console.error(e); setMsg('Something went wrong in the prediction: ' + e.message, 'bad'); return; }
     $('rxStale').hidden = true; closeMech();
     const keep = st.chain ? st.chainView : null;
@@ -543,22 +556,24 @@ export async function mountReactions(app){
     setMsg('');
     $('rxOut').hidden = false;
     // decision path
-    const lit = PATHWAYS.filter((p) => res.lamps[p] && res.lamps[p] !== 'none');
+    // an addition shows one lamp, "Addition", so SN/E lamps are never faked
+    const lampsOf = res.kind === 'addition' ? ['Addition'] : PATHWAYS;
+    const lit = lampsOf.filter((p) => res.lamps[p] && res.lamps[p] !== 'none');
     const boxes = [...res.path.map((p) => ({ step: p.step, text: p.text })),
       { step: 'rule', text: res.notCovered ? 'not covered yet' : res.activation ? 'activation step' : lit.length ? lit.map((p) => `${p} ${res.lamps[p]}`).join(', ') : 'no reaction' }];
     $('rxPath').innerHTML = boxes.map((b, i) => `<button type="button" class="rx-box" data-step="${b.step}"><small>${esc(b.step)}</small><span>${esc(b.text)}</span></button>${i < boxes.length - 1 ? '<span class="rx-arrow" aria-hidden="true">→</span>' : ''}`).join('');
     $('rxPathInfo').hidden = true;
     for (const b of $('rxPath').querySelectorAll('.rx-box')) b.onclick = () => showStep(b.dataset.step, b);
     // lamps
-    $('rxLamps').innerHTML = PATHWAYS.map((p) => `<button type="button" class="lamp ${res.lamps[p] || 'none'}" data-pw="${p}" aria-label="${p}: ${LAMP_TEXT[res.lamps[p] || 'none']}"><i></i>${p}<small>${LAMP_TEXT[res.lamps[p] || 'none']}</small></button>`).join('');
+    $('rxLamps').innerHTML = lampsOf.map((p) => `<button type="button" class="lamp ${res.lamps[p] || 'none'}" data-pw="${p}" aria-label="${p}: ${LAMP_TEXT[res.lamps[p] || 'none']}"><i></i>${p}<small>${LAMP_TEXT[res.lamps[p] || 'none']}</small></button>`).join('');
     for (const b of $('rxLamps').querySelectorAll('.lamp')) b.onclick = () => openPathway(b.dataset.pw);
     // notes
     const notes = [];
     if (res.notCovered) notes.push(['bad', 'Not covered yet: ' + reason(res.notCovered)]);
     if (res.reasons.includes('vinyl_aryl')) notes.push(['warn', reason('vinyl_aryl')]);
     for (const w of res.warnings) notes.push(['warn', reason(w)]);
-    for (const pw of PATHWAYS) for (const n of (res.pathways[pw] && res.pathways[pw].notes) || []){
-      if (/warning/.test(n)) continue;
+    for (const pw of lampsOf) for (const n of (res.pathways[pw] && res.pathways[pw].notes) || []){
+      if (/warning/.test(n) || (pw === 'Addition' && res.reasons.includes(n))) continue;
       if (n === 'ring_e2_checked') notes.push(['ok', `${pw}: ${fill(reason(n), { detail: res.pathways[pw].chairCheck.text })}`]);
       else if (n === 'e2_anti_checked') notes.push(['ok', `${pw}: ${fill(reason(n), { detail: res.pathways[pw].antiCheck.text })}`]);
       else notes.push(['warn', `${pw}: ${reason(n)}`]);
@@ -568,11 +583,18 @@ export async function mountReactions(app){
     // result cards
     const cards = $('rxCards'); cards.replaceChildren();
     if (res.activation) cards.appendChild(card(res.activation.product, 'activation', st.chain ? texts.sequence.activatedNote : 'OH → sulfonate ester (a good leaving group). Now pick a nucleophile for step 2.'));
-    for (const pw of PATHWAYS){
+    // an addition the engine can classify but not build yet still says what kind of addition it is
+    if (res.addition && res.notCovered){ const d = document.createElement('div'); d.className = 'rx-card rx-addclass'; d.innerHTML = `<div class="rx-cardh"><b>Addition</b><span class="rx-rank none">${esc(texts.ui.noProductYet)}</span></div><dl class="rx-dl">${additionLines(res.addition)}</dl>`; cards.appendChild(d); }
+    for (const pw of lampsOf){
       const out = res.pathways[pw];
       if (!out || out.lamp === 'none') continue;
       for (const p of out.products) cards.appendChild(card(p, pw));
     }
+  }
+  const INTERMEDIATE = { cation: 'carbocation (can rearrange)', halonium: 'bridged halonium ion (no rearrangement)', radical: 'carbon radical (no rearrangement)', concerted: 'none: concerted, one step', surface: 'none: H atoms from the metal surface', ozonide: 'ozonide (then cut by the workup)', none: 'none' };
+  const REGIO = { markovnikov: 'Markovnikov', 'anti-markovnikov': 'anti-Markovnikov', none: 'none (same group on both carbons, or the C=C is cut)' };
+  function additionLines(a){
+    return `<dt>Intermediate</dt><dd>${esc(INTERMEDIATE[a.intermediate] || a.intermediate)}</dd><dt>Regiochemistry</dt><dd>${esc(REGIO[a.regio] || a.regio)}</dd><dt>Stereospecific?</dt><dd>${a.stereospecific === 'Y' ? 'Y' : 'N'}${a.stereo !== 'none' ? ` (${esc(a.stereo)} addition)` : ''}</dd>`;
   }
   function showStep(step, btn){
     const info = $('rxPathInfo');
@@ -582,7 +604,7 @@ export async function mountReactions(app){
     const res = st.res, f = res.facts || {}, s = res.site;
     let t = [];
     if (step === 'substrate' && s){ t.push(texts.path.substrate[s.cls] || ''); if (s.ab) t.push(reason('ab_cation')); }
-    if (step === 'reagent' && st.rx.reagent) t.push(texts.path.reagent[st.rx.reagent.box] || '');
+    if (step === 'reagent' && st.rx.reagent) t.push(texts.path.reagent[st.rx.reagent.box] || (st.rx.reagent.add ? texts.ui.additionReagent : ''));
     if (step === 'conditions'){ if (f.solvent) t.push(texts.path.solvent[f.solvent]); if (f.heat) t.push(texts.path.solvent.heat); }
     if (step === 'rule'){ t = res.notCovered ? [reason(res.notCovered)] : res.reasons.map(reason); if (!t.length) t.push('No rule row matched.'); }
     info.dataset.step = step;
@@ -601,7 +623,8 @@ export async function mountReactions(app){
     const stereoTxt = [];
     if (lab.rs.length) stereoTxt.push('R/S: ' + lab.rs.join(', '));
     if (lab.ez.length) stereoTxt.push('E/Z: ' + lab.ez.join(', '));
-    if (p.stereo === 'racemic') stereoTxt.push('both configurations at the former C⁺ (racemic)');
+    if (p.stereo === 'racemic') stereoTxt.push(pw === 'Addition' ? '(±) racemic: both faces of the flat intermediate react equally' : 'both configurations at the former C⁺ (racemic)');
+    else if (p.stereo === 'mixture') stereoTxt.push('mixture of stereoisomers: the new stereocentre forms at a flat intermediate');
     else if (p.stereo) stereoTxt.push(p.stereo);
     if (!stereoTxt.length) stereoTxt.push('none');
     div.innerHTML = `
@@ -610,11 +633,11 @@ export async function mountReactions(app){
       <div class="rx-nameline"></div>
       <dl class="rx-dl">
         <dt>Stereo</dt><dd>${esc(stereoTxt.join('; '))}</dd>
-        ${out ? `<dt>Stereospecific</dt><dd>${out.stereospecific ? 'Y' : 'N'}</dd>` : ''}
+        ${pw === 'Addition' && st.res.addition ? additionLines(st.res.addition) : out ? `<dt>Stereospecific</dt><dd>${out.stereospecific ? 'Y' : 'N'}</dd>` : ''}
         ${p.via ? `<dt>Via</dt><dd>${esc(p.via)}</dd>` : ''}
       </dl>
       ${extra ? `<div class="note">${esc(extra)}</div>` : ''}
-      <div class="row"><button type="button" class="rx-load">Load into editor</button><button type="button" class="rx-3d">${esc(texts.ui.view3d)}</button>${(out || pw === 'activation') && !inMech ? '<button type="button" class="rx-watch">▶ Watch</button>' : ''}</div>`;
+      <div class="row"><button type="button" class="rx-load">Load into editor</button><button type="button" class="rx-3d">${esc(texts.ui.view3d)}</button>${(out || pw === 'activation') && !inMech && pw !== 'Addition' ? '<button type="button" class="rx-watch">▶ Watch</button>' : ''}</div>`;
     nameLine(p.mol, div.querySelector('.rx-nameline'));
     const w = div.querySelector('.rx-watch'); if (w) w.onclick = () => (pw === 'activation' ? openActivation(p) : openPathway(pw, p));
     div.querySelector('.rx-load').onclick = () => { st.keepOut = true; app.loadMolecule(p.mol.getCompactCopy()); $('editor').scrollIntoView({ behavior: smooth(), block: 'center' }); };
@@ -679,7 +702,7 @@ export async function mountReactions(app){
     if (r && r.smiles && r.smiles[0]){ try { out.push({ key: 'reagent', label: speciesText(r), mol: OCL.Molecule.fromSmiles(r.smiles[0]) }); } catch {} }
     if (res.site && /^(Cl|Br|I|F)$/.test(res.site.lg)) out.push({ key: 'lg', label: res.site.lg + '⁻', mol: OCL.Molecule.fromSmiles(`[${res.site.lg}-]`) });
     if (res.activation) out.push({ key: 'activation:' + res.activation.product.idcode, label: 'step 1 product', mol: res.activation.product.mol, p: res.activation.product });
-    for (const pw of PATHWAYS){
+    for (const pw of LAMPS){
       const o = res.pathways[pw];
       if (!o || o.lamp === 'none') continue;
       o.products.forEach((p, i) => out.push({ key: `${pw}:${p.idcode}`, label: st.sceneNames[p.idcode] ? `${pw} ${p.rank || ''}: ${st.sceneNames[p.idcode]}` : `${pw} ${p.rank || ''} #${i + 1}`, mol: p.mol, p }));

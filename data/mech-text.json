@@ -409,6 +409,8 @@
   },
   "ui": {
     "introTag": "Between steps",
+    "additionReagent": "addition reagent: adds across a C=C (Ch 8)",
+    "noProductYet": "no product yet",
     "comingSoon": "The {pw} animation for this case isn't available yet. The prediction and products above are already from the rules.",
     "estimated": "estimated",
     "rankingMode": "{n} molecules in the editor: ranking mode. Draw one molecule to predict a reaction.",

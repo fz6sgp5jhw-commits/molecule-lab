@@ -3,12 +3,14 @@
 import { readFileSync } from 'node:fs';
 import * as OCL from '../openchemlib.js';
 import { nameMolecule } from '../namer.js';
-import { predictSequence, runSequence, rankSN1, rankSN2, rankE1, rankAlkenes, PATHWAYS } from '../predict.js';
-import { findReagent, parseSequence, matchMolecule, guessBox, solventType, entryFromMolecule } from '../reagents.js';
+import { predictSequence, runSequence, rankSN1, rankSN2, rankE1, rankAlkenes, PATHWAYS, LAMPS } from '../predict.js';
+import { findReagent, parseSequence, parseStep, matchMolecule, guessBox, notSNEReason, solventType, entryFromMolecule } from '../reagents.js';
 
 const here = (p) => new URL(p, import.meta.url).pathname;
 OCL.Resources.registerFromNodejs(here('../resources.json'));
-const data = { rules: JSON.parse(readFileSync(here('../data/rules.json'))), cat: JSON.parse(readFileSync(here('../data/reagents.json'))) };
+const data = { rules: JSON.parse(readFileSync(here('../data/rules.json'))), cat: JSON.parse(readFileSync(here('../data/reagents.json'))), additions: JSON.parse(readFileSync(here('../data/additions.json'))) };
+// a typed step: a catalogue name, else parsed like one step of a sequence ("HBr, ROOR", "O3 then DMS")
+const stepOf = (s) => { if (s.reagentDrawn) return { ...s, reagent: matchMolecule(OCL, data.cat, M.fromSmiles(s.reagentDrawn)) || entryFromMolecule(OCL, M.fromSmiles(s.reagentDrawn)) }; const r = findReagent(data.cat, s.reagent); if (r) return { ...s, reagent: r }; const p = parseStep(data.cat, s.reagent); return p.error ? s : { ...p, ...s, reagent: p.reagent, heat: s.heat || p.heat }; };
 const seed = JSON.parse(readFileSync(here('seed-cases.json')));
 const M = OCL.Molecule;
 const nameOf = (m) => { const r = nameMolecule(OCL, m); return r.name || `(no name: ${r.error})`; };
@@ -22,7 +24,7 @@ for (const c of seed.cases){
   try {
     const sub = M.fromSmiles(c.substrate);
     if (c.substrateName && nameOf(sub) !== c.substrateName) fail(c.id, `substrate: expected ${c.substrateName}, got ${nameOf(sub)}`);
-    const steps = c.steps.map((s) => ({ ...s, reagent: s.reagentDrawn ? (matchMolecule(OCL, data.cat, M.fromSmiles(s.reagentDrawn)) || entryFromMolecule(OCL, M.fromSmiles(s.reagentDrawn))) : findReagent(data.cat, s.reagent) || s.reagent }));
+    const steps = c.steps.map(stepOf);
     const results = predictSequence(OCL, sub, steps, data);
     if (results.length < steps.length){ fail(c.id, `sequence stopped after step ${results.length}`); continue; }
     const res = results[results.length - 1];
@@ -46,8 +48,10 @@ for (const c of seed.cases){
     for (const [pw, n] of Object.entries(e.productCount || {})){ const l = res.pathways[pw]?.products || []; if (l.length !== n) fail(c.id, `${pw}: expected ${n} product(s), got [${l.map((x) => nameOf(x.mol)).join('; ')}]`); }
     // every elimination product has exactly one more C=C than the substrate (catches a dropped or misplaced double bond)
     if (steps.length === 1) for (const pw of ['E1', 'E2']) for (const p of res.pathways[pw]?.products || []) if (ccDouble(p.mol) !== ccDouble(sub) + 1) fail(c.id, `${pw}: ${p.smiles} doesn't have exactly one new C=C`);
+    for (const k of e.reasons || []) if (!res.reasons.includes(k)) fail(c.id, `reason: expected ${k}, got [${res.reasons}]`);
+    for (const [k, v] of Object.entries(e.addition || {})) if (res.addition?.[k] !== v) fail(c.id, `addition ${k}: expected ${v}, got ${res.addition?.[k]}`);
     if (e.lamps){
-      for (const pw of PATHWAYS){
+      for (const pw of LAMPS){
         const want = e.lamps[pw] || 'none', got = res.lamps[pw] || 'none';
         if (want !== got) fail(c.id, `${pw} lamp: expected ${want}, got ${got}`);
       }
@@ -89,6 +93,7 @@ for (const [i, r] of seed.reagentMatching.entries()){
     if (r.drawn){ const e = matchMolecule(OCL, data.cat, M.fromSmiles(r.drawn)); if (e?.id !== r.id) fail(id, `drawn ${r.drawn}: expected ${r.id}, got ${e?.id}`); }
     if (r.typed){ const e = findReagent(data.cat, r.typed); if (e?.id !== r.id) fail(id, `typed ${r.typed}: expected ${r.id}, got ${e?.id}`); }
     if (r.guess){ const g = guessBox(OCL, M.fromSmiles(r.guess)); if (g?.box !== r.box || !g?.estimated) fail(id, `guess ${r.guess}: expected ${r.box}, got ${g?.box}`); }
+    if (r.noGuess){ const m = M.fromSmiles(r.noGuess), g = guessBox(OCL, m); if (g || notSNEReason(OCL, m) !== 'not_sn_e_reagent') fail(id, `drawn ${r.about}: expected no estimated box (not_sn_e_reagent), got ${g?.box}`); }
     if (r.solvent){ const t = solventType(data.cat, r.solvent); if (t !== r.type) fail(id, `solvent ${r.solvent}: expected ${r.type}, got ${t}`); }
   } catch (err){ fail(id, `threw ${String(err && err.message || err).split('\n')[0]}`); }
 }
@@ -118,6 +123,20 @@ for (const q of seed.sequences){
       if (e.stereo && c.product.stereo !== e.stereo) fail(q.id, `${tag}: expected stereo ${e.stereo}, got ${c.product.stereo}`);
     });
   } catch (err){ fail(q.id, `threw ${String(err && err.message || err).split('\n')[0]}`); }
+}
+
+// ---------- Q6/Q7 classify: the addition row's regiochemistry for each reagent ----------
+{
+  const { predict } = await import('../predict.js');
+  for (const q of seed.classify || []){
+    try {
+      const p = parseStep(data.cat, q.reagent);
+      if (p.error){ fail(q.id, `parse "${q.reagent}": ${p.error}`); continue; }
+      const res = predict(OCL, M.fromSmiles(q.substrate), p.reagent, p, data);
+      if (res.addition?.regio !== q.regio) fail(q.id, `regio: expected ${q.regio}, got ${res.addition?.regio} (${res.notCovered || 'ok'})`);
+    } catch (err){ fail(q.id, `threw ${String(err && err.message || err).split('\n')[0]}`); }
+  }
+  for (const row of data.additions.rows) for (const k of [...(row.then?.reasons || []), row.notCovered].filter(Boolean)) if (!data.additions.reasons[k] && !data.rules.reasons[k]) fail('additions', `missing reason text for ${k}`);
 }
 
 // ---------- "Which pathway wins?" grid: every cell (all conditions) = what predict() gives for its example ----------

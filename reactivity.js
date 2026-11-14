@@ -209,7 +209,7 @@ export function alkenesFrom(OCL, m, centre, ops = {}){
 // buildProduct(OCL, sub, ops) → { mol, map }   (map: old atom index → new index, −1 if deleted)
 // ops: del [atoms], replace [{atom, frag}], attach [{to, frag}], removeBonds [[a,b]], addBonds [[a,b,order]],
 //      setOrder [[a,b,order]], invert [atoms], clear [atoms], bondParity [{a,b,p}]
-// frag = { smiles (Kekulé form) or mol (an OpenChemLib molecule), atom (attaching atom in the fragment) }
+// frag = { smiles (Kekulé form) or mol (an OpenChemLib molecule), atom (attaching atom in the fragment), order (of the new bond, default 1) }
 export function buildProduct(OCL, sub, ops = {}){
   const M = OCL.Molecule;
   const m = sub.getCompactCopy();
@@ -232,7 +232,7 @@ export function buildProduct(OCL, sub, ops = {}){
       fm[i] = m.addAtom(f.getAtomicNo(i)); m.setAtomCharge(fm[i], f.getAtomCharge(i));
     }
     for (let b = 0; b < f.getBonds(); b++) m.setBondType(m.addBond(fm[f.getBondAtom(0, b)], fm[f.getBondAtom(1, b)]), typeOf(f.getBondOrder(b)));
-    if (!replace) m.setBondType(m.addBond(anchor, fm[frag.atom]), M.cBondTypeSingle);
+    if (!replace) m.setBondType(m.addBond(anchor, fm[frag.atom]), typeOf(frag.order || 1));
   };
   for (const r of ops.replace || []) addFrag(r.frag, r.atom, true);
   for (const r of ops.attach || []) addFrag(r.frag, r.to, false);

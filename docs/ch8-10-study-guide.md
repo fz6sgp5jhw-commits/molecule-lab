@@ -65,21 +65,21 @@ R/S labels below belong to the enantiomer used in the app's tests. If your drawi
 | | Reaction → key's product | How | App |
 |---|---|---|---|
 | a | 3-tBu-cyclohexene (tBu wedged) + peracid → epoxide **anti to tBu** | concerted, syn; the bulky tBu blocks its face | ⏳ S2. 3D ✅: the tBu face is 1.7× more crowded in all 8 shapes |
-| b | 3,4,4-trimethylpent-2-ene + HCl → **3-chloro-2,2,3-trimethylpentane** | H⁺ to C2 → 3° cation next to tBu → Cl⁻ | ⏳ S1. ⚠️ the key's drawing is hard to read. A methyl shift would only swap one 3° cation for another 3° one, so it doesn't happen |
+| b | 3,4,4-trimethylpent-2-ene + HCl → **3-chloro-2,2,3-trimethylpentane** | H⁺ to C2 → 3° cation next to tBu → Cl⁻ | ✅ (racemic, no shift). ⚠️ the key's drawing is hard to read. A methyl shift would only swap one 3° cation for another 3° one, so it doesn't happen |
 | c | 4a-methyl-octalin + H₂/Pd → H's **anti to the angular CH₃** (trans-fused decalin) | syn addition to the less hindered face | ⏳ S2. ⚠️ the 3D check can't tell these faces apart, so the app will show the course rule, labelled as a rule |
-| d | (E)-1-phenylpropene + HBr → **(1-bromopropyl)benzene**, racemic | H⁺ to C2 → **benzylic** cation (resonance with the ring) | ⏳ S1 |
-| e | 2-methylpent-1-ene + HBr/peroxides, heat → **1-bromo-2-methylpentane**, racemic | radical: Br• adds to CH₂ → 3° radical | ⏳ S1 |
+| d | (E)-1-phenylpropene + HBr → **(1-bromopropyl)benzene**, racemic | H⁺ to C2 → **benzylic** cation (resonance with the ring) | ✅ |
+| e | 2-methylpent-1-ene + HBr/peroxides, heat → **1-bromo-2-methylpentane**, racemic | radical: Br• adds to CH₂ → 3° radical | ✅ type “HBr, ROOR, heat” |
 | f | methylcyclohexane + Br₂/light → **1-bromo-1-methylcyclohexane** | Br• takes the only 3° H | ⏳ S3 |
-| g | 3-ethylpent-2-ene + H₂SO₄ (aq) → **3-ethylpentan-3-ol** | H⁺ to the CH → 3° cation → water → −H⁺ | ⏳ S1 |
+| g | 3-ethylpent-2-ene + H₂SO₄ (aq) → **3-ethylpentan-3-ol** | H⁺ to the CH → 3° cation → water → −H⁺ | ✅ type “H2SO4 (aq)” |
 | h | cyclohexene + Br₂ (no light) → **trans-1,2-dibromocyclohexane**, racemic | bromonium, back-side Br⁻ | ⏳ S2 |
 | i | 6-tBu-1-methylcyclohexene (tBu wedged) + BH₃; H₂O₂/OH⁻ → **3-tert-butyl-2-methylcyclohexan-1-ol**: (1R,2R,3R) from the (6S) alkene | B on the less substituted C (anti-Markovnikov), syn, from the face away from tBu. So OH and the new H are both anti to tBu, and the CH₃ is pushed **cis** to tBu | ⏳ S2. 3D ✅ (1.34×, 8/8) |
 | j | 3-iPr-1-methylcyclopentene (iPr wedged) + Br₂/H₂O → **2-bromo-1-methyl-3-(propan-2-yl)cyclopentan-1-ol**: (1S,2S,3S) from the (3S) alkene | Br⁺ forms anti to iPr; water attacks the 3° C from the iPr face. So Br is trans to iPr and OH is cis to it | ⏳ S2. 3D ✅ (1.57×, 8/8) |
 | k | (Z)-pent-2-ene + PhCO₃H → **cis-2-ethyl-3-methyloxirane**, racemic | concerted, syn: cis stays cis | ⏳ S2 (name offline ⏳ P1‑10) |
-| l | 1-methylcyclohexene + O₃; DMS → **6-oxoheptanal** | ring opens: C1 becomes the ketone, C2 the aldehyde | ⏳ S1 |
+| l | 1-methylcyclohexene + O₃; DMS → **6-oxoheptanal** | ring opens: C1 becomes the ketone, C2 the aldehyde | ✅ type “1) O3 2) DMS” (the “cut and number” aid ⏳ S4) |
 | m | α-pinene + H₂/Ni → **cis-pinane** (2,6,6-trimethylbicyclo[3.1.1]heptane) | H₂ adds from the face away from the CMe₂ bridge, so the CH₃ ends up on the bridge's side | ⏳ S2. 3D ✅ (1.7×) |
 | n | 2,3-dimethylpentan-3-ol: H₂SO₄/Δ, then Br₂ → **2,3-dibromo-2,3-dimethylpentane** | E1 → tetrasubstituted alkene ✅, then anti addition (one stereocentre → racemic) | step 1 ✅, step 2 ⏳ S2 |
 | o | methylcyclopentane: Br₂/hν → NaOEt → Cl₂/H₂O → **trans-2-chloro-1-methylcyclopentan-1-ol**, racemic | 3° bromide → E2 (Zaitsev) → chloronium, water on the 3° C | step 2 ✅, steps 1 and 3 ⏳ S3/S2 |
-| p | cyclohexane: Cl₂/hν → NaOEt → O₃; DMS → **hexanedial** | one kind of H, so Cl₂'s poor selectivity doesn't matter here | step 2 ✅, steps 1 and 3 ⏳ S3/S1 |
+| p | cyclohexane: Cl₂/hν → NaOEt → O₃; DMS → **hexanedial** | one kind of H, so Cl₂'s poor selectivity doesn't matter here | steps 2 and 3 ✅, step 1 ⏳ S3 (test step 3 from cyclohexene with “O3 then DMS”) |
 | q | 1-isopropylcyclohexene: BH₃; H₂O₂/HO⁻ → TsCl/py → NaOEt → **3-isopropylcyclohexene** (non-Zaitsev) | hydroboration gives **trans**-2-isopropylcyclohexanol; TsCl keeps that configuration; E2 needs OTs axial, which puts iPr axial too, so C2 has no axial H. The H must come from C6 | steps 2–3 ✅ (the trans-diaxial check gives exactly the key's alkene); step 1 ⏳ S2 |
 
 **How to see the faces (2a, 2i, 2j, 2m) today:** draw the starting alkene, open **3D**, and turn it so you look at the flat C=C edge-on. The big group (tBu, iPr, CMe₂) sticks out on one side; the reagent comes in from the other.
@@ -92,7 +92,7 @@ R/S labels below belong to the enantiomer used in the app's tests. If your drawi
 - **e.** 1-methylcyclohexene → trans-2-methylcyclohexanol: **1) BH₃·THF 2) H₂O₂/OH⁻** (syn H and OH, so CH₃ and OH end up trans).
 - **f.** (Z)-pent-2-ene → cis epoxide: **PhCO₃H** (any peroxy acid, e.g. mCPBA).
 - **g.** 1-methylcyclopentene → trans-2-bromo-1-methylcyclopentanol: **Br₂, H₂O**.
-- **App:** ⏳ S1 (a–c), S2 (d–g). Once those land, draw the start, type the reagent and compare. After S5, *Plan: first → second* will find these by itself.
+- **App:** a–c ✅ (type “HBr”, “1) O3 2) DMS”, “HBr, ROOR”); d–g ⏳ S2: today they say “this addition isn’t built yet” and still show the kind of addition. Once those land, draw the start, type the reagent and compare. After S5, *Plan: first → second* will find these by itself.
 
 ### Q4 Reaction map (key: I, F, C, G, A; A, C; the alcohol → 1,2-dimethylcyclopentene arrow left blank)
 - **Top route:** 2,3-dimethylcyclopentanol → **I** (TsCl/py) → OTs → **F** (NaOEt) → **1,5-dimethylcyclopentene**. Zaitsev, with no cation, so no shift. ✅ App.
@@ -103,7 +103,7 @@ R/S labels below belong to the enantiomer used in the app's tests. If your drawi
   - **A** (HBr) → 1-bromo-1,2-dimethylcyclopentane (Br on the 3° C).
 - **From 1,2-dimethylcyclopentene:** **A** (HBr) → the same 3° bromide; **C** → trans-1,2-dibromo-1,2-dimethylcyclopentane.
 - **Tip:** "most efficient" means one step per arrow and no rearrangement you don't want. Ask yourself: do I want a cation (acid) or not (TsCl then base)?
-- **App:** steps from the alcohol ✅; additions ⏳ S1/S2.
+- **App:** steps from the alcohol ✅; **A** (HBr) and **G** (HBr/ROOR) ✅ (the bromides form as a mixture of stereoisomers, shown without wedges); **C** (Br₂) ⏳ S2.
 
 ### Q5 Road map with yields (HCl 87 %; then KOtBu: 60 / 25 / 15 %)
 - **Step 1:** 1,6-dimethylcyclohexene + HCl → **1-chloro-1,2-dimethylcyclohexane** (Markovnikov, 3° C). Both diastereomers form, because the cation is flat.
@@ -113,7 +113,7 @@ R/S labels below belong to the enantiomer used in the app's tests. If your drawi
   - The key's order is what the app gives with **NaOEt**.
   - Extra subtlety the app shows: in one of the two chloride diastereomers, C2 has no H anti to the axial Cl, so that diastereomer can't make the tetrasubstituted alkene at all.
 - **How to "take yields into account":** the biggest yield goes with the most favoured product under your course's rule. Never invent percentages; match the given ones to the order.
-- **App:** step 2 ✅ (ranks the three); step 1 ⏳ S1.
+- **App:** step 1 ✅ (1-chloro-1,2-dimethylcyclohexane, both diastereomers: “mixture”); step 2 ✅ (ranks the three).
 
 ### Q6–8 Pick all that apply (key: Q6 A, D, F; Q7 B, C; Q8 B, C, F)
 | Option | Q6 Markovnikov? | Q7 anti-Markovnikov? | Why |
@@ -134,7 +134,7 @@ R/S labels below belong to the enantiomer used in the app's tests. If your drawi
 | E: Br₂/light on an alkane | no | radical substitution |
 | F: BH₃·THF; H₂O₂/OH⁻ | ✔ | concerted syn |
 
-- **App:** ⏳ S1/S2: every result card will say *Regiochemistry* and *Stereospecific?*. ⏳ S5 *Classify* checks a whole list at once.
+- **App:** ✅ every addition card says *Intermediate*, *Regiochemistry* and *Stereospecific?* (Q6/Q7 options A–F, also for B and Q8's S2 reagents, which aren't built yet but are classified). Products for Q8 B, C, F ⏳ S2. ⏳ S5 *Classify* checks a whole list at once.
 
 ### Q9 Which mechanism for Cl₂/H₂O on 1-methylcyclohex-1-ene? (key: E)
 - **Look for three things:**
@@ -157,7 +157,7 @@ R/S labels below belong to the enantiomer used in the app's tests. If your drawi
 ### Q11 2,2-Dimethylcyclopentan-1-ol → heptane-2,6-dione (key: H₂SO₄ (cat)/Δ; O₃, DMS)
 - **Work backwards:** two C=O groups 4 carbons apart in a 7-carbon chain come from opening a **ring** C=O pair, so the alkene is **1,2-dimethylcyclopentene**.
 - That alkene comes from the alcohol by E1 with a **methyl shift** (2° → 3° cation): Ch 7 Q9l/Q13a.
-- **App:** step 1 ✅ (the methyl-shift E1); step 2 ⏳ S1 (ozonolysis); the whole route ⏳ S5.
+- **App:** step 1 ✅ (the methyl-shift E1); step 2 ✅ (type “1) H2SO4, heat 2) O3 then DMS”); the whole route by itself ⏳ S5.
 
 ---
 

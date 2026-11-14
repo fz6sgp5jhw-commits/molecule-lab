@@ -1,5 +1,5 @@
 {
- "_about": "Expected textbook answers for the SN1/SN2/E1/E2 engine (docs/mechanisms-plan.md, 'Seed test set' and the confirmed course worksheet answers). Each case: substrate SMILES (+ its name, checked by namer.js so a wrong SMILES fails loudly), steps [{reagent, solvent, heat, site}], expect for the last step: lamps (unlisted = none), products [{pathway, smiles, name, rank}], stereospecific, flags, notCovered, activation (first step). Seed 22 (menthyl/neomenthyl) is left out until checked against the course textbook; worksheet cases are only here once confirmed from Peter's answer key.",
+ "_about": "Expected textbook answers for the SN1/SN2/E1/E2 engine (docs/mechanisms-plan.md, 'Seed test set' and the confirmed course worksheet answers). Each case: substrate SMILES (+ its name, checked by namer.js so a wrong SMILES fails loudly), steps [{reagent, solvent, heat, site}], expect for the last step: lamps (unlisted = none), products [{pathway, smiles, name, rank}], stereospecific, flags, notCovered, activation (first step). Seed 22 (menthyl/neomenthyl) is left out until checked against the course textbook; worksheet cases are only here once confirmed from Peter's answer key. Ch 8 additions (docs/ch8-10-app-gaps.md \"Seed cases\", ids A-…): expect.addition = {intermediate, regio, stereospecific} from data/additions.json; product stereo racemic | mixture | null; classify = Q6/Q7 regiochemistry per reagent; reagentMatching noGuess = drawn molecule that must get no estimated SN/E box.",
  "cases": [
   {
    "id": "1",
@@ -1395,6 +1395,572 @@
      }
     ]
    }
+  },
+  {
+   "id": "P0-1",
+   "about": "an alkene with an addition reagent whose engine is not built yet (Br2: S2) says so, never no_site",
+   "substrate": "CC1=CCCC1",
+   "substrateName": "1-methylcyclopentene",
+   "steps": [
+    {
+     "reagent": "Br2"
+    }
+   ],
+   "expect": {
+    "notCovered": "addition_not_yet",
+    "addition": {
+     "intermediate": "halonium",
+     "regio": "none",
+     "stereospecific": "Y"
+    }
+   }
+  },
+  {
+   "id": "P0-3",
+   "about": "homoallylic alcohol + HBr: substitution shown, with a warning that the C=C also adds HBr",
+   "substrate": "C=CCCO",
+   "substrateName": "but-3-en-1-ol",
+   "steps": [
+    {
+     "reagent": "HBr"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "SN2": "major"
+    },
+    "warnings": [
+     "alkene_also_reacts"
+    ],
+    "products": [
+     {
+      "pathway": "SN2",
+      "smiles": "C=CCCBr",
+      "name": "4-bromobut-1-ene"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-2b",
+   "substrate": "CC=C(C)C(C)(C)C",
+   "substrateName": null,
+   "steps": [
+    {
+     "reagent": "HCl"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "addition": {
+     "intermediate": "cation",
+     "regio": "markovnikov",
+     "stereospecific": "N"
+    },
+    "productCount": {
+     "Addition": 1
+    },
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "CCC(C)(Cl)C(C)(C)C",
+      "name": "3-chloro-2,2,3-trimethylpentane",
+      "rank": "major",
+      "stereo": "racemic"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-2d",
+   "substrate": "C/C=C/c1ccccc1",
+   "substrateName": null,
+   "steps": [
+    {
+     "reagent": "HBr"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "addition": {
+     "intermediate": "cation",
+     "regio": "markovnikov",
+     "stereospecific": "N"
+    },
+    "productCount": {
+     "Addition": 1
+    },
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "CCC(Br)c1ccccc1",
+      "name": "(1-bromopropyl)benzene",
+      "rank": "major",
+      "stereo": "racemic"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-2e",
+   "substrate": "C=C(C)CCC",
+   "substrateName": "2-methylpent-1-ene",
+   "steps": [
+    {
+     "reagent": "HBr, ROOR, heat"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "addition": {
+     "intermediate": "radical",
+     "regio": "anti-markovnikov",
+     "stereospecific": "N"
+    },
+    "productCount": {
+     "Addition": 1
+    },
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "CCCC(C)CBr",
+      "name": "1-bromo-2-methylpentane",
+      "rank": "major",
+      "stereo": "racemic"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-2g",
+   "substrate": "CCC(CC)=CC",
+   "substrateName": null,
+   "steps": [
+    {
+     "reagent": "H2SO4 (aq)"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "addition": {
+     "intermediate": "cation",
+     "regio": "markovnikov",
+     "stereospecific": "N"
+    },
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "CCC(O)(CC)CC",
+      "name": "3-ethylpentan-3-ol",
+      "rank": "major"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-Q3a",
+   "substrate": "CC1=CCCC1",
+   "substrateName": "1-methylcyclopentene",
+   "steps": [
+    {
+     "reagent": "HBr"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "addition": {
+     "intermediate": "cation",
+     "regio": "markovnikov",
+     "stereospecific": "N"
+    },
+    "productCount": {
+     "Addition": 1
+    },
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "CC1(Br)CCCC1",
+      "name": "1-bromo-1-methylcyclopentane",
+      "rank": "major"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-Q3b",
+   "substrate": "C=C(CC)CC",
+   "substrateName": null,
+   "steps": [
+    {
+     "reagent": "O3, DMS"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "addition": {
+     "intermediate": "ozonide",
+     "regio": "none",
+     "stereospecific": "N"
+    },
+    "productCount": {
+     "Addition": 2
+    },
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "CCC(=O)CC",
+      "name": "pentan-3-one"
+     },
+     {
+      "pathway": "Addition",
+      "smiles": "C=O",
+      "name": "formaldehyde"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-Q3c",
+   "substrate": "CCC=C(C)C",
+   "substrateName": null,
+   "steps": [
+    {
+     "reagent": "HBr, ROOR"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "addition": {
+     "intermediate": "radical",
+     "regio": "anti-markovnikov",
+     "stereospecific": "N"
+    },
+    "productCount": {
+     "Addition": 1
+    },
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "CCC(Br)C(C)C",
+      "name": "3-bromo-2-methylpentane",
+      "rank": "major",
+      "stereo": "racemic"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-Q4-3",
+   "substrate": "CC1=CCCC1C",
+   "substrateName": "1,5-dimethylcyclopentene",
+   "steps": [
+    {
+     "reagent": "HBr"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "addition": {
+     "intermediate": "cation",
+     "regio": "markovnikov",
+     "stereospecific": "N"
+    },
+    "productCount": {
+     "Addition": 1
+    },
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "CC1CCCC1(C)Br",
+      "name": "1-bromo-1,2-dimethylcyclopentane",
+      "rank": "major",
+      "stereo": "mixture"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-Q4-3b",
+   "substrate": "CC1=C(C)CCC1",
+   "substrateName": "1,2-dimethylcyclopentene",
+   "steps": [
+    {
+     "reagent": "HBr"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "addition": {
+     "intermediate": "cation",
+     "regio": "markovnikov",
+     "stereospecific": "N"
+    },
+    "productCount": {
+     "Addition": 1
+    },
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "CC1CCCC1(C)Br",
+      "name": "1-bromo-1,2-dimethylcyclopentane",
+      "rank": "major",
+      "stereo": "mixture"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-Q4-4",
+   "substrate": "CC1=CCCC1C",
+   "substrateName": "1,5-dimethylcyclopentene",
+   "steps": [
+    {
+     "reagent": "HBr, ROOR"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "addition": {
+     "intermediate": "radical",
+     "regio": "anti-markovnikov",
+     "stereospecific": "N"
+    },
+    "productCount": {
+     "Addition": 1
+    },
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "CC1CCC(Br)C1C",
+      "name": "1-bromo-2,3-dimethylcyclopentane",
+      "rank": "major",
+      "stereo": "mixture"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-2p-3",
+   "substrate": "C1=CCCCC1",
+   "substrateName": "cyclohexene",
+   "steps": [
+    {
+     "reagent": "O3 then DMS"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "addition": {
+     "intermediate": "ozonide",
+     "regio": "none",
+     "stereospecific": "N"
+    },
+    "productCount": {
+     "Addition": 1
+    },
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "O=CCCCCC=O",
+      "name": "hexanedial"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-shift",
+   "substrate": "CC(C)(C)C=C",
+   "substrateName": "3,3-dimethylbut-1-ene",
+   "steps": [
+    {
+     "reagent": "HBr"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "addition": {
+     "intermediate": "cation",
+     "regio": "markovnikov",
+     "stereospecific": "N"
+    },
+    "productCount": {
+     "Addition": 2
+    },
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "CC(C)C(C)(C)Br",
+      "name": "2-bromo-2,3-dimethylbutane",
+      "rank": "major",
+      "via": "methyl shift"
+     },
+     {
+      "pathway": "Addition",
+      "smiles": "CC(Br)C(C)(C)C",
+      "name": "3-bromo-2,2-dimethylbutane",
+      "rank": "minor",
+      "stereo": "racemic"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-tie",
+   "substrate": "CC=CCC",
+   "substrateName": "pent-2-ene",
+   "steps": [
+    {
+     "reagent": "HBr"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "addition": {
+     "intermediate": "cation",
+     "regio": "markovnikov",
+     "stereospecific": "N"
+    },
+    "productCount": {
+     "Addition": 2
+    },
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "CC(Br)CCC",
+      "name": "2-bromopentane",
+      "rank": "competing"
+     },
+     {
+      "pathway": "Addition",
+      "smiles": "CCC(Br)CC",
+      "name": "3-bromopentane",
+      "rank": "competing"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-hcl-roor",
+   "about": "only HBr has a radical chain: HCl with peroxides is plain Markovnikov, with the reason",
+   "substrate": "C=C(C)CCC",
+   "substrateName": "2-methylpent-1-ene",
+   "steps": [
+    {
+     "reagent": "HCl, ROOR"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "reasons": [
+     "only_hbr_radical"
+    ],
+    "addition": {
+     "intermediate": "cation",
+     "regio": "markovnikov",
+     "stereospecific": "N"
+    },
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "CCCC(C)(C)Cl",
+      "name": "2-chloro-2-methylpentane"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-bh3-alone",
+   "about": "BH3 with no oxidation step stops: never name an organoborane",
+   "substrate": "CC1=CCCCC1",
+   "steps": [
+    {
+     "reagent": "BH3"
+    }
+   ],
+   "expect": {
+    "notCovered": "needs_workup"
+   }
+  },
+  {
+   "id": "A-o3-alone",
+   "about": "O3 with no workup stops",
+   "substrate": "CC1=CCCCC1",
+   "steps": [
+    {
+     "reagent": "O3"
+    }
+   ],
+   "expect": {
+    "notCovered": "needs_workup"
+   }
+  },
+  {
+   "id": "A-acid-heat",
+   "about": "alkene + acid with heat and no water: the equilibrium goes back to the alkene",
+   "substrate": "CC1=CCCC1",
+   "steps": [
+    {
+     "reagent": "H2SO4",
+     "heat": true
+    }
+   ],
+   "expect": {
+    "notCovered": "hydration_vs_dehydration"
+   }
+  },
+  {
+   "id": "A-diene",
+   "about": "conjugated diene + HBr: 1,2 vs 1,4 is not covered, never guessed",
+   "substrate": "C=CC=C",
+   "steps": [
+    {
+     "reagent": "HBr"
+    }
+   ],
+   "expect": {
+    "notCovered": "conjugated_diene"
+   }
+  },
+  {
+   "id": "A-enone",
+   "about": "C=C conjugated with C=O: the cation rule doesn't hold, so stop",
+   "substrate": "C=CC(C)=O",
+   "steps": [
+    {
+     "reagent": "HBr"
+    }
+   ],
+   "expect": {
+    "notCovered": "addition_alkene_type"
+   }
   }
  ],
  "ranking": [
@@ -1666,6 +2232,30 @@
   {
    "solvent": "ethanol",
    "type": "protic"
+  },
+  {
+   "noGuess": "[O-][O+]=O",
+   "about": "ozone"
+  },
+  {
+   "noGuess": "OO",
+   "about": "H2O2"
+  },
+  {
+   "noGuess": "CC(=O)OO",
+   "about": "peracetic acid"
+  },
+  {
+   "noGuess": "BrBr",
+   "about": "Br2"
+  },
+  {
+   "noGuess": "[H][H]",
+   "about": "H2"
+  },
+  {
+   "noGuess": "B",
+   "about": "BH3"
   }
  ],
  "sequences": [
@@ -1796,6 +2386,34 @@
      "stop": "sequence_not_run"
     }
    ]
+  },
+  {
+   "id": "A-2l",
+   "substrate": "CC1=CCCCC1",
+   "text": "1) O3 2) DMS",
+   "expect": [
+    {
+     "pw": "Addition",
+     "name": "6-oxoheptanal",
+     "smiles": "CC(=O)CCCCC=O"
+    }
+   ]
+  },
+  {
+   "id": "A-Q11",
+   "substrate": "CC1(C)CCCC1O",
+   "text": "1) H2SO4, heat 2) O3 then DMS",
+   "expect": [
+    {
+     "pw": "E1",
+     "name": "1,2-dimethylcyclopentene"
+    },
+    {
+     "pw": "Addition",
+     "name": "heptane-2,6-dione",
+     "smiles": "CC(=O)CCCC(C)=O"
+    }
+   ]
   }
  ],
  "sequenceParsing": [
@@ -1859,6 +2477,41 @@
   {
    "text": "NaOEt",
    "steps": null
+  },
+  {
+   "text": "1) BH3·THF followed by H2O2/HO- 2) TsCl, py 3) NaOEt",
+   "steps": [
+    "hydroboration/THF/false",
+    "tscl/pyridine/false",
+    "ethoxide/EtOH/false"
+   ]
+  },
+  {
+   "text": "1) BH3 2) H2O2, NaOH",
+   "steps": [
+    "hydroboration/THF/false"
+   ]
+  },
+  {
+   "text": "1) O3 2) DMS",
+   "steps": [
+    "ozonolysis/null/false"
+   ]
+  },
+  {
+   "text": "1) Cl2, hv 2) NaOEt 3) O3 then DMS",
+   "steps": [
+    "cl2-hv/null/false",
+    "ethoxide/EtOH/false",
+    "ozonolysis/null/false"
+   ]
+  },
+  {
+   "text": "1) H2SO4, heat 2) O3 then DMS",
+   "steps": [
+    "h2so4/H2O/true",
+    "ozonolysis/null/false"
+   ]
   }
  ],
  "newman": [
@@ -1949,6 +2602,44 @@
     "socl2-kotbu": "minor",
     "tscl-kotbu": "minor"
    }
+  }
+ ],
+ "classify": [
+  {
+   "id": "Q6A",
+   "substrate": "CC(C)(C)C=C",
+   "reagent": "H2SO4 (cat), 0 °C",
+   "regio": "markovnikov"
+  },
+  {
+   "id": "Q7B",
+   "substrate": "CC1=CCCCC1",
+   "reagent": "BH3·THF; H2O2/OH-",
+   "regio": "anti-markovnikov"
+  },
+  {
+   "id": "Q7C",
+   "substrate": "CC1=CCCCC1",
+   "reagent": "HBr, peroxides, heat",
+   "regio": "anti-markovnikov"
+  },
+  {
+   "id": "Q6D",
+   "substrate": "C=C1CCCC1",
+   "reagent": "HI",
+   "regio": "markovnikov"
+  },
+  {
+   "id": "Q6E",
+   "substrate": "CC1=CCCCC1",
+   "reagent": "O3; Zn/HOAc",
+   "regio": "none"
+  },
+  {
+   "id": "Q6F",
+   "substrate": "CC1=CCCCC1",
+   "reagent": "conc. H2SO4 then H2O, heat",
+   "regio": "markovnikov"
   }
  ]
 }
