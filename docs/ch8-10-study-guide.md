@@ -56,7 +56,7 @@ Today the app does **eliminations only**. Every addition or radical step says "n
   - That is SN2 with the strained ring as the leaving group: one step, inversion at that carbon.
   - The intermediate is the **ester** (Asp–C(=O)–O–C) on one carbon and OH on the other, **trans** to each other. Water then hydrolyses the ester, and the C–O bond on that carbon is kept, so the diol is **trans** (the product shown).
 - **Why SN2 and not SN1:** the attack and the ring opening are concerted, and inversion is needed to get the trans product.
-- **App:** ✅ draw a cis epoxide (e.g. cis-2,3-dimethyloxirane) and type “H3O+” or “NaOH”: SN2 opening from the back gives the **trans** diol, labelled racemic. The `epoxideOpening` mechanism ⏳ S4; meanwhile, the SN2 card's backside-attack picture is the same idea.
+- **App:** ✅ draw a cis epoxide (e.g. cis-2,3-dimethyloxirane) and type “H3O+” or “NaOH”: SN2 opening from the back gives the **trans** diol, labelled racemic. ✅ S4: ▶ Watch on the card plays the opening (acid: the ring O takes H⁺ first; base: HO⁻ at the less substituted C), with the quiz “which carbon does the nucleophile attack?”. Q1's enzyme uses the same arrows (an acid on the ring O, a nucleophile at the back); the WHY page says so.
 - **Why it matters:** CYP3A4 makes the epoxide, and epoxide hydrolase turns it into a water-soluble diol you excrete. Two drugs competing for CYP3A4 is a classic drug–drug interaction.
 
 ### Q2 Major products
@@ -75,7 +75,7 @@ R/S labels below belong to the enantiomer used in the app's tests. If your drawi
 | i | 6-tBu-1-methylcyclohexene (tBu wedged) + BH₃; H₂O₂/OH⁻ → **3-tert-butyl-2-methylcyclohexan-1-ol**: (1R,2R,3R) from the (6S) alkene | B on the less substituted C (anti-Markovnikov), syn, from the face away from tBu. So OH and the new H are both anti to tBu, and the CH₃ is pushed **cis** to tBu | ✅ type “BH3·THF; H2O2/OH-” (or “1) BH3 2) H2O2/OH-”): the key's isomer, *Face: course rule*. The 3D difference here (1.3×) is too close to call by itself, so the rule decides, with the same answer |
 | j | 3-iPr-1-methylcyclopentene (iPr wedged) + Br₂/H₂O → **2-bromo-1-methyl-3-(propan-2-yl)cyclopentan-1-ol**: (1S,2S,3S) from the (3S) alkene | Br⁺ forms anti to iPr; water attacks the 3° C from the iPr face. So Br is trans to iPr and OH is cis to it | ✅ type “Br2, H2O”: the key's isomer, *Face: computed* (1.6×) |
 | k | (Z)-pent-2-ene + PhCO₃H → **cis-2-ethyl-3-methyloxirane**, racemic | concerted, syn: cis stays cis | ✅ type “PhCO3H”: cis epoxide, racemic. The (E) alkene gives the trans epoxide (stereospecific). Name offline ⏳ P1‑10 |
-| l | 1-methylcyclohexene + O₃; DMS → **6-oxoheptanal** | ring opens: C1 becomes the ketone, C2 the aldehyde | ✅ type “1) O3 2) DMS” (the “cut and number” aid ⏳ S4) |
+| l | 1-methylcyclohexene + O₃; DMS → **6-oxoheptanal** | ring opens: C1 becomes the ketone, C2 the aldehyde | ✅ type “1) O3 2) DMS”; ▶ Watch shows the cut (S4), and its WHY page gives the “cut and number” tip. Numbered atoms on the drawing itself: not built |
 | m | α-pinene + H₂/Ni → **cis-pinane** (2,6,6-trimethylbicyclo[3.1.1]heptane) | H₂ adds from the face away from the CMe₂ bridge, so the CH₃ ends up on the bridge's side | ✅ type “H2, Ni”: cis-pinane, *Face: computed* (1.7×) |
 | n | 2,3-dimethylpentan-3-ol: H₂SO₄/Δ, then Br₂ → **2,3-dibromo-2,3-dimethylpentane** | E1 → tetrasubstituted alkene ✅, then anti addition (one stereocentre → racemic) | ✅ type “1) H2SO4, heat 2) Br2” (one new stereocentre → racemic) |
 | o | methylcyclopentane: Br₂/hν → NaOEt → Cl₂/H₂O → **trans-2-chloro-1-methylcyclopentan-1-ol**, racemic | 3° bromide → E2 (Zaitsev) → chloronium, water on the 3° C | ✅ type the whole route “1) Br2, light 2) NaOEt 3) Cl2, H2O” |
@@ -144,7 +144,7 @@ R/S labels below belong to the enantiomer used in the app's tests. If your drawi
 - **Wrong answers:**
   - A: no ring-closing arrow.
   - B, C, D, F: one arrow from the wrong atom, or water on the wrong carbon or the wrong face.
-- **App:** ⏳ S4 `halohydrin` mechanism, with the quiz "Which carbon does water attack?".
+- **App:** ✅ S4: ▶ Watch on the Br₂/H₂O card plays the `halohydrin` mechanism (bridged ion, water at the more substituted C from the back, proton transfer), with the quiz “Which carbon does water attack?” (tick *Quiz me*).
 
 ### Q10 Methylcyclohexane → trans-2-bromo-1-methylcyclohexanol (key: Br₂/hν; NaOEt/EtOH; Br₂/H₂O)
 - **Work backwards:**

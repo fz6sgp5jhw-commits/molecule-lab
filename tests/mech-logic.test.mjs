@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { density, elementOf } from '../density.js';
 import { placer, textBox, boxSegDist, boxBoxDist } from '../mech-place.js';
-import { TEMPLATES, PRELUDES } from '../mech-templates.js';
+import { TEMPLATES, PRELUDES, ADD_TEMPLATES } from '../mech-templates.js';
 import { LAYERS } from '../mech-view.js';
 
 let fails = 0, n = 0;
@@ -93,6 +93,42 @@ ok(elementOf('OSO₃H') === 'O' && elementOf('Br') === 'Br' && elementOf('Cl') =
   ok(has('E2', (o) => o.k === 'sigma') && has('E2', (o) => o.k === 'piForm') && has('E2', (o) => o.k === 'pi'), 'E2: σ C–H/σ*, π forming, π');
   ok(has('E1', (o) => o.k === 'piForm') && has('E1', (o) => o.k === 'pi'), 'E1: p orbitals forming π');
   ok(LAYERS.every((k) => texts.ui.layers[k]), 'every layer has a checkbox label');
+}
+
+// ---- a radical carbon: somewhat electron-poor, one level only (never as poor as C⁺) ----
+{
+  const g = { atoms: [A('C'), { ...A('C'), radical: true }, A('C')], bonds: [B(0, 1), B(1, 2)] };
+  const d = density(g);
+  ok(d.atoms[1].level === 'poor1', `radical C is poor1 (got ${d.atoms[1].level})`);
+  ok(d.atoms[0].level === 'neutral', `a radical barely touches its neighbours (got ${d.atoms[0].level})`);
+  ok(elementOf('RO') === 'O' && elementOf('OR') === 'O', 'RO / OR read as oxygen');
+}
+// ---- Ch 8/10 templates (S4): every text, quiz and placement exists; every addition row names a template ----
+{
+  const texts = JSON.parse(readFileSync(new URL('../data/mech-text.json', import.meta.url)));
+  const additions = JSON.parse(readFileSync(new URL('../data/additions.json', import.meta.url)));
+  const VIRT = new Set(['nu', 'base', 'hb', 'gh', 'hp', 'hx', 'act', 'ax', 'e', 'ex', 'e2', 'e3', 'e4', 'i1', 'i2', 'w1', 'w2']);
+  for (const row of additions.rows) if (row.then) ok(ADD_TEMPLATES[row.then.template], `addition row ${row.id}: template ${row.then.template} exists`);
+  for (const [name, { t }] of Object.entries(ADD_TEMPLATES)){
+    for (const r of Object.keys(t.place || {})) ok(VIRT.has(r), `${name}: placed role ${r} is a virtual role`);
+    ok(t.frames.some((f) => f.result), `${name}: has a result frame`);
+    for (const f of t.frames){
+      const keys = typeof f.text === 'string' ? [f.text] : Object.values(f.text || {});
+      for (const k of keys) ok(texts.frames[k], `${name}: text ${k}`);
+      for (const q of [f.quiz, ...Object.values(f.when || {}).map((w) => w.quiz)].filter(Boolean)){
+        ok(texts.quiz[q.q], `${name}: quiz ${q.q}`);
+        if (q.kind === 'choice') ok(texts.quiz[q.q] && texts.quiz[q.q].options[q.answer], `${name}: choice quiz ${q.q} has its answer among the options`);
+      }
+      for (const a of f.arrows || []) ok(a.length === 2 || a[2] === 'f', `${name}: arrow kind is full or 'f' (fishhook)`);
+      if (f.ts4) ok(f.ts4.length === 4, `${name}: ts4 names four roles`);
+    }
+  }
+  const fishy = (n) => ADD_TEMPLATES[n].t.frames.some((f) => (f.arrows || []).some((a) => a[2] === 'f'));
+  ok(fishy('hbrRadical') && fishy('radicalHalogenation') && !fishy('addHX'), 'fishhooks only in the radical templates');
+  ok(ADD_TEMPLATES.halonium.t.frames.some((f) => f.bridge) && ADD_TEMPLATES.hydroboration.t.frames.some((f) => f.ts4) && ADD_TEMPLATES.hydrogenation.t.frames.some((f) => f.surface) && ADD_TEMPLATES.ozonolysis.t.frames.some((f) => f.fragments), 'bridge, ts4, surface and fragments are used');
+  // every [[term]] in the new texts is in the glossary
+  const all = JSON.stringify(texts.frames) + JSON.stringify(texts.quiz);
+  for (const m of all.matchAll(/\[\[([^\]|]+)/g)) ok(texts.glossary[m[1]], `glossary has [[${m[1]}]]`);
 }
 
 console.log(fails ? `${fails} of ${n} checks failed` : `mech-logic: ${n} checks passed`);

@@ -2,6 +2,346 @@
   "_about": "All teaching text for the mechanism viewer and the Reactions window. Placeholders: {Nu} nucleophile, {Base} base, {LG} leaving group as drawn, {LGion} what leaves, {X} acid counter-ion, {class} substrate class (1°, 2°…), {cation}/{cation2} carbocation class before/after a shift, {via} how the chosen product formed, {product} product name, {stereo} stereo sentence, {rank} major/minor. [[term]] marks a glossary term (tap for its definition). Reviewed against standard intro textbooks after Session 3 (plan, Answers from Peter, 6).",
   "speaker": "LAB",
   "frames": {
+    "ahx_meet": {
+      "text": "The C=C's π bond is a cloud of electrons above and below the two carbons, so the alkene is the [[nucleophile]]. {Reagent} is the [[electrophile]]: its H is δ+.",
+      "why": [
+        "The π bond is weaker and more exposed than the σ bond, so its electrons are the ones that react.",
+        "[[Markovnikov's rule]]: H⁺ bonds to the C=C carbon that leaves the more stable carbocation on its partner (here a {cation} cation)."
+      ]
+    },
+    "ahx_meet_h3o": {
+      "text": "In aqueous acid the real acid is H₃O⁺. The C=C's π electrons (the [[nucleophile]]) will take its δ+ H.",
+      "why": [
+        "The π bond is weaker and more exposed than the σ bond, so its electrons are the ones that react.",
+        "[[Markovnikov's rule]]: H⁺ bonds to the C=C carbon that leaves the more stable carbocation on its partner (here a {cation} cation).",
+        "The acid is a [[catalyst]]: the H⁺ taken here is given back in the last step."
+      ]
+    },
+    "ahx_attack": {
+      "text": "Arrow 1: the π electrons reach for the H. Arrow 2: the bond to that H breaks, and both of its electrons stay with {exGone}.",
+      "why": [
+        "This first step is the slow one ([[rate-determining step]]): it makes a high-energy carbocation."
+      ]
+    },
+    "ahx_ts1": {
+      "text": "[[transition state|Transition state]]: the new C–H bond is half made, the π bond half broken, and the other carbon is becoming δ+.",
+      "why": [
+        "The transition state looks like the carbocation it leads to ([[Hammond postulate]]). Whatever makes that cation more stable (more carbons on C⁺) also lowers this barrier, which is why the Markovnikov path wins."
+      ]
+    },
+    "ahx_cation": {
+      "text": "A {cation} [[carbocation]]: the carbon that didn't get the H has only six electrons and an empty p orbital. It is flat, so it can be attacked from either face.",
+      "why": [
+        "The neighbouring C–H and C–C bonds feed a little electron density into the empty p orbital ([[hyperconjugation]]). More carbons on C⁺ means more of this: 3° > 2° > 1°.",
+        "A flat C⁺ remembers no stereo: a new stereocentre made here forms as a racemic mixture (or as diastereomers if the molecule already has a stereocentre)."
+      ]
+    },
+    "ahx_meet_x": {
+      "text": "{Nu} (the ion that just left) is drawn to the C⁺.",
+      "why": [
+        "The empty p orbital has a lobe on each face, so {Nu} can bond from either side with equal chance."
+      ]
+    },
+    "ahx_meet_water": {
+      "text": "Water (the solvent) brings a lone pair to the C⁺.",
+      "why": [
+        "Water is only a weak [[nucleophile]], but the C⁺ is very electron-poor and water is everywhere.",
+        "The empty p orbital has a lobe on each face, so water can bond from either side with equal chance."
+      ]
+    },
+    "ahx_nu_attack": {
+      "text": "{Nu} bonds to the C⁺: the arrow starts at its lone pair and ends at the carbon.",
+      "why": [
+        "This step is fast: a lone pair meets an empty orbital, with almost no barrier."
+      ]
+    },
+    "ahx_product": {
+      "text": "The new C–{X} bond is made: {X} sits on the carbon that held the +, and the new H on the other one. This is the Markovnikov product.",
+      "why": []
+    },
+    "ahx_oxonium": {
+      "text": "Water is now bonded through its O, which carries a + (an [[oxonium ion]]). One more step: it loses H⁺.",
+      "why": []
+    },
+    "add_result": {
+      "text": "Product ({rank}): {product}. {stereo} Path: {via}.",
+      "why": [
+        "The drawing is flat. Which face each new group goes to is worked out in 3D by the prediction engine; the product card and its 3D model show the result.",
+        "Major/minor comes from the same rules as the card above. No percentages are claimed."
+      ]
+    },
+    "hal_meet": {
+      "text": "{X2} meets the C=C. {X2} itself isn't polar, but the π cloud pushes on the near {X}'s electrons, so that end becomes δ+ (an induced dipole).",
+      "why": [
+        "The electron-rich π bond is the [[nucleophile]]; the near {X} is the [[electrophile]]."
+      ]
+    },
+    "hal_attack": {
+      "text": "Three arrows at once: the π electrons go to the near {X}, a lone pair on that {X} reaches over to the other carbon, and the {X}–{X} bond breaks (the far {X} leaves as {Xm}).",
+      "why": [
+        "Because the {X} bonds to both carbons, no open carbocation forms, so nothing can shift."
+      ]
+    },
+    "hal_ts1": {
+      "text": "Transition state: both C–{X} bonds are half made and the {X}–{X} bond is half broken.",
+      "why": []
+    },
+    "hal_ion": {
+      "text": "A bridged [[halonium ion]]: {X} is bonded to both carbons and carries the +. It sits on one face of the old C=C and blocks that face.",
+      "why": [
+        "Every atom has a full octet, which is why this ion is more stable than an open carbocation and doesn't rearrange.",
+        "The three-membered ring is strained, so it is ready to be opened."
+      ]
+    },
+    "hal_meet_x": {
+      "text": "{Xm} comes back. The bridge blocks one face, so {Xm} must come in from the other face, opposite the {X}.",
+      "why": [
+        "Each C–{X}⁺ bond has an empty σ* orbital pointing out of the back of its carbon, just as in SN2 ([[backside attack]])."
+      ]
+    },
+    "hal_meet_water": {
+      "text": "Water is the solvent, so there is far more water than {Xm}: water opens the ion at the more substituted carbon, from the face opposite the {X}.",
+      "why": [
+        "Water attacks the more substituted carbon. That carbon holds more of the δ+ (its C–{X} bond is longer and weaker), so the nucleophile goes there even though it is more crowded. This is why OH ends up on the more substituted carbon."
+      ]
+    },
+    "hal_open": {
+      "text": "Arrow 1: the nucleophile's lone pair attacks the back of the carbon. Arrow 2: that C–{X} bond breaks and its electrons go back to {X}.",
+      "why": []
+    },
+    "hal_ts2": {
+      "text": "Transition state: the new bond is half made from the back while the C–{X} bond is half broken, like SN2.",
+      "why": []
+    },
+    "hal_product": {
+      "text": "The two {X} atoms end up on opposite faces: [[anti addition]].",
+      "why": [
+        "In a ring this gives the trans product. One alkene stereoisomer gives one set of product stereoisomers, so the course counts it as [[stereospecific]]."
+      ]
+    },
+    "hal_oxonium": {
+      "text": "Water is bonded through its O (an [[oxonium ion]], O⁺) on the face opposite the {X}: anti. One more step: it loses H⁺.",
+      "why": []
+    },
+    "hbr_init": {
+      "text": "Initiation. Heat or light breaks the weak O–O bond of the peroxide (ROOR) evenly: each O keeps one electron. A [[fishhook arrow]] (one barb) moves one electron.",
+      "why": [
+        "Breaking a bond evenly is [[homolytic cleavage]]. The O–O bond is the weakest bond around, so it is the one that breaks.",
+        "Only a trace of peroxide is needed: each radical starts a long [[chain reaction]]."
+      ]
+    },
+    "hbr_ro": {
+      "text": "Two RO• [[radical|radicals]]. One takes the H from H–Br: one electron from RO• and one from the H–Br bond make the new O–H bond; the other electron stays on Br.",
+      "why": [
+        "Three fishhooks: radical steps move single electrons. The O–H bond made is stronger than the H–Br bond broken, so this step is downhill."
+      ]
+    },
+    "hbr_br": {
+      "text": "Now Br• (a bromine atom with 7 electrons) is the radical that carries the chain.",
+      "why": [
+        "From here on, RO• isn't needed: each cycle makes a new Br•."
+      ]
+    },
+    "hbr_add": {
+      "text": "Propagation 1: Br• adds to the C=C. One π electron pairs with Br•'s electron to make the C–Br bond; the other π electron stays on the other carbon.",
+      "why": [
+        "This leaves the more stable {radical} radical. Radicals follow the same order as carbocations (3° > 2° > 1°), because alkyl groups also help a carbon that is short of electrons.",
+        "So Br ends up on the less substituted carbon: anti-Markovnikov. (In ionic HBr addition H adds first; here Br adds first, which is why the result flips.)"
+      ]
+    },
+    "hbr_radical": {
+      "text": "A {radical} carbon [[radical]]: seven electrons, one unpaired (the dot). It is nearly flat and somewhat electron-poor.",
+      "why": [
+        "Radicals don't do 1,2-shifts here, so the skeleton stays as drawn.",
+        "Nearly flat means either face can react next: a new stereocentre made here forms as a racemic mixture (or as diastereomers)."
+      ]
+    },
+    "hbr_prop2": {
+      "text": "Propagation 2: the carbon radical takes H from another H–Br. The C–H bond forms and Br• is set free.",
+      "why": [
+        "This Br• goes back to propagation 1, so the chain repeats thousands of times. It stops (termination) when two radicals happen to meet."
+      ]
+    },
+    "hbr_chain": {
+      "text": "Product made, and a new Br• carries on the chain. Only HBr works this way: with HCl or HI one of the two propagation steps is uphill, so peroxides change nothing.",
+      "why": []
+    },
+    "rad_init": {
+      "text": "Initiation. Light (hν) breaks the {X}–{X} bond evenly ([[homolytic cleavage]]): each atom keeps one electron. Each [[fishhook arrow]] moves one electron.",
+      "why": [
+        "The {X}–{X} bond is weak and absorbs light of the right energy. Without light (or heat), no radicals form and nothing happens."
+      ]
+    },
+    "rad_x": {
+      "text": "Two {X}• [[radical|radicals]]. Each has seven electrons and wants one more.",
+      "why": []
+    },
+    "rad_abstract": {
+      "text": "Propagation 1: {X}• pulls off an H atom. One electron of the C–H bond pairs with {X}•'s electron (new H–{X}); the other stays on the carbon.",
+      "why": [
+        "{X}• takes the H whose C–H bond is weakest, which leaves the most stable radical: 3° > 2° > 1° > CH₃.",
+        "With Br• this step is uphill, so its transition state looks like the radical it makes ([[Hammond postulate]]): small differences in radical stability matter a lot, and Br₂ is very selective. With Cl• it is downhill and early, so Cl₂ gives mixtures."
+      ]
+    },
+    "rad_carbon": {
+      "text": "A {radical} carbon [[radical]] (the dot): nearly flat and somewhat electron-poor. H{X} has left.",
+      "why": [
+        "Nearly flat: if this carbon becomes a stereocentre, both faces react and the product is racemic (or a mixture of diastereomers)."
+      ]
+    },
+    "rad_prop2": {
+      "text": "Propagation 2: the carbon radical pulls an {X} atom off another {X2}. A new C–{X} bond forms, and a new {X}• keeps the chain going.",
+      "why": []
+    },
+    "rad_chain": {
+      "text": "Product made, and {X}• goes back to propagation 1. The chain ends (termination) when two radicals meet.",
+      "why": []
+    },
+    "hb_meet": {
+      "text": "BH₃ (drawn as H–BH₂) meets the C=C. Boron has only six electrons and an empty p orbital, so it is the [[electrophile]]. The H on B is slightly δ− (B is less electronegative than H).",
+      "why": [
+        "BH₃ is used as BH₃·THF: THF lends boron a lone pair until the alkene arrives."
+      ]
+    },
+    "hb_arrows": {
+      "text": "Two arrows, one step: the π electrons go to B, and the B–H bond's electrons go to the other carbon (the H moves with them).",
+      "why": []
+    },
+    "hb_ts": {
+      "text": "A four-centre [[transition state]] (shaded): the C–B and C–H bonds form while the π and B–H bonds break, all at once ([[concerted]]). There is no carbocation, so nothing shifts.",
+      "why": [
+        "B goes to the less substituted carbon: it is less crowded, and the other carbon holds the small δ+ that builds up in the transition state better."
+      ]
+    },
+    "hb_borane": {
+      "text": "An [[organoborane]]: B on the less substituted carbon, H on the more substituted one, both on the same face ([[syn addition]]).",
+      "why": [
+        "Each BH₃ can add up to three times (to three alkenes); the drawing shows one."
+      ]
+    },
+    "hb_ox": {
+      "text": "Second part, H₂O₂ / HO⁻ (shown as one step): the C–B bond is replaced by C–OH with [[retention]]. The O takes exactly B's place, so OH stays syn to the new H.",
+      "why": [
+        "HOO⁻ adds to B, then the carbon group moves from B to O with its bonding electrons, keeping its configuration. Water then frees the alcohol.",
+        "Net result: OH on the less substituted carbon (anti-Markovnikov), with H and OH syn."
+      ]
+    },
+    "hyd_h2": {
+      "text": "H₂ meets the metal catalyst. The metal surface (grey bar) holds H atoms.",
+      "why": [
+        "Without a metal, H₂ doesn't add to a C=C at all: the [[catalyst]] gives a lower-energy path and isn't used up."
+      ]
+    },
+    "hyd_split": {
+      "text": "The H–H bond breaks on the metal and each H sits on the surface. The C=C lies flat on the metal with its less crowded face down.",
+      "why": [
+        "Bulky groups on the other face would bump into the flat metal, so the less crowded face is the one that touches it. The card's Face line says how the app decided which face that is."
+      ]
+    },
+    "hyd_split_same": {
+      "text": "The H–H bond breaks on the metal and each H sits on the surface. The C=C lies flat on the metal. Here both faces of the C=C are alike, so either face gives the same product (or its mirror image).",
+      "why": []
+    },
+    "hyd_split_mix": {
+      "text": "The H–H bond breaks on the metal and each H sits on the surface. The C=C lies flat on the metal, normally with its less crowded face down. Here the 3D shape doesn't show one face clearly less crowded, so the app shows both faces (a mixture) rather than guess.",
+      "why": []
+    },
+    "hyd_deliver": {
+      "text": "Both H atoms move from the metal to the two carbons, from the side touching the metal.",
+      "why": [
+        "The two H's actually add one after the other, but both come from the metal side, so they end up on the same face."
+      ]
+    },
+    "hyd_product": {
+      "text": "Both new H's are on the same face: [[syn addition]]. The C=C is now a C–C single bond.",
+      "why": []
+    },
+    "epo_meet": {
+      "text": "A [[peroxy acid]] (RCO₃H, e.g. mCPBA) meets the C=C. Its O–O bond is weak, and the end O (the one bonded to H) is electron-poor: the [[electrophile]].",
+      "why": [
+        "The O–H is hydrogen-bonded to the C=O of the same molecule, making a five-atom ring. That ring lets all the bonds change at once."
+      ]
+    },
+    "epo_arrows": {
+      "text": "Four arrows, one step (the \"butterfly\"): π electrons to the end O; the O–O bond's electrons make a new C=O; the old C=O π electrons take the H; the O–H electrons form the second C–O bond.",
+      "why": []
+    },
+    "epo_ts": {
+      "text": "One [[transition state]]: every bond changes at the same time ([[concerted]]). There is no intermediate, so nothing rotates or rearranges.",
+      "why": []
+    },
+    "epo_product": {
+      "text": "An [[epoxide]] (three-membered C–O–C ring) and a carboxylic acid. The O went to one face of the C=C, so both C–O bonds are on the same face: syn. A cis alkene gives a cis epoxide, a trans alkene a trans epoxide.",
+      "why": [
+        "That makes epoxidation [[stereospecific]]."
+      ]
+    },
+    "ozo_meet": {
+      "text": "O₃ (ozone) attacks the C=C.",
+      "why": [
+        "O₃ adds across the C=C to make a molozonide, which rearranges to an ozonide (a five-membered C–O–O–C–O ring). The app doesn't draw these: the course only asks for the final products."
+      ]
+    },
+    "ozo_cut": {
+      "text": "After the workup (DMS or Zn/HOAc) the C=C is cut completely, and each of its two carbons gets a C=O. A ring C=C gives one chain with a C=O at each end.",
+      "why": [
+        "Reductive workup keeps the H's on the carbonyl carbons, so aldehydes stay aldehydes. A carbon that had two carbon groups becomes a ketone.",
+        "Cut and number: number the carbons of the alkene, cut between the two C=C carbons, then put an =O on each. The numbers show where each old carbon ended up."
+      ]
+    },
+    "ozo_cut_multi": {
+      "text": "After the workup (DMS or Zn/HOAc) the C=C is cut completely, and each of its two carbons gets a C=O. This molecule has more than one C=C: every one is cut the same way, though the drawing shows only one.",
+      "why": [
+        "Reductive workup keeps the H's on the carbonyl carbons, so aldehydes stay aldehydes. A carbon that had two carbon groups becomes a ketone.",
+        "Cut and number: number the carbons of each alkene, cut between the two C=C carbons, then put an =O on each."
+      ]
+    },
+    "eo_protonate": {
+      "text": "Acid first: the epoxide O takes H⁺ from H₃O⁺. The C–O bonds get weaker and the ring carbons more δ+.",
+      "why": [
+        "An enzyme does the same thing with an acid group (such as a Tyr O–H) next to the ring O: it makes the O a better leaving group while a nucleophile attacks from the back."
+      ]
+    },
+    "eo_meet_acid": {
+      "text": "{Nu} attacks a carbon of the protonated ring from the back, like SN2. With acid it goes to the more substituted carbon when that carbon is 3°.",
+      "why": [
+        "In the protonated epoxide the C–O bond to the 3° carbon is the longer, weaker one, so that carbon carries the most δ+.",
+        "If neither carbon is 3°, the app shows both openings instead of choosing one."
+      ]
+    },
+    "eo_meet": {
+      "text": "{Nu} attacks the epoxide from the back, like SN2. With a base it goes to the less substituted (less crowded) carbon.",
+      "why": [
+        "The three-membered ring is strained, so even O⁻ (normally a poor leaving group) can leave here.",
+        "Backside attack is slow at a crowded carbon, so the less substituted carbon wins."
+      ]
+    },
+    "eo_attack": {
+      "text": "Arrow 1: {Nu}'s lone pair attacks the back of the carbon. Arrow 2: the ring C–O bond breaks and the ring opens.",
+      "why": []
+    },
+    "eo_ts": {
+      "text": "Transition state: the new C–O bond is half made and the ring C–O bond half broken ([[backside attack]]).",
+      "why": []
+    },
+    "eo_open_acid": {
+      "text": "The ring is open. The new O (from water, now O⁺) is on the face opposite the old ring O: anti, so the two O's end up trans.",
+      "why": []
+    },
+    "eo_open_base": {
+      "text": "The ring is open. The old ring O is now O⁻ (an alkoxide), and the new OH is on the opposite face: anti, so they end up trans.",
+      "why": []
+    },
+    "eo_protonate_o": {
+      "text": "[[proton transfer|Proton transfer]]: the O⁻ takes H⁺ from water, giving the neutral diol (and HO⁻ back).",
+      "why": []
+    },
+    "eo_result": {
+      "text": "Product ({rank}): {product}. {stereo} The two OH groups are anti (trans): epoxide opening is [[stereospecific]].",
+      "why": [
+        "The drawing is flat; the product card and its 3D model show the configuration worked out in 3D."
+      ]
+    },
     "sn2_meet": {
       "text": "Meet the players. {Nu} is the [[nucleophile]]: it is rich in electrons (red glow). The C–{LG} bond is polar (the dipole arrow points to {LG}), so the carbon is [[electrophile|electron-poor]] (δ+, blue glow) and {LG} is δ−.",
       "why": [
@@ -352,6 +692,19 @@
     "retention": "The carbon keeps its configuration (retention)."
   },
   "glossary": {
+    "Markovnikov's rule": "Markovnikov's rule: in HX or H₃O⁺ addition, H⁺ goes to the C=C carbon that leaves the more stable carbocation, so X (or OH) ends up on the more substituted carbon.",
+    "halonium ion": "Halonium ion: a three-membered ring with a positive halogen (Br⁺, Cl⁺) bonded to two carbons. It blocks one face, so the nucleophile adds from the other (anti).",
+    "anti addition": "Anti addition: the two new groups add to opposite faces of the C=C (Br₂, halohydrins; trans in a ring).",
+    "syn addition": "Syn addition: the two new groups add to the same face of the C=C (hydroboration, hydrogenation, epoxidation).",
+    "radical": "Radical: an atom or group with one unpaired electron (drawn as a dot). Stability: 3° > 2° > 1° > CH₃; allylic and benzylic are best.",
+    "fishhook arrow": "Fishhook arrow: a curved arrow with a single barb. It moves one electron (radical steps); a full arrowhead moves two.",
+    "homolytic cleavage": "Homolytic cleavage: a bond breaks evenly, one electron to each atom, giving two radicals (needs heat or light).",
+    "chain reaction": "Chain reaction: initiation makes radicals; propagation steps each use a radical and make a new one, so the cycle repeats; termination joins two radicals and stops it.",
+    "organoborane": "Organoborane: a compound with a C–B bond, made by hydroboration. H₂O₂/HO⁻ then swaps B for OH with retention.",
+    "peroxy acid": "Peroxy acid (peracid): RCO₃H, a carboxylic acid with an extra O (e.g. mCPBA). It gives one O to a C=C to make an epoxide.",
+    "epoxide": "Epoxide (oxirane): a three-membered ring of two carbons and one O. The ring is strained, so nucleophiles open it from the back (anti).",
+    "concerted": "Concerted: all the bond changes happen in one step, with one transition state and no intermediate.",
+    "Hammond postulate": "Hammond postulate: a transition state looks most like the species (reactant or product) closest to it in energy. An uphill step has a product-like transition state.",
     "nucleophile": "Nucleophile (Nu): an electron-rich species that donates an electron pair to form a new bond with an electron-poor atom. 'Nucleus-loving'.",
     "electrophile": "Electrophile: an electron-poor atom or molecule that accepts an electron pair. Here, the δ+ carbon bonded to the leaving group.",
     "electronegativity": "Electronegativity: how strongly an atom pulls shared bonding electrons towards itself. F > O > Cl > N > Br > I > C > H.",
@@ -454,6 +807,54 @@
     "layersCaption": "Show:"
   },
   "quiz": {
+    "add_h": {
+      "q": "Quiz: which C=C carbon will the H⁺ bond to? Tap it.",
+      "explain": "H⁺ bonds to the carbon that leaves the more stable carbocation on its partner: H to the less substituted end, the + on the more substituted one ([[Markovnikov's rule]])."
+    },
+    "hal_face": {
+      "q": "Quiz: which face does {Nu} attack from?",
+      "options": {
+        "front": "The same face as the bridge",
+        "back": "The opposite face"
+      },
+      "explain": "The opposite face: the bridging {X} blocks its own face, and the empty σ* orbitals point out of the back. So the two {X} atoms end up anti."
+    },
+    "water_carbon": {
+      "q": "Quiz: which carbon does water attack? Tap it.",
+      "explain": "The more substituted carbon: it carries more of the δ+ in the bridged ion, so OH ends up there and {X} on the other carbon."
+    },
+    "br_end": {
+      "q": "Quiz: which C=C carbon does Br• bond to? Tap it.",
+      "explain": "Br• adds to the less substituted end, so the unpaired electron lands on the more substituted carbon: the more stable radical (3° > 2° > 1°)."
+    },
+    "which_h": {
+      "q": "Quiz: which carbon does {X}• take an H from? Tap it.",
+      "explain": "{X}• takes the H on the carbon whose C–H bond is weakest: the one that leaves the most stable radical (3° > 2° > 1° > CH₃)."
+    },
+    "boron_carbon": {
+      "q": "Quiz: which C=C carbon does B bond to? Tap it.",
+      "explain": "B goes to the less substituted carbon (less crowded), and H to the more substituted one."
+    },
+    "same_face": {
+      "q": "Quiz: do B and H add to the same face of the C=C, or to opposite faces?",
+      "options": {
+        "same": "Same face",
+        "opposite": "Opposite faces"
+      },
+      "explain": "Same face: B and H come from one B–H bond, so they reach the two carbons from the same side ([[syn addition]])."
+    },
+    "metal_face": {
+      "q": "Quiz: which face of the C=C touches the metal?",
+      "options": {
+        "less": "The less crowded face",
+        "more": "The more crowded face"
+      },
+      "explain": "The less crowded face: bulky groups on the other face would bump into the flat metal surface. Both H's then add to that face."
+    },
+    "epox_attack": {
+      "q": "Quiz: which carbon does {Nu} attack? Tap it.",
+      "explain": "With acid: the more substituted (3°) carbon, which holds more δ+. With a base: the less substituted carbon, which is less crowded."
+    },
     "attack": {
       "q": "Quiz: tap the atom {Nu} attacks.",
       "explain": "{Nu} attacks the δ+ carbon that holds {LG} (Cα), from the back side."

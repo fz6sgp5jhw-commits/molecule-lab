@@ -41,7 +41,7 @@ try {
   ok(/Intermediate\s*carbocation/.test(card), 'card: Intermediate carbocation');
   ok(/Regiochemistry\s*Markovnikov/.test(card), 'card: Regiochemistry Markovnikov');
   ok(/Stereospecific\?\s*N/.test(card), 'card: Stereospecific? N');
-  ok(!(await page.$('#rxCards .rx-watch')), 'no Watch button until the addition viewer exists');
+  ok(!!(await page.$('#rxCards .rx-watch')), 'addition card has a ▶ Watch button (S4 viewer)');
   ok(/addition/i.test(await text('#rxPath')), 'decision path names the addition');
   // a 390 px phone: no sideways scrolling
   await page.setViewportSize({ width: 390, height: 844 });

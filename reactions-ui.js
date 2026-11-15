@@ -9,7 +9,7 @@ import { findReagent, matchMolecule, guessBox, notSNEReason, entryFromMolecule, 
 import { plan as planRoutes } from './planner.js';
 import { predict, runSequence, rankSN1, rankSN2, rankE1, rankAlkenes, rankRadicals, PATHWAYS, LAMPS } from './predict.js';
 import { mountGrid } from './pathway-grid-ui.js';
-import { TEMPLATES, PRELUDES, ACTIVATION } from './mech-templates.js';
+import { TEMPLATES, PRELUDES, ACTIVATION, ADD_TEMPLATES } from './mech-templates.js';
 import { openMechanism } from './mech-view.js';
 
 const $ = (id) => document.getElementById(id);
@@ -646,7 +646,7 @@ export async function mountReactions(app){
         ${p.via ? `<dt>Via</dt><dd>${esc(p.via)}</dd>` : ''}
       </dl>
       ${extra ? `<div class="note">${esc(extra)}</div>` : ''}
-      <div class="row"><button type="button" class="rx-load">Load into editor</button><button type="button" class="rx-3d">${esc(texts.ui.view3d)}</button>${(out || pw === 'activation') && !inMech && pw !== 'Addition' ? '<button type="button" class="rx-watch">▶ Watch</button>' : ''}</div>`;
+      <div class="row"><button type="button" class="rx-load">Load into editor</button><button type="button" class="rx-3d">${esc(texts.ui.view3d)}</button>${(out || pw === 'activation') && !inMech && (pw !== 'Addition' || addTemplate()) ? '<button type="button" class="rx-watch">▶ Watch</button>' : ''}</div>`;
     nameLine(p.mol, div.querySelector('.rx-nameline'));
     const w = div.querySelector('.rx-watch'); if (w) w.onclick = () => (pw === 'activation' ? openActivation(p) : openPathway(pw, p));
     div.querySelector('.rx-load').onclick = () => { st.keepOut = true; app.loadMolecule(p.mol.getCompactCopy()); $('editor').scrollIntoView({ behavior: smooth(), block: 'center' }); };
@@ -768,12 +768,12 @@ export async function mountReactions(app){
       mount.innerHTML = `<div class="msg warn">${esc(pw)} doesn’t happen here (lamp off). Tap a lit lamp.</div>`;
       win.scrollIntoView({ behavior: smooth(), block: 'start' }); return;
     }
-    if (!TEMPLATES[pw]){
+    if (pw === 'Addition' ? !addTemplate() : !TEMPLATES[pw]){
       mount.innerHTML = `<div class="msg warn">${esc(fill(texts.ui.comingSoon, { pw }))}</div>`;
       win.scrollIntoView({ behavior: smooth(), block: 'start' }); return;
     }
     const p = chosen || out.products[0];
-    const o = mechOptions(pw, p, out);
+    const o = pw === 'Addition' ? additionOptions(p, out) : mechOptions(pw, p, out);
     if (seq){ o.intro = seq.intro; o.offer = [seq.offer, o.offer].filter(Boolean); }
     st.mech = openMechanism(mount, o);
     win.scrollIntoView({ behavior: smooth(), block: 'start' });
@@ -860,6 +860,97 @@ export async function mountReactions(app){
       ...finalHooks(finalView(p, pw)),
       offer: offerFor(pw),
     };
+  }
+  // ---------- Ch 8/10 additions: which template, and the roles/flags/words for one product ----------
+  // the viewer template for the current result's addition row (null when the row names none)
+  function addTemplate(){ const a = st.res && st.res.addition; return a && ADD_TEMPLATES[a.template] || null; }
+  const RAD_CLS = ['methyl', '1°', '2°', '3°', '3°'];
+  const X2 = { Br: 'Br₂', Cl: 'Cl₂', I: 'I₂', F: 'F₂' };
+  function additionOptions(p, out){
+    const res = st.res, a = res.addition, r = st.rx.reagent, entry = addTemplate();
+    const m = res.subMol.getCompactCopy(); m.ensureHelperArrays(OCL.Molecule.cHelperRings);
+    const carbons = (x) => { let n = 0; for (let i = 0; i < m.getConnAtoms(x); i++) if (m.getAtomicNo(m.getConnAtom(x, i)) === 6) n++; return n; };
+    const [x, y] = out.alkene || [];
+    const other = (q) => (q === x ? y : x);
+    const flags = { ...(entry.flags || {}), major: p.rank === 'major', multi: out.alkenes > 1 };
+    const notes = res.reasons || [];
+    flags.tie = ['markovnikov_tie', 'boron_tie', 'epoxide_tie', 'epoxide_acid_mixed'].some((k) => notes.includes(k));
+    const roles = {};
+    const X = r.x || (r.nu && r.nu.smiles) || 'Br';
+    const tokens = {}, virt = {};
+    const vars = { Reagent: r.label, X, Xm: X + '⁻', X2: X2[X] || X + '₂', rank: p.rank || '', via: p.via || '', cat: 'metal' };
+    const cls = (q) => CLS_TEXT[Math.min(3, carbons(q))] || `${carbons(q)}°`;
+    const meter = (q) => Math.max(1, Math.min(4, carbons(q) + 1)); // 1° → 2 … 3° → 4 (schematic)
+    const t = entry.t, tpl = a.template;
+    if (tpl === 'addHX' || tpl === 'hydration'){
+      roles.a = p.protonated; roles.b = other(p.protonated); roles.ca = roles.b; roles.c = p.centre ?? roles.b;
+      if (['H', 'alkyl', 'ring'].includes(p.shift)){ flags.shift = true; flags['shift' + { H: 'H', alkyl: 'Alkyl', ring: 'Ring' }[p.shift]] = true; roles.n = p.centre; roles.g = p.group ?? null; }
+      flags.canShift = (out.cations || []).some((c) => ['H', 'alkyl', 'ring'].includes(c.shift));
+      const water = !!flags.water;
+      virt.e = { atom: 'H' };
+      virt.ex = water ? { atom: 'O', rest: 'H₂' } : { atom: X };
+      virt.nu = water ? { atom: 'O', rest: 'H₂' } : { atom: X };
+      Object.assign(tokens, { exDelta: water ? '' : 'δ−', exBound: water ? '+' : '', exFree: water ? '' : '−', nu: water ? '' : '−', nuAfter: water ? '+' : '', nuRestOx: 'H₂', nuRestR: 'H', c0: meter(roles.b), c1: p.cationCarbons ? Math.max(1, Math.min(4, p.cationCarbons + 1)) : meter(roles.c) });
+      Object.assign(vars, { Nu: water ? 'H₂O' : X + '⁻', exGone: water ? 'H₂O' : X + '⁻', cation: cls(roles.b), cation2: p.cationCarbons ? CLS_TEXT[p.cationCarbons] || `${p.cationCarbons}°` : cls(roles.c) });
+    } else if (tpl === 'halonium' || tpl === 'halohydrin'){
+      roles.b = p.attack ?? y; roles.a = other(roles.b); roles.ca = roles.b;
+      const water = !!flags.water;
+      virt.e = { atom: X }; virt.ex = { atom: X };
+      virt.nu = water ? { atom: 'O', rest: 'H₂' } : { atom: X };
+      Object.assign(tokens, { nu: water ? '' : '−', nuAfter: water ? '+' : '', nuDelta: water ? 'δ+' : 'δ−', nuRestOx: 'H₂', nuRestR: 'H' });
+      vars.Nu = water ? 'H₂O' : X + '⁻';
+    } else if (tpl === 'hbrRadical'){
+      roles.a = p.brOn; roles.b = p.centre; roles.ca = roles.b;
+      virt.i1 = { atom: 'RO' }; virt.i2 = { atom: 'OR' }; virt.e = { atom: 'H' }; virt.ex = { atom: 'Br' }; virt.w1 = { atom: 'H' }; virt.w2 = { atom: 'Br' };
+      tokens.c0 = meter(roles.b); vars.radical = cls(roles.b);
+    } else if (tpl === 'radicalHalogenation'){
+      roles.a = p.centre; roles.ca = p.centre;
+      virt.e = { atom: 'H' }; for (const k of ['i1', 'i2', 'w1', 'w2']) virt[k] = { atom: X };
+      flags.quizH = a.regio === 'weakest-ch' && p.rank === 'major';
+      tokens.c0 = Math.max(1, Math.min(4, (p.radicalClass ?? 1) + 1)); vars.radical = RAD_CLS[p.radicalClass ?? 1];
+    } else if (tpl === 'hydroboration'){
+      roles.a = p.regio ?? x; roles.b = other(roles.a); roles.ca = roles.a;
+      virt.e = { atom: 'BH₂' }; virt.ex = { atom: 'H' };
+    } else if (tpl === 'hydrogenation' || tpl === 'epoxidation' || tpl === 'ozonolysis'){
+      roles.a = x; roles.b = y; roles.ca = x;
+      if (tpl === 'hydrogenation'){ virt.e = { atom: 'H' }; virt.ex = { atom: 'H' }; tokens.cat = 'metal surface'; }
+      if (tpl === 'epoxidation'){ virt.e = { atom: 'O' }; virt.ex = { atom: 'O' }; virt.e2 = { atom: 'C', rest: '(R)' }; virt.e3 = { atom: 'O' }; virt.e4 = { atom: 'H' }; }
+      if (tpl === 'ozonolysis'){ virt.e = { atom: 'O' }; virt.ex = { atom: 'O' }; }
+    } else if (tpl === 'epoxideOpening'){
+      const ep = out.epoxide;
+      roles.ca = p.attack; roles.lg = ep.o; roles.b = ep.c.find((q) => q !== p.attack); roles.c = p.attack;
+      const acid = a.row === 'epoxide_acid';
+      flags.acid = acid;
+      virt.nu = acid ? { atom: 'O', rest: 'H₂' } : { atom: 'O', rest: 'H' };
+      virt.hx = { atom: 'OH₂' };
+      Object.assign(tokens, { nu: acid ? '' : '−', nuAfter: acid ? '+' : '', nuDelta: acid ? 'δ+' : 'δ−', lgLabel: acid ? 'OH' : 'O', lgOn: acid ? '+' : '', lgAfter: acid ? '' : '−', nuRestOpen: acid ? 'H₂' : 'H' });
+      vars.Nu = acid ? 'H₂O' : 'HO⁻';
+    }
+    // faces (stereo additions): tier 0 = the faces are alike; 3 = not decided
+    const tier = out.face ? out.face.tier : null;
+    flags.faceSame = tier === 0; flags.faceMix = tier === 3;
+    vars.stereo = addStereo(p, a, out);
+    const site = { ca: roles.ca, lgAtom: roles.lg ?? null };
+    return {
+      OCL, mol: m, site, roles, flags, tokens, virt, template: t, texts, labels: {},
+      vars, productName: nameOf(p.mol).then((n) => String(n.name || n.why || '').replace(/\.$/, '')),
+      ...finalHooks(finalView(p, 'Addition')),
+      offer: null,
+    };
+  }
+  // one sentence about this product's stereo, from the engine's labels (never worked out here)
+  function addStereo(p, a, out){
+    const flat = /cation|radical/.test(a.intermediate);
+    const S = { racemic: flat ? 'Racemic (±): the flat intermediate is attacked from both faces equally.' : 'Racemic (±): the mirror-image product forms in equal amounts (the reagent can start on either face).',
+      meso: 'Meso: the product has a mirror plane, so it is achiral.', achiral: 'No stereocentre, only cis/trans on the ring.',
+      single: 'One stereoisomer: the starting material was one enantiomer.', relative: 'Only the relative configuration is known (the start was drawn without wedges).',
+      mixture: 'A mixture of stereoisomers forms.' };
+    let t = p.stereo ? S[p.stereo] || '' : 'No new stereocentre.';
+    const f = out.face;
+    if (f && f.tier === 1) t += ` Face: computed from the 3D shape (the other face is ${f.ratio.toFixed(1)}× more crowded).`;
+    else if (f && f.tier === 2) t += ' Face: course rule, anti to the group on the neighbouring stereocentre.';
+    else if (f && f.tier === 3) t += ' Face: not decided, so both faces are shown (diastereomers).';
+    return t;
   }
   // "E1 also competes here. See it?": another lit pathway (its partner first), with why it's major/minor
   function offerFor(pw){

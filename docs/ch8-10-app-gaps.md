@@ -365,7 +365,7 @@ Every session follows the "Saving tokens" rules in `mechanisms-plan.md`:
    - Alkane C–H sites, Br₂/hν vs Cl₂/hν rows, radical stability ranking in ranking mode, `allylic_needs_nbs`.
    - Full sequences A-2f, 2o, 2p, Q10 (runSequence).
    - Answer the Q5 question with Peter first; then add A-Q5 with the agreed tag.
-4. **S4: viewer.**
+4. **S4: viewer.** ✅ 2026-11-14. All ten templates plus `hydration` (addHX with water), each opened from ▶ Watch on the Addition card; fishhooks, radical dots, bridge, ts4, surface, fragments; quizzes (tap, and a new `choice` kind). `tests/mech-add-ui.test.mjs` walks every template with the overlap check, which now also flags a reagent atom drawn on a bond. Not done: termination frames (P2), numbered atoms for ozonolysis's “cut and number” (the tip is a WHY page). Peter still has to review the look.
    - Renderer fields: fishhook, radical dot, bridge, ts4, surface, fragments.
    - Templates `addHX`, `halonium`, `halohydrin`, `hbrRadical`, `radicalHalogenation`, `hydroboration`, `epoxidation`, `hydrogenation`, `ozonolysis`, `epoxideOpening`; text in `mech-text.json`; quiz points.
    - Extend `reactions-ui.test.mjs` to open each one once, with the overlap check on every frame.

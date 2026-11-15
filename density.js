@@ -10,7 +10,8 @@
 // onium O⁺ is weak because neutral water/alcohol leaves easily). It only sets how full a bond's cloud looks.
 //
 // density(graph) → { atoms: [{ score, level }], bonds: [{ weight, shift, polar, toB, size }] }
-//   graph.atoms: [{ el: 'C' | 'Br' | …, charge: -1 | 0 | 1, delta: -1 | 0 | 1 }]
+//   graph.atoms: [{ el: 'C' | 'Br' | …, charge: -1 | 0 | 1, delta: -1 | 0 | 1, radical?: true }]
+//   A radical carbon (7 electrons) is somewhat electron-poor: one level only (poor1), never as poor as C⁺.
 //   graph.bonds: [{ a, b, order: 1 | 2 | 3, state: 'full' | 'breaking' | 'forming' | 'partial' | 'pdouble' }]
 //   level: 'rich' | 'rich1' | 'neutral' | 'poor1' | 'poor' (rich1/poor1 = somewhat)
 //   weight: how full the bond's cloud is (0..~1.6); shift: 0..0.3 of the bond length toward the
@@ -22,7 +23,8 @@ const HETERO = new Set(['N', 'O', 'S', 'F', 'Cl', 'Br', 'I', 'P']);
 const TO_C = { H: 1, C: 1, O: 0.95, N: 0.92, F: 1, S: 0.8, P: 0.8, Cl: 0.8, Br: 0.66, I: 0.52 };
 const STATE_W = { full: 1, breaking: 0.7, forming: 0.22, partial: 0.4, pdouble: 1.3 };
 
-export function elementOf(label){ const m = /^[A-Z][a-z]?/.exec(String(label || '')); return m && (m[0] in EN) ? m[0] : (m && m[0][0] in EN ? m[0][0] : 'C'); }
+// "RO" / "OR" (an alkoxy group) is an O; a leading R before another element is the R group, not an element
+export function elementOf(label){ const m = /^[A-Z][a-z]?/.exec(String(label || '').replace(/^R(?=[A-Z])/, '')); return m && (m[0] in EN) ? m[0] : (m && m[0][0] in EN ? m[0][0] : 'C'); }
 
 export function levelOf(s){ return s >= 0.55 ? 'rich' : s >= 0.2 ? 'rich1' : s <= -0.55 ? 'poor' : s <= -0.2 ? 'poor1' : 'neutral'; }
 
@@ -37,6 +39,7 @@ export function density(graph){
     const het = HETERO.has(x.el);
     if (x.charge < 0) s[i] += 1;
     else if (x.charge > 0) s[i] += het ? -0.35 : -1;
+    else if (x.radical && x.el === 'C') s[i] -= 0.3;
     else if (x.delta) s[i] += 0.45 * x.delta * -1; // delta +1 = δ+ (poor), −1 = δ− (rich)
     else if (het && x.el !== 'P') s[i] += 0.3;
   });

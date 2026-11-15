@@ -26,5 +26,16 @@ window.__mvOverlaps = () => {
       }
     }
   }
+  // a reagent atom (drawn by the viewer, not part of the substrate) lying on a bond it isn't part of
+  for (const t of texts.filter((x) => x.classList.contains('mv-nu'))){
+    const a = ink(t), cx = (a.left + a.right) / 2, cy = (a.top + a.bottom) / 2, box = { l: a.left + 1, r: a.right - 1, t: a.top, b: a.bottom };
+    for (const [p, q] of lines){
+      if (Math.hypot(p.x - cx, p.y - cy) < 18 || Math.hypot(q.x - cx, q.y - cy) < 18) continue; // its own bond
+      for (let k = 0; k <= 20; k++){
+        const x = p.x + (q.x - p.x) * k / 20, y = p.y + (q.y - p.y) * k / 20;
+        if (x > box.l && x < box.r && y > box.t && y < box.b){ bad.push(`${t.textContent}~bond`); break; }
+      }
+    }
+  }
   return bad;
 };

@@ -251,7 +251,7 @@ function buildStereo(OCL, m, x, y, t, r, K, out){
     seen.add(p.ids.id);
     let mol = p.mol, stereo = p.stereo;
     if (st.geometryUnknown && stereo){ mol = mol.getCompactCopy(); mol.stripStereoInformation(); mol.ensureHelperArrays(OCL.Molecule.cHelperCIP); stereo = 'mixture'; }
-    list.push(product(mol, { key: [rank === 'minor' ? 0 : 1], via: VIA[t.build] || t.build, face: p.f, stereo }));
+    list.push(product(mol, { key: [rank === 'minor' ? 0 : 1], via: VIA[t.build] || t.build, face: p.f, stereo, attack: p.v.attack, regio: p.v.regio }));
   };
   for (const p of major) push(p, 'major');
   for (const p of minor) push(p, 'minor');
@@ -406,6 +406,9 @@ export function predictAddition(OCL, mol, r, opts = {}, data){
   if (st.has('achiral')) res.reasons.push('achiral_cis_trans');
   if (st.has('single')) res.reasons.push('single_isomer');
   if (st.has('relative')) res.reasons.push('relative_only');
+  // for the mechanism viewer: the prepared substrate (every atom index above refers to it) and the reacting atoms
+  res.subMol = m;
+  out.alkene = cc[0] || null; out.epoxide = ep || null; out.alkenes = cc.length;
   res.pathways.Addition = out;
   res.lamps.Addition = 'major';
   return res;
