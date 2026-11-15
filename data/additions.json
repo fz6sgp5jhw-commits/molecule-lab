@@ -1,5 +1,5 @@
 {
-  "_about": "Alkene addition rows (docs/ch8-10-app-gaps.md, 'Design: an addition engine that never guesses'). Checked in order, first match wins, like rules.json. when: sub (alkene | alkane | epoxide), act (the reagent's `add` role in reagents.json), x (halogen of HX/X2), heat, light, peroxide, water. then: intermediate (cation | halonium | radical | concerted | surface | ozonide | none), regio (markovnikov | anti-markovnikov | none), stereo (syn | anti | none), shifts, adds { more, less } (what ends up on the more / less substituted C=C carbon), stereospecific (Y | N), build (markovnikov | radical | ozonolysis | halonium | hydroboration | hydrogenation | epoxidation | epoxideOpen; missing = the product builder isn't written yet, so the row says addition_not_yet but still reports its classification), session (when the builder lands), template (viewer, S4), reasons. notCovered rows stop with that reason. Rows may carry tags: course | disagree.",
+  "_about": "Alkene addition rows (docs/ch8-10-app-gaps.md, 'Design: an addition engine that never guesses'). Checked in order, first match wins, like rules.json. when: sub (alkene | alkane | epoxide), act (the reagent's `add` role in reagents.json), x (halogen of HX/X2), heat, light, peroxide, water. then: intermediate (cation | halonium | radical | concerted | surface | ozonide | none), regio (markovnikov | anti-markovnikov | none), stereo (syn | anti | none), shifts, adds { more, less } (what ends up on the more / less substituted C=C carbon), stereospecific (Y | N), build (markovnikov | radical | ozonolysis | halonium | hydroboration | hydrogenation | epoxidation | epoxideOpen | radicalSub; missing = the product builder isn't written yet, so the row says addition_not_yet but still reports its classification), session (when the builder lands), template (viewer, S4), reasons. notCovered rows stop with that reason. Rows may carry tags: course | disagree.",
   "faces": {
     "_about": "Facial selectivity probe and 3D placement (faces.js). probeHeight/cutoff in Å; ratio = more ÷ less hindered face needed for tier 1 (computed); agreeWindow in kcal/mol (every conformer this close to the lowest must agree); bond = Å from the carbon for each new atom (by atomic number). Calibration (S2, 2026-11-14, seeds 42/1/7/99): 2a 1.74, 2m 1.69, 2j 1.47–1.70 → tier 1; 2i 1.27–1.33 and 3-methylcyclohexene (a textbook mixture) 1.23–1.28 overlap within seed noise, so the doc's 1.3 was raised to 1.4: 2i falls to tier 2 with the same answer, 3-methylcyclohexene stays a mixture. 2c 1.05, Q4 1.04–1.26, 4-Me/4-tBu-cyclohexene and 1-Me-4-tBu-cyclohexene ≤ 1.07, norbornene 1.00 (textbook: exo, so the probe can't see that one: tier 3), camphene 1.02.",
     "probeHeight": 2.0, "cutoff": 3.0, "ratio": 1.4, "agreeWindow": 1.5, "maxConformers": 16, "temperature": 298, "bond": { "1": 1.09, "8": 1.43, "17": 1.78, "35": 1.94, "53": 2.14 }
@@ -13,7 +13,12 @@
     { "id": "needs_workup", "when": { "act": ["BH3", "O3"] }, "notCovered": "needs_workup" },
     { "id": "needs_catalyst", "when": { "act": "H2" }, "notCovered": "needs_catalyst" },
     { "id": "oxidative_workup", "when": { "act": "O3ox" }, "notCovered": "oxidative_workup" },
-    { "id": "alkane_radical", "when": { "sub": "alkane", "act": "X2", "light": true }, "notCovered": "radical_not_yet" },
+    { "id": "radical_br", "when": { "sub": "alkane", "act": "X2", "light": true, "x": "Br" },
+      "then": { "intermediate": "radical", "regio": "weakest-ch", "stereo": "none", "shifts": false, "stereospecific": "N", "build": "radicalSub", "selective": true, "template": "radicalHalogenation", "reasons": ["radical_chain", "br_selective", "radical_no_shift"] } },
+    { "id": "radical_cl", "when": { "sub": "alkane", "act": "X2", "light": true, "x": "Cl" },
+      "then": { "intermediate": "radical", "regio": "every-ch", "stereo": "none", "shifts": false, "stereospecific": "N", "build": "radicalSub", "selective": false, "template": "radicalHalogenation", "reasons": ["radical_chain", "radical_no_shift"] } },
+    { "id": "radical_other", "when": { "sub": "alkane", "act": "X2", "light": true }, "notCovered": "radical_x_not_covered" },
+    { "id": "alkane_dark", "when": { "sub": "alkane", "act": "X2" }, "notCovered": "radical_needs_light" },
     { "id": "hbr_radical", "when": { "sub": "alkene", "act": "HX", "x": "Br", "peroxide": true },
       "then": { "intermediate": "radical", "regio": "anti-markovnikov", "stereo": "none", "shifts": false, "adds": { "more": "H", "less": "X" }, "stereospecific": "N", "build": "radical", "template": "hbrRadical", "reasons": ["hbr_radical", "radical_no_shift"] } },
     { "id": "hx_peroxide", "when": { "sub": "alkene", "act": "HX", "peroxide": true },
@@ -42,7 +47,6 @@
   "reasons": {
     "not_sn_e_reagent": "This isn’t an SN/E reagent (it has an O–O, X–X or H–H bond, or boron: an oxidant, halogen, H₂ or borane), so no SN/E role is estimated for it. If it’s in the reagent list, type its name instead.",
     "addition_not_yet": "This addition (Ch 8) isn’t built yet, so no product is shown. The card still says what kind of addition it is.",
-    "radical_not_yet": "This is an alkane with a halogen and light: radical halogenation (Ch 10) isn’t covered yet.",
     "addition_alkene_type": "A C=C carbon here carries O, N, a halogen, or is conjugated with C=O or C≡N. Those change where H⁺ adds, and the addition engine doesn’t cover them yet.",
     "conjugated_diene": "Conjugated diene: 1,2- vs 1,4-addition isn’t covered yet.",
     "several_alkenes": "This molecule has more than one C=C, and one equivalent of reagent could add to either. The app doesn’t pick one.",
@@ -90,6 +94,14 @@
     "epoxide_acid_mixed": "In acid, a 1° vs 2° epoxide carbon isn’t clear-cut (sterics and δ+ pull opposite ways), so both products are shown.",
     "achiral_cis_trans": "The product is achiral: its only stereochemistry is cis/trans on the ring, so it forms as one cis/trans isomer with no racemate.",
     "stereospecific_meaning": "Stereospecific (textbook meaning): stereoisomeric starting alkenes give different stereoisomeric products. For example, (E)-but-2-ene + Br₂ gives meso-2,3-dibromobutane, while (Z)-but-2-ene gives the racemate.",
-    "stereospecific_course": "Your course key calls this addition stereospecific because the mechanism fixes how the groups add (anti, through the bridged ion), even when there is no E/Z pair to compare (Q8C)."
+    "stereospecific_course": "Your course key calls this addition stereospecific because the mechanism fixes how the groups add (anti, through the bridged ion), even when there is no E/Z pair to compare (Q8C).",
+    "radical_chain": "Radical chain: light splits X–X into 2 X• (initiation). X• takes an H to leave a carbon radical, which takes X from X₂ and makes a new X• (propagation).",
+    "br_selective": "Br• is very selective: taking an H is uphill for Br•, so the transition state is late and looks like the radical (Hammond). The most stable radical (3° > 2° > 1° > CH₃) wins, so its bromide is the major product.",
+    "cl_unselective": "Cl• is much less selective: taking an H is downhill for Cl•, so the transition state is early and barely feels the radical's stability (Hammond). Every kind of H is replaced, giving a mixture (shown as competing; the app doesn't give percentages).",
+    "radical_x_not_covered": "Only Br₂ and Cl₂ radical halogenations are covered (F₂ is explosive, and I₂ doesn't react).",
+    "radical_needs_light": "An alkane doesn't react with Br₂ or Cl₂ in the dark: radical halogenation needs light (hν) or heat to split X–X. Add “light” (e.g. “Br2, hv”).",
+    "radical_heteroatom": "This molecule has O, N or a halogen. A C–H next to it behaves differently in radical reactions, and that isn't covered.",
+    "no_ch": "There is no C–H a halogen radical could take here.",
+    "bridged_rearranges": "This C=C is in a bridged ring system (like norbornene, α-pinene or camphene). There the carbocation, bridged ion or radical rearranges (Wagner–Meerwein shift, ring opening), and that isn't covered. Concerted additions (H₂/cat, peracids, BH₃) still work."
   }
 }

@@ -402,6 +402,42 @@ export function rankE1(OCL, mols){
   }));
 }
 
+// ---------- radical stability (Ch 10) ----------
+// A drawn radical (one atom with a radical flag) is ranked by its own carbon; an alkane with none is ranked by the
+// best radical its weakest C–H gives. Key: allylic/benzylic (resonance) first, then carbons on the radical C
+// (3° > 2° > 1° > CH₃). Vinyl/aryl radicals come last. Rules, not energies.
+const RAD_CLS = ['methyl', '1°', '2°', '3°'];
+export function rankRadicals(OCL, mols){
+  const M = OCL.Molecule;
+  return rank(mols.map((mol, index) => {
+    const m = mol.getCompactCopy(); m.removeExplicitHydrogens(); m.ensureHelperArrays(M.cHelperRings);
+    const score = (a) => {
+      let carbons = 0, sp2 = m.isAromaticAtom(a), ab = false;
+      for (let i = 0; i < m.getConnAtoms(a); i++){
+        const n = m.getConnAtom(a, i);
+        if (m.getAtomicNo(n) === 6) carbons++;
+        if (m.getConnBondOrder(a, i) > 1) sp2 = true;
+        if (m.isAromaticAtom(n)) ab = true;
+        for (let j = 0; j < m.getConnAtoms(n); j++) if (m.getConnAtom(n, j) !== a && m.getConnBondOrder(n, j) > 1) ab = true;
+      }
+      if (sp2) return { key: [-1, 0], text: 'vinyl/aryl radical (sp², least stable)' };
+      return { key: [ab ? 1 : 0, carbons], text: `${RAD_CLS[carbons] || carbons + '°'} radical${ab ? ', allylic/benzylic (spread out by resonance)' : ''}` };
+    };
+    const rad = [];
+    for (let a = 0; a < m.getAtoms(); a++) if (m.getAtomRadical(a) && m.getAtomicNo(a) === 6) rad.push(a);
+    if (rad.length > 1) return { index, none: true, reason: 'more than one radical centre' };
+    if (rad.length) { const s = score(rad[0]); return { index, key: s.key, reason: s.text }; }
+    let best = null;
+    for (let a = 0; a < m.getAtoms(); a++){
+      if (m.getAtomicNo(a) !== 6 || m.getAllHydrogens(a) === 0) continue;
+      const s = score(a);
+      if (!best || s.key[0] > best.key[0] || (s.key[0] === best.key[0] && s.key[1] > best.key[1])) best = s;
+    }
+    if (!best) return { index, none: true, reason: 'no radical drawn, and no C–H to take' };
+    return { index, key: best.key, reason: `no radical drawn: its weakest C–H gives a ${best.text}` };
+  }));
+}
+
 // ---------- alkene stability (worksheet Ch 7 Q8) ----------
 // Rule-based, never MMFF (energies of different constitutional isomers can't be compared that way).
 // Key, compared in order: conjugated C=C's > more alkyl groups on the C=C > no small-ring strain (C=C in or

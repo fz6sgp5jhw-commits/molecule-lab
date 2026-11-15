@@ -4,6 +4,7 @@
 // stereospecific). Never guesses: a case the rows or builders don't cover returns { notCovered }.
 //
 // Built in S1: Markovnikov HX / H₃O⁺ (with shifts), HBr/ROOR (radical, anti-Markovnikov), ozonolysis.
+// S2: stereo additions in 3D (faces.js) and epoxide opening. S3: radical halogenation of alkanes.
 // Rows whose builder isn't written yet (X₂, BH₃, H₂/cat, peracids: S2) still report their classification
 // and stop with addition_not_yet. New stereocentres are never given an invented configuration: products
 // are labelled racemic (±) or mixture, and drawn without wedges at the new centres.
@@ -298,6 +299,50 @@ export function epoxideOf(OCL, m){
   return null;
 }
 
+// ---------- S3: radical halogenation of alkanes (X₂ + light) ----------
+// Br• takes the weakest C–H (the one leaving the most stable radical: 3° > 2° > 1° > CH₃), so the top class is
+// major and the rest minor; two different positions of the top class are competing. Cl• is much less selective
+// (its H-abstraction is downhill, an early transition state: Hammond), so every position is competing, with no
+// percentages. Allylic/benzylic C–H needs NBS (not covered); C–H next to O/N/halogen isn't covered either.
+const CLS = ['methyl', '1°', '2°', '3°', '4°'];
+function buildRadicalSub(OCL, m, r, t, out){
+  for (let a = 0; a < m.getAtoms(); a++) if (m.getAtomicNo(a) !== 6) return 'radical_heteroatom';
+  const X = { smiles: r.x === 'Cl' ? 'Cl' : 'Br', atom: 0 };
+  const list = [];
+  for (let a = 0; a < m.getAtoms(); a++){
+    if (m.isAromaticAtom(a) || m.getAllHydrogens(a) === 0) continue;
+    let sp2 = false, ab = false;
+    for (let i = 0; i < m.getConnAtoms(a); i++){
+      const n = m.getConnAtom(a, i);
+      if (m.getConnBondOrder(a, i) > 1) sp2 = true;
+      if (m.isAromaticAtom(n)) ab = true;
+      for (let j = 0; j < m.getConnAtoms(n); j++) if (m.getConnAtom(n, j) !== a && m.getConnBondOrder(n, j) > 1) ab = true;
+    }
+    if (sp2) continue; // vinyl/aryl C–H: much stronger, not taken
+    if (ab) return 'allylic_needs_nbs';
+    const cls = carbonCount(m, a);
+    const b = buildProduct(OCL, m, { attach: [{ to: a, frag: X }] });
+    list.push(product(b.mol, { key: [t.selective ? cls : 0], via: `${CLS[cls]} C–H → ${CLS[cls]} radical, then X–X`, radicalClass: cls, centre: a, stereo: flatStereo(b.mol, [b.map[a]]) }));
+  }
+  if (!list.length) return 'no_ch';
+  out.products = rankProducts(list);
+  if (!t.selective && out.products.length > 1) out.notes.push('cl_unselective');
+  return null;
+}
+
+// Norbornene, α-pinene, camphene: a cation (or bridged ion, or radical) next to a bridged bicyclic skeleton
+// rearranges (Wagner–Meerwein, ring opening). True if the C=C is in a ring that shares ≥ 3 atoms with another.
+function bridgedAlkene(OCL, m, x, y){
+  m.ensureHelperArrays(OCL.Molecule.cHelperRings);
+  const rs = m.getRingSet(), rings = [];
+  for (let i = 0; i < rs.getSize(); i++) rings.push(rs.getRingAtoms(i));
+  for (const r of rings){
+    if (!r.includes(x) && !r.includes(y)) continue;
+    for (const q of rings) if (q !== r && q.filter((a) => r.includes(a)).length >= 3) return true;
+  }
+  return false;
+}
+
 const SUBST = ['unsubstituted', 'monosubstituted', 'disubstituted', 'trisubstituted', 'tetrasubstituted'];
 
 // predictAddition(OCL, mol, reagent, opts, data) → a predict()-shaped result, or null when this isn't an
@@ -322,15 +367,16 @@ export function predictAddition(OCL, mol, r, opts = {}, data){
   res.addition = { row: row.id, intermediate: t.intermediate, regio: t.regio, stereo: t.stereo, shifts: t.shifts, stereospecific: t.stereospecific, adds: t.adds, template: t.template, tags: [...(row.tags || t.tags || [])] };
   const carbonsOn = (a) => { let n = 0; for (let i = 0; i < m.getConnAtoms(a); i++) if (m.getAtomicNo(m.getConnAtom(a, i)) === 6) n++; return n; };
   res.path = [
-    { step: 'substrate', text: ep ? 'epoxide (three-membered C–O–C ring)' : cc.length === 1 ? `alkene (${SUBST[carbonsOn(cc[0][0]) + carbonsOn(cc[0][1]) - 2] || ''} C=C)` : `${cc.length} C=C` },
-    { step: 'reagent', text: ep ? `${r.label}: opens the strained ring` : `${r.label}: adds across the C=C` },
+    { step: 'substrate', text: !cc.length && !ep ? 'alkane (C–H bonds only)' : ep ? 'epoxide (three-membered C–O–C ring)' : cc.length === 1 ? `alkene (${SUBST[carbonsOn(cc[0][0]) + carbonsOn(cc[0][1]) - 2] || ''} C=C)` : `${cc.length} C=C` },
+    { step: 'reagent', text: ep ? `${r.label}: opens the strained ring` : !cc.length ? `${r.label}: X• takes an H (radical chain)` : `${r.label}: adds across the C=C` },
     { step: 'conditions', text: [facts.heat && 'heat', facts.light && 'light', facts.peroxide && 'peroxides'].filter(Boolean).join(', ') || 'no heat or light' },
   ];
   if (!t.build) return { ...res, notCovered: 'addition_not_yet', session: t.session };
-  if (t.build !== 'ozonolysis' && !ep){
+  if (t.build !== 'ozonolysis' && !ep && cc.length){
     const prob = alkeneProblem(OCL, m, cc);
     if (prob) return { ...res, notCovered: prob };
     if (cc.length > 1) return { ...res, notCovered: 'several_alkenes' };
+    if (['cation', 'halonium', 'radical'].includes(t.intermediate) && bridgedAlkene(OCL, m, cc[0][0], cc[0][1])) return { ...res, notCovered: 'bridged_rearranges' };
   }
   res.reasons.push(...(t.reasons || []));
   const out = { lamp: 'major', stereospecific: t.stereospecific === 'Y', products: [], notes: [] };
@@ -342,10 +388,11 @@ export function predictAddition(OCL, mol, r, opts = {}, data){
   else if (t.build === 'radical') buildRadical(OCL, m, x, y, nu, out);
   else if (t.build === 'ozonolysis') buildOzonolysis(OCL, m, cc, out);
   else if (t.build === 'epoxideOpen') stop = buildEpoxideOpening(OCL, m, ep, t, K, out);
+  else if (t.build === 'radicalSub') stop = buildRadicalSub(OCL, m, r, t, out);
   else stop = buildStereo(OCL, m, x, y, t, r, K, out);
   if (stop) return { ...res, notCovered: stop };
   if (!out.products.length) return { ...res, notCovered: 'no_rule' };
-  for (const k of ['markovnikov_tie', 'boron_tie', 'epoxide_tie', 'epoxide_acid_mixed', 'opening_undecided', 'alkene_geometry_unknown', 'substrate_stereo_undefined']) if (out.notes.includes(k)) res.reasons.push(k);
+  for (const k of ['cl_unselective', 'markovnikov_tie', 'boron_tie', 'epoxide_tie', 'epoxide_acid_mixed', 'opening_undecided', 'alkene_geometry_unknown', 'substrate_stereo_undefined']) if (out.notes.includes(k)) res.reasons.push(k);
   if (out.face){
     if (out.face.tier) res.reasons.push('face_tier' + out.face.tier);
     if (out.face.tier === 2 && !res.addition.tags.includes('course')) res.addition.tags.push('course');

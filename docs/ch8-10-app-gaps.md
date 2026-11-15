@@ -361,7 +361,7 @@ Every session follows the "Saving tokens" rules in `mechanisms-plan.md`:
    - 3D placement builder for syn/anti/epoxide.
    - Racemic/meso/single labels; X₂, X₂/H₂O, BH₃ (two-part), H₂/cat, peracid; epoxide + H₃O⁺/HO⁻ (SN2 opening).
    - **Tests first:** A-2a, c, h, i, j, k, m, n, o (step 3 on the alkene), q step 1, Q3d–g, Q4-5/6, Q8 classify, A-Q1 pattern, A-ctrl, plus calibration cases (norbornene exo, 3-methylcyclohexene mixture). Every stereo case is checked by ID code **and** the `sides` face check.
-3. **S3: radicals.**
+3. **S3: radicals.** ✅ 2026-11-14, except A-Q5 (waiting for question 3). Also added: “needs light” for an alkane + X₂ in the dark, a stop for C–H next to O/N/halogen, and a guard that stops cation/halonium/radical additions to bridged bicyclic alkenes (norbornene, α-pinene, camphene rearrange). *Rank radicals* takes drawn radicals, or an alkane by its weakest C–H.
    - Alkane C–H sites, Br₂/hν vs Cl₂/hν rows, radical stability ranking in ranking mode, `allylic_needs_nbs`.
    - Full sequences A-2f, 2o, 2p, Q10 (runSequence).
    - Answer the Q5 question with Peter first; then add A-Q5 with the agreed tag.

@@ -1,6 +1,6 @@
 // Ch 8 addition card, wired up in the real page (fake PubChem/OPSIN). DOM text only.
 // 1-methylcyclopentene + HBr → one Addition lamp (no SN/E lamps), Intermediate / Regiochemistry / Stereospecific lines,
-// product 1-bromo-1-methylcyclopentane; then Br₂ → Racemic? Y; then 3-tBu-cyclohexene + mCPBA → Face computed (S2).
+// product 1-bromo-1-methylcyclopentane; then Br₂ → Racemic? Y; then 3-tBu-cyclohexene + mCPBA → Face computed (S2); Br₂/hν on methylcyclohexane and Rank radicals (S3).
 import { chromium } from 'playwright';
 
 const BASE = process.env.BASE_URL || 'http://localhost:8765/';
@@ -65,6 +65,21 @@ try {
   ok(/major/.test(ep) && /computed from the 3D shape/.test(ep) && /one stereoisomer/.test(ep), 'mCPBA on 3-tBu-cyclohexene: major, Face computed, one stereoisomer');
   await page.setViewportSize({ width: 390, height: 844 });
   ok(await page.evaluate(() => document.documentElement.scrollWidth <= 390), '390 px with the stereo card: no sideways scroll');
+  await page.setViewportSize({ width: 1280, height: 900 });
+  // S3: radical bromination of an alkane, and the radical ranking
+  await page.fill('#nameInput', 'CC1CCCCC1');
+  await page.click('#nameBtn');
+  await page.waitForTimeout(500);
+  await page.fill('#rxReagentInput', 'Br2, hv'); await page.press('#rxReagentInput', 'Enter');
+  await page.click('#rxPredict');
+  await page.waitForFunction(() => /radical/.test(document.querySelector('#rxCards').textContent), null, { timeout: 10000 });
+  const rad = await text('#rxCards .rx-card');
+  ok(/major/.test(rad) && /3° C–H/.test(rad) && /weakest/.test(rad), 'Br₂/hν on methylcyclohexane: major product from the 3° C–H');
+  await page.fill('#nameInput', '[CH2]C.C[C](C)C.[CH2]C=C');
+  await page.click('#nameBtn');
+  await page.waitForFunction(() => !document.querySelector('#rxRank').hidden, null, { timeout: 10000 });
+  await page.click('#rxRankRad');
+  ok(/1.*allylic.*2.*3° radical.*3.*1° radical/s.test(await text('#rxRankList')), 'ranking mode: radicals allylic > 3° > 1°');
 } catch (e) {
   ok(false, 'test crashed after "' + lastOk + '": ' + e.message.split('\n').slice(0, 6).join(' | '));
 }

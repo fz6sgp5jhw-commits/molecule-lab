@@ -7,7 +7,7 @@
 import { analyse, cationPathways, buildProduct, LG_LABEL } from './reactivity.js';
 import { findReagent, matchMolecule, guessBox, notSNEReason, entryFromMolecule, findSolvent, parseSequence, parseStep } from './reagents.js';
 import { plan as planRoutes } from './planner.js';
-import { predict, runSequence, rankSN1, rankSN2, rankE1, rankAlkenes, PATHWAYS, LAMPS } from './predict.js';
+import { predict, runSequence, rankSN1, rankSN2, rankE1, rankAlkenes, rankRadicals, PATHWAYS, LAMPS } from './predict.js';
 import { mountGrid } from './pathway-grid-ui.js';
 import { TEMPLATES, PRELUDES, ACTIVATION } from './mech-templates.js';
 import { openMechanism } from './mech-view.js';
@@ -159,9 +159,9 @@ export async function mountReactions(app){
 
   // ---------- ranking mode ----------
   function showRank(kind){
-    const list = ({ SN1: rankSN1, SN2: rankSN2, E1: rankE1, Alk: rankAlkenes })[kind](OCL, st.frags);
-    for (const b of [$('rxRankSN1'), $('rxRankSN2'), $('rxRankE1'), $('rxRankAlk'), $('rxPlan')]) b.setAttribute('aria-pressed', String(b.id.endsWith(kind)));
-    const head = { SN1: 'SN1 rate, fastest first', SN2: 'SN2 rate, fastest first', E1: 'E1 rate with acid and heat (OH → OH₂⁺), fastest first', Alk: 'Alkene stability (rules, not energies), most stable first' }[kind];
+    const list = ({ SN1: rankSN1, SN2: rankSN2, E1: rankE1, Alk: rankAlkenes, Rad: rankRadicals })[kind](OCL, st.frags);
+    for (const b of [$('rxRankSN1'), $('rxRankSN2'), $('rxRankE1'), $('rxRankAlk'), $('rxRankRad'), $('rxPlan')]) b.setAttribute('aria-pressed', String(b.id.endsWith(kind)));
+    const head = { SN1: 'SN1 rate, fastest first', SN2: 'SN2 rate, fastest first', E1: 'E1 rate with acid and heat (OH → OH₂⁺), fastest first', Alk: 'Alkene stability (rules, not energies), most stable first', Rad: 'Radical stability (rules, not energies), most stable first' }[kind];
     let prev = null;
     $('rxRankList').innerHTML = `<li class="rx-rankhead">${head}</li>` + list.map((x) => {
       const tie = x.place !== null && list.filter((y) => y.place === x.place).length > 1;
@@ -174,11 +174,12 @@ export async function mountReactions(app){
   $('rxRankSN2').onclick = () => showRank('SN2');
   $('rxRankE1').onclick = () => showRank('E1');
   $('rxRankAlk').onclick = () => showRank('Alk');
+  $('rxRankRad').onclick = () => showRank('Rad');
 
   // ---------- reverse planner: first molecule → second, through the forward engine (planner.js) ----------
   let planToken = 0;
   async function showPlan(){
-    for (const b of [$('rxRankSN1'), $('rxRankSN2'), $('rxRankE1'), $('rxRankAlk'), $('rxPlan')]) b.setAttribute('aria-pressed', String(b.id === 'rxPlan'));
+    for (const b of [$('rxRankSN1'), $('rxRankSN2'), $('rxRankE1'), $('rxRankAlk'), $('rxRankRad'), $('rxPlan')]) b.setAttribute('aria-pressed', String(b.id === 'rxPlan'));
     const list = $('rxRankList');
     if (st.frags.length !== 2){ list.innerHTML = '<li class="rx-rankhead">The planner needs exactly two molecules: the start first, then the target.</li>'; return; }
     const [A, B] = st.frags, token = ++planToken;
@@ -592,7 +593,7 @@ export async function mountReactions(app){
     }
   }
   const INTERMEDIATE = { sn2: 'none: SN2 opening of the strained ring (back-side attack)', cation: 'carbocation (can rearrange)', halonium: 'bridged halonium ion (no rearrangement)', radical: 'carbon radical (no rearrangement)', concerted: 'none: concerted, one step', surface: 'none: H atoms from the metal surface', ozonide: 'ozonide (then cut by the workup)', none: 'none' };
-  const REGIO = { 'more-substituted': 'Nu to the more substituted carbon', 'less-substituted': 'Nu to the less substituted carbon', markovnikov: 'Markovnikov', 'anti-markovnikov': 'anti-Markovnikov', none: 'none (same group on both carbons, or the C=C is cut)' };
+  const REGIO = { 'weakest-ch': 'X on the carbon whose C–H is weakest (most stable radical)', 'every-ch': 'every kind of C–H (Cl• is unselective: a mixture)', 'more-substituted': 'Nu to the more substituted carbon', 'less-substituted': 'Nu to the less substituted carbon', markovnikov: 'Markovnikov', 'anti-markovnikov': 'anti-Markovnikov', none: 'none (same group on both carbons, or the C=C is cut)' };
   // S2: per product, "Racemic?" (racemic / meso / one stereoisomer) and, when the two faces of the C=C differ, which tier decided the face
   const RACEMIC = { racemic: 'Y: (±) racemic, the other enantiomer forms equally', meso: 'N: meso (achiral, it has a mirror plane)', achiral: 'N: achiral (only cis/trans on the ring)', single: 'N: one stereoisomer (the start is one enantiomer)', relative: 'relative configuration only (start drawn without wedges)', mixture: 'mixture of stereoisomers' };
   function additionLines(a, p, out){

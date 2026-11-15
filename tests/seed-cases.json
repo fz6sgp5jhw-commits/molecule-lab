@@ -3007,6 +3007,222 @@
      }
     ]
    }
+  },
+  {
+   "id": "A-2f",
+   "about": "Br• takes the only 3° H",
+   "substrate": "CC1CCCCC1",
+   "steps": [
+    {
+     "reagent": "Br2, hv"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "addition": {
+     "intermediate": "radical",
+     "stereospecific": "N"
+    },
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "CC1(Br)CCCCC1",
+      "name": "1-bromo-1-methylcyclohexane",
+      "rank": "major"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-rad-butane",
+   "about": "2° beats 1°; new centre at a flat radical → racemic",
+   "substrate": "CCCC",
+   "steps": [
+    {
+     "reagent": "Br2, light"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "productCount": {
+     "Addition": 2
+    },
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "CCC(C)Br",
+      "name": "2-bromobutane",
+      "rank": "major",
+      "stereo": "racemic"
+     },
+     {
+      "pathway": "Addition",
+      "smiles": "CCCCBr",
+      "name": "1-bromobutane",
+      "rank": "minor"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-rad-Br-tie",
+   "about": "two different 3° positions → competing, never one picked",
+   "substrate": "CC(C)C(C)CC",
+   "steps": [
+    {
+     "reagent": "Br2, hv"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "CC(C)(Br)C(C)CC",
+      "name": "2-bromo-2,3-dimethylpentane",
+      "rank": "competing"
+     },
+     {
+      "pathway": "Addition",
+      "smiles": "CC(C)C(C)(Br)CC",
+      "name": "3-bromo-2,3-dimethylpentane",
+      "rank": "competing",
+      "stereo": "racemic"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-rad-Cl",
+   "about": "Cl• is unselective: every position is shown, no percentages",
+   "substrate": "CC(C)C",
+   "steps": [
+    {
+     "reagent": "Cl2, hv"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "productCount": {
+     "Addition": 2
+    },
+    "reasons": [
+     "cl_unselective"
+    ],
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "CC(C)CCl",
+      "name": "1-chloro-2-methylpropane",
+      "rank": "competing"
+     },
+     {
+      "pathway": "Addition",
+      "smiles": "CC(C)(C)Cl",
+      "name": "2-chloro-2-methylpropane",
+      "rank": "competing"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-rad-Cl-one",
+   "about": "one kind of H: Cl₂'s poor selectivity doesn't matter (2p step 1)",
+   "substrate": "C1CCCCC1",
+   "steps": [
+    {
+     "reagent": "Cl2, light"
+    }
+   ],
+   "expect": {
+    "lamps": {
+     "Addition": "major"
+    },
+    "productCount": {
+     "Addition": 1
+    },
+    "products": [
+     {
+      "pathway": "Addition",
+      "smiles": "ClC1CCCCC1",
+      "name": "chlorocyclohexane",
+      "rank": "major"
+     }
+    ]
+   }
+  },
+  {
+   "id": "A-rad-benzylic",
+   "about": "benzylic C–H: not covered (NBS)",
+   "substrate": "Cc1ccccc1",
+   "steps": [
+    {
+     "reagent": "Br2, hv"
+    }
+   ],
+   "expect": {
+    "notCovered": "allylic_needs_nbs"
+   }
+  },
+  {
+   "id": "A-rad-hetero",
+   "about": "C–H next to O/N/halogen: not covered",
+   "substrate": "CCCO",
+   "steps": [
+    {
+     "reagent": "Br2, hv"
+    }
+   ],
+   "expect": {
+    "notCovered": "radical_heteroatom"
+   }
+  },
+  {
+   "id": "A-rad-dark",
+   "about": "alkane + Br2 in the dark: no reaction, said plainly",
+   "substrate": "CCCC",
+   "steps": [
+    {
+     "reagent": "Br2"
+    }
+   ],
+   "expect": {
+    "notCovered": "radical_needs_light"
+   }
+  },
+  {
+   "id": "A-bridged-HBr",
+   "about": "norbornene: the cation rearranges (Wagner–Meerwein)",
+   "substrate": "C1=CC2CCC1C2",
+   "steps": [
+    {
+     "reagent": "HBr"
+    }
+   ],
+   "expect": {
+    "notCovered": "bridged_rearranges"
+   }
+  },
+  {
+   "id": "A-bridged-Br2",
+   "about": "α-pinene + Br2: the bridged ion/cation rearranges",
+   "substrate": "CC1=CC[C@@H]2C[C@H]1C2(C)C",
+   "steps": [
+    {
+     "reagent": "Br2"
+    }
+   ],
+   "expect": {
+    "notCovered": "bridged_rearranges"
+   }
   }
  ],
  "ranking": [
@@ -3195,6 +3411,29 @@
     4,
     0,
     null
+   ]
+  },
+  {
+   "id": "R-radical",
+   "mode": "radical",
+   "note": "allylic/benzylic > 3° > 2° > 1° > methyl; an alkane is ranked by the best radical its weakest C–H gives",
+   "mols": [
+    "[CH2]C",
+    "C[CH]C",
+    "C[C](C)C",
+    "[CH2]C=C",
+    "[CH3]",
+    "CC(C)C"
+   ],
+   "order": [
+    3,
+    [
+     2,
+     5
+    ],
+    1,
+    0,
+    4
    ]
   }
  ],
@@ -3490,6 +3729,88 @@
      "stereo": "racemic"
     }
    ]
+  },
+  {
+   "id": "A-2o",
+   "substrate": "CC1CCCC1",
+   "text": "1) Br2, light 2) NaOEt 3) Cl2, H2O",
+   "expect": [
+    {
+     "pw": "Addition",
+     "name": "1-bromo-1-methylcyclopentane"
+    },
+    {
+     "pw": "E2",
+     "name": "1-methylcyclopentene"
+    },
+    {
+     "pw": "Addition",
+     "name": "2-chloro-1-methylcyclopentan-1-ol",
+     "smiles": "C[C@@](CCC1)([C@@H]1Cl)O",
+     "stereo": "racemic"
+    }
+   ]
+  },
+  {
+   "id": "A-2p",
+   "substrate": "C1CCCCC1",
+   "text": "1) Cl2, light 2) NaOEt 3) O3 followed by DMS",
+   "expect": [
+    {
+     "pw": "Addition",
+     "name": "chlorocyclohexane"
+    },
+    {
+     "pw": "E2",
+     "name": "cyclohexene"
+    },
+    {
+     "pw": "Addition",
+     "name": "hexanedial",
+     "smiles": "O=CCCCCC=O"
+    }
+   ]
+  },
+  {
+   "id": "A-Q10",
+   "substrate": "CC1CCCCC1",
+   "text": "1) Br2, light 2) NaOEt/EtOH 3) Br2/H2O",
+   "expect": [
+    {
+     "pw": "Addition",
+     "name": "1-bromo-1-methylcyclohexane"
+    },
+    {
+     "pw": "E2",
+     "name": "1-methylcyclohexene"
+    },
+    {
+     "pw": "Addition",
+     "name": "2-bromo-1-methylcyclohexan-1-ol",
+     "smiles": "C[C@@](CCCC1)([C@@H]1Br)O",
+     "stereo": "racemic"
+    }
+   ]
+  },
+  {
+   "id": "A-2q",
+   "substrate": "CC(C)C1=CCCCC1",
+   "text": "1) BH3·THF followed by H2O2/HO- 2) TsCl, pyridine 3) NaOEt",
+   "expect": [
+    {
+     "pw": "Addition",
+     "name": "2-(propan-2-yl)cyclohexan-1-ol",
+     "smiles": "CC(C)[C@@H](CCCC1)[C@H]1O",
+     "stereo": "racemic"
+    },
+    {
+     "pw": "activation"
+    },
+    {
+     "pw": "E2",
+     "name": "3-(propan-2-yl)cyclohexene"
+    }
+   ]
   }
  ],
  "sequenceParsing": [
@@ -3751,6 +4072,13 @@
    "substrate": "CC1=CCCCC1",
    "reagent": "BH3·THF; H2O2/OH-",
    "stereospecific": "Y",
+   "built": true
+  },
+  {
+   "id": "Q8E",
+   "substrate": "CC1CCCCC1",
+   "reagent": "Br2, light",
+   "stereospecific": "N",
    "built": true
   }
  ]
