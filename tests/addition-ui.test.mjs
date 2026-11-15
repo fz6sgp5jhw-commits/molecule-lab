@@ -1,6 +1,6 @@
 // Ch 8 addition card, wired up in the real page (fake PubChem/OPSIN). DOM text only.
 // 1-methylcyclopentene + HBr → one Addition lamp (no SN/E lamps), Intermediate / Regiochemistry / Stereospecific lines,
-// product 1-bromo-1-methylcyclopentane; then Br₂ (builder not written yet) → the classification card, no product.
+// product 1-bromo-1-methylcyclopentane; then Br₂ → Racemic? Y; then 3-tBu-cyclohexene + mCPBA → Face computed (S2).
 import { chromium } from 'playwright';
 
 const BASE = process.env.BASE_URL || 'http://localhost:8765/';
@@ -47,11 +47,24 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   ok(await page.evaluate(() => document.documentElement.scrollWidth <= 390), '390 px: no sideways scroll');
   await page.setViewportSize({ width: 1280, height: 900 });
-  // Br₂: classified, builder not written yet → says so, no product
+  // Br₂ (S2): anti addition built in 3D → Racemic? Y, halonium, no "not built" note
   await page.fill('#rxReagentInput', 'Br2'); await page.press('#rxReagentInput', 'Enter');
   await page.click('#rxPredict');
-  await page.waitForFunction(() => /isn’t built yet/.test(document.querySelector('#rxNotes').textContent), null, { timeout: 5000 });
-  ok(/halonium/.test(await text('#rxCards')) && /no product yet/.test(await text('#rxCards')), 'Br₂: classification card (halonium), no product');
+  await page.waitForFunction(() => /Racemic\?/.test(document.querySelector('#rxCards').textContent), null, { timeout: 15000 });
+  const br = await text('#rxCards .rx-card');
+  ok(/halonium/.test(br) && /Racemic\?\s*Y/.test(br), 'Br₂: halonium card, Racemic? Y');
+  ok(!/isn’t built yet/.test(await text('#rxNotes')), 'Br₂: no "not built yet" note');
+  // a face decided from the 3D shape: 3-tBu-cyclohexene + mCPBA → one major epoxide, Face computed, one stereoisomer
+  await page.fill('#nameInput', 'CC(C)(C)[C@@H]1CCCC=C1');
+  await page.click('#nameBtn');
+  await page.waitForTimeout(500);
+  await page.fill('#rxReagentInput', 'mCPBA'); await page.press('#rxReagentInput', 'Enter');
+  await page.click('#rxPredict');
+  await page.waitForFunction(() => /Face/.test(document.querySelector('#rxCards').textContent), null, { timeout: 20000 });
+  const ep = await text('#rxCards .rx-card');
+  ok(/major/.test(ep) && /computed from the 3D shape/.test(ep) && /one stereoisomer/.test(ep), 'mCPBA on 3-tBu-cyclohexene: major, Face computed, one stereoisomer');
+  await page.setViewportSize({ width: 390, height: 844 });
+  ok(await page.evaluate(() => document.documentElement.scrollWidth <= 390), '390 px with the stereo card: no sideways scroll');
 } catch (e) {
   ok(false, 'test crashed after "' + lastOk + '": ' + e.message.split('\n').slice(0, 6).join(' | '));
 }

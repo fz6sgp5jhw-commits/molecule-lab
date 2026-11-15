@@ -591,10 +591,16 @@ export async function mountReactions(app){
       for (const p of out.products) cards.appendChild(card(p, pw));
     }
   }
-  const INTERMEDIATE = { cation: 'carbocation (can rearrange)', halonium: 'bridged halonium ion (no rearrangement)', radical: 'carbon radical (no rearrangement)', concerted: 'none: concerted, one step', surface: 'none: H atoms from the metal surface', ozonide: 'ozonide (then cut by the workup)', none: 'none' };
-  const REGIO = { markovnikov: 'Markovnikov', 'anti-markovnikov': 'anti-Markovnikov', none: 'none (same group on both carbons, or the C=C is cut)' };
-  function additionLines(a){
-    return `<dt>Intermediate</dt><dd>${esc(INTERMEDIATE[a.intermediate] || a.intermediate)}</dd><dt>Regiochemistry</dt><dd>${esc(REGIO[a.regio] || a.regio)}</dd><dt>Stereospecific?</dt><dd>${a.stereospecific === 'Y' ? 'Y' : 'N'}${a.stereo !== 'none' ? ` (${esc(a.stereo)} addition)` : ''}</dd>`;
+  const INTERMEDIATE = { sn2: 'none: SN2 opening of the strained ring (back-side attack)', cation: 'carbocation (can rearrange)', halonium: 'bridged halonium ion (no rearrangement)', radical: 'carbon radical (no rearrangement)', concerted: 'none: concerted, one step', surface: 'none: H atoms from the metal surface', ozonide: 'ozonide (then cut by the workup)', none: 'none' };
+  const REGIO = { 'more-substituted': 'Nu to the more substituted carbon', 'less-substituted': 'Nu to the less substituted carbon', markovnikov: 'Markovnikov', 'anti-markovnikov': 'anti-Markovnikov', none: 'none (same group on both carbons, or the C=C is cut)' };
+  // S2: per product, "Racemic?" (racemic / meso / one stereoisomer) and, when the two faces of the C=C differ, which tier decided the face
+  const RACEMIC = { racemic: 'Y: (±) racemic, the other enantiomer forms equally', meso: 'N: meso (achiral, it has a mirror plane)', achiral: 'N: achiral (only cis/trans on the ring)', single: 'N: one stereoisomer (the start is one enantiomer)', relative: 'relative configuration only (start drawn without wedges)', mixture: 'mixture of stereoisomers' };
+  function additionLines(a, p, out){
+    let h = `<dt>Intermediate</dt><dd>${esc(INTERMEDIATE[a.intermediate] || a.intermediate)}</dd><dt>Regiochemistry</dt><dd>${esc(REGIO[a.regio] || a.regio)}</dd><dt>Stereospecific?</dt><dd>${a.stereospecific === 'Y' ? 'Y' : 'N'}${a.stereo !== 'none' ? ` (${esc(a.stereo)} addition)` : ''}</dd>`;
+    if (p) h += `<dt>Racemic?</dt><dd>${esc(p.stereo ? RACEMIC[p.stereo] || p.stereo : 'N: no stereocentre')}</dd>`;
+    const f = out && out.face;
+    if (p && f && f.tier) h += `<dt>Face</dt><dd>${esc(f.tier === 1 ? `computed from the 3D shape: the other face is ${f.ratio.toFixed(1)}× more crowded` : f.tier === 2 ? 'course rule: anti to the group on the neighbouring stereocentre (3D difference small)' : 'not decided: both faces (mixture of diastereomers)')}</dd>`;
+    return h;
   }
   function showStep(step, btn){
     const info = $('rxPathInfo');
@@ -623,8 +629,10 @@ export async function mountReactions(app){
     const stereoTxt = [];
     if (lab.rs.length) stereoTxt.push('R/S: ' + lab.rs.join(', '));
     if (lab.ez.length) stereoTxt.push('E/Z: ' + lab.ez.join(', '));
-    if (p.stereo === 'racemic') stereoTxt.push(pw === 'Addition' ? '(±) racemic: both faces of the flat intermediate react equally' : 'both configurations at the former C⁺ (racemic)');
-    else if (p.stereo === 'mixture') stereoTxt.push('mixture of stereoisomers: the new stereocentre forms at a flat intermediate');
+    const flatAdd = pw === 'Addition' && /cation|radical/.test(st.res && st.res.addition ? st.res.addition.intermediate : '');
+    if (p.stereo === 'racemic') stereoTxt.push(pw !== 'Addition' ? 'both configurations at the former C⁺ (racemic)' : flatAdd ? '(±) racemic: both faces of the flat intermediate react equally' : '(±) racemic: one enantiomer drawn');
+    else if (p.stereo === 'mixture') stereoTxt.push(flatAdd ? 'mixture of stereoisomers: the new stereocentre forms at a flat intermediate' : 'mixture of stereoisomers');
+    else if (pw === 'Addition' && RACEMIC[p.stereo]) { /* said on the Racemic? line */ }
     else if (p.stereo) stereoTxt.push(p.stereo);
     if (!stereoTxt.length) stereoTxt.push('none');
     div.innerHTML = `
@@ -633,7 +641,7 @@ export async function mountReactions(app){
       <div class="rx-nameline"></div>
       <dl class="rx-dl">
         <dt>Stereo</dt><dd>${esc(stereoTxt.join('; '))}</dd>
-        ${pw === 'Addition' && st.res.addition ? additionLines(st.res.addition) : out ? `<dt>Stereospecific</dt><dd>${out.stereospecific ? 'Y' : 'N'}</dd>` : ''}
+        ${pw === 'Addition' && st.res.addition ? additionLines(st.res.addition, p, out) : out ? `<dt>Stereospecific</dt><dd>${out.stereospecific ? 'Y' : 'N'}</dd>` : ''}
         ${p.via ? `<dt>Via</dt><dd>${esc(p.via)}</dd>` : ''}
       </dl>
       ${extra ? `<div class="note">${esc(extra)}</div>` : ''}

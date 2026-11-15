@@ -20,7 +20,51 @@ const ccDouble = (m) => { let n = 0; m.ensureHelperArrays(M.cHelperRings); for (
 const fails = [];
 const fail = (id, msg) => fails.push(`#${id} ${msg}`);
 
-for (const c of seed.cases){
+// ---------- S2 stereo helpers ----------
+// mirror image of a SMILES: swap @ and @@ (tetrahedral centres only; E/Z is its own mirror image)
+const mirrorSmiles = (smi) => smi.replace(/@@|@/g, (t) => t === '@' ? '@@' : '@');
+// racemic products may come out as either enantiomer; the diastereomer must still match exactly
+const sameOrMirror = (idcode, smi, racemic) => idcode === idOf(smi) || (racemic && idcode === idOf(mirrorSmiles(smi)));
+const flatId = (m) => OCL.CanonizerUtil.getIDCode(m, OCL.CanonizerUtil.NOSTEREO);
+// Second, independent stereo check ("sides"): in a fresh MMFF-free conformer of the expected structure, the sign of each
+// substituent's bond along the ring normal. pairs: [[sub, ringAtom], [sub, ringAtom], 'cis' | 'trans'], atom indices in
+// the expected SMILES (heavy atoms in SMILES order); sub 'H' = the one H on that ring atom. The ID-code check already
+// proves the built product IS this structure (or its mirror image, which keeps cis/trans), so this catches a wrong
+// expected SMILES (the 2h lesson) with geometry instead of CIP bookkeeping.
+function sidesFails(smi, pairs){
+  const m = M.fromSmiles(smi);
+  const g = new OCL.ConformerGenerator(7, false);
+  g.initializeConformers(m);
+  const c = g.getNextConformerAsMolecule();
+  c.ensureHelperArrays(M.cHelperRings);
+  const P = (a) => [c.getAtomX(a), c.getAtomY(a), c.getAtomZ(a)];
+  const out = [];
+  for (const [[sa, ca], [sb, cb], want] of pairs){
+    const rs = c.getRingSet();
+    let ring = null;
+    for (let i = 0; i < rs.getSize(); i++){ const r = rs.getRingAtoms(i); if (r.includes(ca) && r.includes(cb) && (!ring || r.length < ring.length)) ring = r; }
+    if (!ring){ out.push(`no ring with atoms ${ca},${cb}`); continue; }
+    const n = [0, 0, 0];
+    ring.forEach((a, i) => { const p = P(a), q = P(ring[(i + 1) % ring.length]); n[0] += (p[1] - q[1]) * (p[2] + q[2]); n[1] += (p[2] - q[2]) * (p[0] + q[0]); n[2] += (p[0] - q[0]) * (p[1] + q[1]); });
+    const hOf = (a) => { for (let i = 0; i < c.getAllConnAtoms(a); i++){ const x = c.getConnAtom(a, i); if (c.getAtomicNo(x) === 1) return x; } return -1; };
+    const side = (s, r) => { const a = s === 'H' ? hOf(r) : s; const d = P(a).map((v, i) => v - P(r)[i]); return Math.sign(d[0] * n[0] + d[1] * n[1] + d[2] * n[2]); };
+    const got = side(sa, ca) === side(sb, cb) ? 'cis' : 'trans';
+    if (got !== want) out.push(`sides ${sa}@${ca} / ${sb}@${cb}: expected ${want}, got ${got}`);
+  }
+  return out;
+}
+// acyclic second check: the set of CIP labels, up to the mirror image ({R,S} vs {R,R}/{S,S})
+function cipSet(mol){
+  const m = mol.getCompactCopy(); m.ensureHelperArrays(M.cHelperCIP);
+  const l = []; for (let a = 0; a < m.getAtoms(); a++){ const p = m.getAtomCIPParity(a); if (p === 1 || p === 2) l.push(p === 1 ? 'R' : 'S'); }
+  const s = l.sort().join(''), t = l.map((x) => x === 'R' ? 'S' : 'R').sort().join('');
+  return s < t ? s : t;
+}
+const cipNorm = (s) => { const l = s.split(','); const a = [...l].sort().join(''), b = l.map((x) => x === 'R' ? 'S' : 'R').sort().join(''); return a < b ? a : b; };
+
+// mirror-image runs: a substrate drawn as one enantiomer also runs as the other, expecting the mirror-image product
+const allCases = seed.cases.flatMap((c) => c.mirror ? [c, { ...c, id: c.id + '(mirror)', substrate: mirrorSmiles(c.substrate), expect: { ...c.expect, products: c.expect.products.map((p) => ({ ...p, smiles: mirrorSmiles(p.smiles) })) } }] : [c]);
+for (const c of allCases){
   try {
     const sub = M.fromSmiles(c.substrate);
     if (c.substrateName && nameOf(sub) !== c.substrateName) fail(c.id, `substrate: expected ${c.substrateName}, got ${nameOf(sub)}`);
@@ -59,14 +103,20 @@ for (const c of seed.cases){
     for (const [pw, v] of Object.entries(e.stereospecific || {})) if (res.pathways[pw]?.stereospecific !== v) fail(c.id, `${pw} stereospecific: expected ${v}, got ${res.pathways[pw]?.stereospecific}`);
     for (const p of e.products || []){
       const list = res.pathways[p.pathway]?.products || [];
-      const got = list.find((x) => x.idcode === idOf(p.smiles));
+      if (p.sides) for (const f of sidesFails(p.smiles, p.sides)) fail(c.id, `${p.pathway} ${p.name || p.smiles}: ${f}`);
+      const got = list.find((x) => p.constitution ? flatId(x.mol) === flatId(M.fromSmiles(p.smiles)) : sameOrMirror(x.idcode, p.smiles, p.stereo === 'racemic'));
       if (!got){ fail(c.id, `${p.pathway}: expected ${p.name || p.smiles}, got [${list.map((x) => nameOf(x.mol)).join('; ')}]`); continue; }
-      if (p.name && nameOf(got.mol) !== p.name) fail(c.id, `${p.pathway} name: expected ${p.name}, got ${nameOf(got.mol)}`);
+      // a name written without R/S (racemic, or the key gives only cis/trans) is compared without the descriptor block
+      const nm = (m) => p.name && !p.name.startsWith('(') ? nameOf(m).replace(/^\([^)]*\)-/, '') : nameOf(m);
+      if (p.name && nm(got.mol) !== p.name) fail(c.id, `${p.pathway} name: expected ${p.name}, got ${nameOf(got.mol)}`);
       if (p.rank && got.rank !== p.rank) fail(c.id, `${p.pathway} ${p.name || p.smiles}: expected ${p.rank}, got ${got.rank}`);
       if (p.order && got.order !== p.order) fail(c.id, `${p.pathway} ${p.name || p.smiles}: expected place ${p.order}, got ${got.order}`);
       if (p.via && got.via !== p.via) fail(c.id, `${p.pathway} ${p.name || p.smiles}: expected via ${p.via}, got ${got.via}`);
       if (p.stereo && got.stereo !== p.stereo) fail(c.id, `${p.pathway} ${p.name || p.smiles}: expected stereo ${p.stereo}, got ${got.stereo}`);
+      if (p.cip && cipSet(got.mol) !== cipNorm(p.cip)) fail(c.id, `${p.pathway} ${p.name || p.smiles}: expected CIP set ${p.cip} (or mirror), got ${cipSet(got.mol)}`);
     }
+    if (e.face && res.pathways.Addition?.face?.tier !== e.face.tier) fail(c.id, `face tier: expected ${e.face.tier}, got ${res.pathways.Addition?.face?.tier} (ratio ${res.pathways.Addition?.face?.ratio?.toFixed?.(2)})`);
+    for (const t of e.tags || []) if (!(res.addition?.tags || []).includes(t)) fail(c.id, `tag: expected ${t}, got [${res.addition?.tags || ''}]`);
   } catch (err){ fail(c.id, `threw ${String(err && err.message || err).split('\n')[0]}`); }
 }
 
@@ -118,8 +168,8 @@ for (const q of seed.sequences){
       if (e.stop || s.stop){ if (s.stop !== e.stop) fail(q.id, `${tag}: expected stop ${e.stop}, got ${s.stop || 'a product'}`); return; }
       const c = s.chosen;
       if (c.pw !== e.pw) fail(q.id, `${tag}: expected ${e.pw}, got ${c.pw}`);
-      if (e.smiles && c.product.idcode !== idOf(e.smiles)) fail(q.id, `${tag}: expected ${e.smiles}, got ${c.product.smiles}`);
-      if (e.name && nameOf(c.product.mol) !== e.name) fail(q.id, `${tag}: expected ${e.name}, got ${nameOf(c.product.mol)}`);
+      if (e.smiles && !sameOrMirror(c.product.idcode, e.smiles, e.stereo === 'racemic')) fail(q.id, `${tag}: expected ${e.smiles}, got ${c.product.smiles}`);
+      if (e.name && nameOf(c.product.mol).replace(e.name.startsWith('(') ? /^$/ : /^\([^)]*\)-/, '') !== e.name) fail(q.id, `${tag}: expected ${e.name}, got ${nameOf(c.product.mol)}`);
       if (e.stereo && c.product.stereo !== e.stereo) fail(q.id, `${tag}: expected stereo ${e.stereo}, got ${c.product.stereo}`);
     });
   } catch (err){ fail(q.id, `threw ${String(err && err.message || err).split('\n')[0]}`); }
@@ -133,7 +183,10 @@ for (const q of seed.sequences){
       const p = parseStep(data.cat, q.reagent);
       if (p.error){ fail(q.id, `parse "${q.reagent}": ${p.error}`); continue; }
       const res = predict(OCL, M.fromSmiles(q.substrate), p.reagent, p, data);
-      if (res.addition?.regio !== q.regio) fail(q.id, `regio: expected ${q.regio}, got ${res.addition?.regio} (${res.notCovered || 'ok'})`);
+      if (q.regio && res.addition?.regio !== q.regio) fail(q.id, `regio: expected ${q.regio}, got ${res.addition?.regio} (${res.notCovered || 'ok'})`);
+      if (q.stereospecific && res.addition?.stereospecific !== q.stereospecific) fail(q.id, `stereospecific: expected ${q.stereospecific}, got ${res.addition?.stereospecific} (${res.notCovered || 'ok'})`);
+      for (const t of q.tags || []) if (!(res.addition?.tags || []).includes(t)) fail(q.id, `tag: expected ${t}, got [${res.addition?.tags || ''}]`);
+      if (q.built && (res.notCovered || !res.pathways.Addition?.products?.length)) fail(q.id, `expected a product, got ${res.notCovered || 'none'}`);
     } catch (err){ fail(q.id, `threw ${String(err && err.message || err).split('\n')[0]}`); }
   }
   for (const row of data.additions.rows) for (const k of [...(row.then?.reasons || []), row.notCovered].filter(Boolean)) if (!data.additions.reasons[k] && !data.rules.reasons[k]) fail('additions', `missing reason text for ${k}`);

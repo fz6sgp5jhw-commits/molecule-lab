@@ -407,6 +407,11 @@ Every session follows the "Saving tokens" rules in `mechanisms-plan.md`:
    - The key's answer (H₂ anti to the angular CH₃, giving trans-4a-methyldecalin) would be shown as a **course rule**, not a computed result.
    - Is "add from the face opposite the nearest substituent" the rule your course wants in general?
 6. **Radical rates:** should the app show textbook relative rates per H (for example Br₂ 1 : 82 : 1600, Cl₂ 1 : 3.9 : 5.2 for 1° : 2° : 3°)? If so, which textbook's numbers? Otherwise it stays qualitative (Br₂ selective, Cl₂ a mixture).
+5b. **Found while building S2 (2026-11-14):**
+   - The face threshold had to go from 1.3 to **1.4**. With 1.3, 2i (1.27–1.33, depending on the conformer sample) and 3-methylcyclohexene (1.23–1.28, a textbook mixture) couldn't be told apart. 2i now uses the course rule, with the same answer.
+   - The course rule now needs the allylic stereocentre to sit next to a C=C carbon **with no H** (2c, Q4, 2i). Otherwise 3-methylcyclohexene would be given a face, but textbooks call it a mixture.
+   - **Q4 (Br₂ on 1,5-dimethylcyclopentene):** for Br₂ the face alone doesn't fix the product, because Br⁻ can open either carbon. The printed answer is "Br⁺ anti to the CH₃, Br⁻ opens C2" (away from the CH₃). The app reproduces it by measuring which back face is less crowded (C2, 1.7×), not from the δ⁺ rule (which would pick C1 and give the other isomer). Is that the reasoning your course uses?
+   - **Norbornene + peracid:** textbooks say exo. The steric probe sees no difference (1.00), so the app says "facial selectivity not covered" rather than guessing. Camphene (1.02) is the same.
 7. **Stereospecific (Q8C):**
    - The course counts Br₂/H₂O on 1-methylcyclohexene as stereospecific (an anti mechanism).
    - Some books use the word only when different alkene isomers give different products.

@@ -9,6 +9,7 @@
 // are labelled racemic (±) or mixture, and drawn without wedges at the new centres.
 
 import { cationPathways, buildProduct, bondBetween } from './reactivity.js';
+import { conformers, faceRef, faceNormal, probeFaces, carbonCrowd, courseRuleGroup, antiFace, place3d, idPair, from3d } from './faces.js';
 
 const matches = (want, have) => want === undefined || (Array.isArray(want) ? want.includes(have) : want === have);
 export function lookupAddition(additions, facts){
@@ -148,6 +149,155 @@ function buildOzonolysis(OCL, m, cc, out){
   out.products = list;
 }
 
+// ---------- S2: stereo additions built in 3D (faces.js) ----------
+const HALOGEN = { F: 9, Cl: 17, Br: 35, I: 53 };
+const carbonCount = (m, a) => { let n = 0; for (let i = 0; i < m.getConnAtoms(a); i++) if (m.getAtomicNo(m.getConnAtom(a, i)) === 6) n++; return n; };
+
+// Stereo facts about the substrate: chiral (in 3D), stereocentres drawn without wedges, C=C geometry not drawn.
+function substrateStereo(OCL, m, c0, x, y){
+  const M = OCL.Molecule;
+  m.ensureHelperArrays(M.cHelperCIP);
+  let undefinedCentre = false;
+  for (let a = 0; a < m.getAtoms(); a++) if (m.isAtomStereoCenter(a) && m.getAtomParity(a) !== 1 && m.getAtomParity(a) !== 2) undefinedCentre = true;
+  const b = bondBetween(m, x, y);
+  const geometryUnknown = !m.isRingBond(b) && m.getBondParity(b) === M.cBondParityUnknown;
+  const p = idPair(OCL, c0);
+  return { chiral: p.id !== p.mirror, undefinedCentre, geometryUnknown };
+}
+
+function stereoLabel(OCL, prod3d, st){
+  const p = idPair(OCL, prod3d);
+  const m = from3d(OCL, prod3d);
+  // real stereocentres, and ring cis/trans "pseudo" centres (trans-4a-methyldecalin has only those)
+  let centres = 0, pseudo = 0;
+  for (let a = 0; a < m.getAtoms(); a++){ if (m.isAtomStereoCenter(a)) centres++; else if (m.isAtomParityPseudo(a) && (m.getAtomParity(a) === 1 || m.getAtomParity(a) === 2)) pseudo++; }
+  if (!centres && !pseudo) return { mol: m, ids: p, stereo: null };
+  if (p.id === p.mirror) return { mol: m, ids: p, stereo: centres ? 'meso' : 'achiral' };
+  if (st.undefinedCentre) return { mol: m, ids: p, stereo: 'relative' };
+  return { mol: m, ids: p, stereo: st.chiral ? 'single' : 'racemic' };
+}
+
+// The recipe for one addition: which atoms go where, for a face f (+1/−1) of x=y.
+// Each variant is one regiochemical/opening choice; `attack` is the carbon a nucleophile opens from the back.
+function recipes(OCL, m, x, y, t, r, out){
+  const H = 1, O = 8;
+  if (t.build === 'hydrogenation') return [{ ops: (f) => [{ on: x, el: H, face: f }, { on: y, el: H, face: f }] }];
+  if (t.build === 'epoxidation') return [{ ops: (f) => [{ bridge: [x, y], el: O, face: f }] }];
+  if (t.build === 'hydroboration'){
+    const cx = carbonCount(m, x), cy = carbonCount(m, y);
+    const pairs = cx === cy ? [[x, y], [y, x]] : cx < cy ? [[x, y]] : [[y, x]];
+    if (pairs.length > 1) out.notes.push('boron_tie');
+    return pairs.map(([b, h]) => ({ ops: (f) => [{ on: b, el: O, face: f }, { on: h, el: H, face: f }], regio: b }));
+  }
+  // halonium: X⁺ bridges face f; the nucleophile (X⁻, or water for a halohydrin) opens it from −f
+  const X = HALOGEN[r.x] || 35, nu = t.adds && t.adds.more === 'OH' ? O : X;
+  let attack;
+  if (nu === O){ // water at the carbon with more δ+ (same score as a cation); tie → both
+    const ends = endScores(OCL, m, x, y), best = Math.max(...ends.map((e) => e.score));
+    attack = ends.filter((e) => e.score === best).map((e) => e.plus);
+    if (attack.length > 1) out.notes.push('markovnikov_tie');
+  } else attack = [x, y]; // X₂: either carbon; decided below only if it changes the product
+  return attack.map((a) => { const o = a === x ? y : x; return { ops: (f) => [{ on: o, el: X, face: f }, { on: a, el: nu, face: -f }], attack: a, regio: a }; });
+}
+
+const VIA = { halonium: 'bridged halonium ion on one face, opened from the back (anti)', hydroboration: 'B and H add to one face (syn); B → OH with retention', hydrogenation: 'two H from the metal surface to one face (syn)', epoxidation: 'the peroxy acid delivers O to one face (syn)' };
+
+// Builds every face × variant in the lowest-energy conformer, then decides which face (faces.js tiers).
+function buildStereo(OCL, m, x, y, t, r, K, out){
+  const confs = conformers(OCL, m, K.maxConformers);
+  if (!confs.length) return 'no_3d';
+  const c0 = confs[0].mol, ref = faceRef(c0, x, y), n0 = faceNormal(c0, x, y, ref);
+  const st = substrateStereo(OCL, m, c0, x, y);
+  const vars = recipes(OCL, m, x, y, t, r, out);
+  const built = vars.map((v) => {
+    const at = (f) => { const p3 = place3d(OCL, c0, x, y, n0, v.ops(f), K); return { f, v, ...stereoLabel(OCL, p3, st) }; };
+    return { plus: at(1), minus: at(-1) };
+  });
+  // Enantiotopic (or homotopic) faces: the two faces give mirror images (or the same molecule), so no face question.
+  const diastereotopic = built.some(({ plus, minus }) => plus.ids.id !== minus.ids.id && plus.ids.id !== minus.ids.mirror);
+  let major, minor = [];
+  out.face = { tier: 0 };
+  if (!diastereotopic) major = built.map((b) => b.plus);
+  else {
+    const pr = probeFaces(confs, x, y, ref, K);
+    out.face = { tier: 3, ratio: pr.ratio, agree: pr.agree, n: pr.n };
+    let F = 0;
+    if (pr.less && pr.ratio >= K.ratio && pr.agree === pr.n){ F = pr.less; out.face.tier = 1; }
+    else {
+      const cand = courseRuleGroup(m, x, y);
+      if (cand){ const af = antiFace(c0, x, y, ref, cand); if (!pr.less || pr.less === af){ F = af; out.face.tier = 2; out.face.group = cand.group; } }
+    }
+    const all = built.flatMap((b) => [b.plus, b.minus]);
+    if (!F) major = all;
+    else {
+      let chosen = built.map((b) => (F > 0 ? b.plus : b.minus));
+      // X₂ opened at either carbon gives different diastereomers here: open at the carbon whose back face (−F) is less crowded
+      const opens = chosen.filter((p) => p.v.attack != null && t.build === 'halonium' && !(t.adds && t.adds.more === 'OH'));
+      if (opens.length > 1){
+        const cr = opens.map((p) => carbonCrowd(confs, p.v.attack, x, y, ref, -F, K));
+        const lo = Math.min(...cr), hi = Math.max(...cr);
+        out.face.openRatio = lo > 0 ? hi / lo : Infinity;
+        if (out.face.openRatio >= K.ratio) chosen = chosen.filter((p) => !opens.includes(p) || cr[opens.indexOf(p)] === lo);
+        else out.notes.push('opening_undecided');
+      }
+      major = chosen;
+      minor = all.filter((p) => !chosen.some((q) => q.ids.id === p.ids.id));
+    }
+  }
+  const list = [], seen = new Set();
+  const push = (p, rank) => {
+    if (seen.has(p.ids.id) || (p.stereo === 'racemic' && seen.has(p.ids.mirror))) return;
+    seen.add(p.ids.id);
+    let mol = p.mol, stereo = p.stereo;
+    if (st.geometryUnknown && stereo){ mol = mol.getCompactCopy(); mol.stripStereoInformation(); mol.ensureHelperArrays(OCL.Molecule.cHelperCIP); stereo = 'mixture'; }
+    list.push(product(mol, { key: [rank === 'minor' ? 0 : 1], via: VIA[t.build] || t.build, face: p.f, stereo }));
+  };
+  for (const p of major) push(p, 'major');
+  for (const p of minor) push(p, 'minor');
+  if (st.geometryUnknown) out.notes.push('alkene_geometry_unknown');
+  if (st.undefinedCentre) out.notes.push('substrate_stereo_undefined');
+  out.products = rankProducts(list);
+  return null;
+}
+
+// Epoxide + H₃O⁺ / HO⁻: SN2 opening, the nucleophile (water/hydroxide → OH) comes in opposite the ring O.
+// Acid: the more substituted C if one is 3°; base: the less substituted C; a tie (or 1° vs 2° in acid) → both.
+function buildEpoxideOpening(OCL, m, ep, t, K, out){
+  const confs = conformers(OCL, m, 1);
+  if (!confs.length) return 'no_3d';
+  const c0 = confs[0].mol;
+  const st = substrateStereo(OCL, m, c0, ep.c[0], ep.c[1]);
+  const [ca, cb] = ep.c.map((a) => carbonCount(m, a));
+  let attack;
+  if (ca === cb) attack = ep.c;
+  else if (t.open === 'acid') attack = Math.max(ca, cb) >= 3 ? [ca > cb ? ep.c[0] : ep.c[1]] : ep.c;
+  else attack = [ca < cb ? ep.c[0] : ep.c[1]];
+  if (attack.length > 1) out.notes.push(ca === cb ? 'epoxide_tie' : 'epoxide_acid_mixed');
+  const list = [], seen = new Set();
+  for (const a of attack){
+    const p3 = place3d(OCL, c0, a, ep.o, null, [{ on: a, el: 8, from: ep.o }], K, [a, ep.o]);
+    const p = stereoLabel(OCL, p3, st);
+    if (seen.has(p.ids.id) || (p.stereo === 'racemic' && seen.has(p.ids.mirror))) continue;
+    seen.add(p.ids.id);
+    list.push(product(p.mol, { key: [1], via: 'SN2 opening (back side)', stereo: p.stereo, attack: a }));
+  }
+  out.products = rankProducts(list);
+  return null;
+}
+
+// The epoxide ring of a molecule: { o, c: [c1, c2] }, or null.
+export function epoxideOf(OCL, m){
+  m.ensureHelperArrays(OCL.Molecule.cHelperRings);
+  const rs = m.getRingSet();
+  for (let i = 0; i < rs.getSize(); i++){
+    const r = rs.getRingAtoms(i);
+    if (r.length !== 3) continue;
+    const o = r.filter((a) => m.getAtomicNo(a) === 8), c = r.filter((a) => m.getAtomicNo(a) === 6);
+    if (o.length === 1 && c.length === 2) return { o: o[0], c };
+  }
+  return null;
+}
+
 const SUBST = ['unsubstituted', 'monosubstituted', 'disubstituted', 'trisubstituted', 'tetrasubstituted'];
 
 // predictAddition(OCL, mol, reagent, opts, data) → a predict()-shaped result, or null when this isn't an
@@ -159,8 +309,9 @@ export function predictAddition(OCL, mol, r, opts = {}, data){
   m.removeExplicitHydrogens();
   m.ensureHelperArrays(M.cHelperRings);
   const { cc, yne } = alkeneBonds(OCL, m);
+  const ep = cc.length ? null : epoxideOf(OCL, m);
   const res = { kind: 'addition', lamps: {}, reasons: [], pathways: {}, warnings: [], flags: [], path: [] };
-  const facts = { sub: cc.length ? 'alkene' : 'alkane', act: r.add, x: r.x, heat: !!opts.heat, light: !!(r.light || opts.light), peroxide: !!(r.peroxide || opts.peroxide), water: !!r.water };
+  const facts = { sub: cc.length ? 'alkene' : ep ? 'epoxide' : 'alkane', act: r.add || (ep ? r.open : undefined), x: r.x, heat: !!opts.heat, light: !!(r.light || opts.light), peroxide: !!(r.peroxide || opts.peroxide), water: !!r.water };
   res.facts = facts;
   if (!cc.length && yne.length) return { ...res, notCovered: 'alkyne_not_covered' };
   const row = lookupAddition(additions, facts);
@@ -168,15 +319,15 @@ export function predictAddition(OCL, mol, r, opts = {}, data){
   if (!row) return { ...res, notCovered: 'no_rule' };
   if (row.notCovered) return { ...res, notCovered: row.notCovered };
   const t = row.then;
-  res.addition = { row: row.id, intermediate: t.intermediate, regio: t.regio, stereo: t.stereo, shifts: t.shifts, stereospecific: t.stereospecific, adds: t.adds, template: t.template, tags: row.tags || t.tags || [] };
+  res.addition = { row: row.id, intermediate: t.intermediate, regio: t.regio, stereo: t.stereo, shifts: t.shifts, stereospecific: t.stereospecific, adds: t.adds, template: t.template, tags: [...(row.tags || t.tags || [])] };
   const carbonsOn = (a) => { let n = 0; for (let i = 0; i < m.getConnAtoms(a); i++) if (m.getAtomicNo(m.getConnAtom(a, i)) === 6) n++; return n; };
   res.path = [
-    { step: 'substrate', text: cc.length === 1 ? `alkene (${SUBST[carbonsOn(cc[0][0]) + carbonsOn(cc[0][1]) - 2] || ''} C=C)` : `${cc.length} C=C` },
-    { step: 'reagent', text: `${r.label}: adds across the C=C` },
+    { step: 'substrate', text: ep ? 'epoxide (three-membered C–O–C ring)' : cc.length === 1 ? `alkene (${SUBST[carbonsOn(cc[0][0]) + carbonsOn(cc[0][1]) - 2] || ''} C=C)` : `${cc.length} C=C` },
+    { step: 'reagent', text: ep ? `${r.label}: opens the strained ring` : `${r.label}: adds across the C=C` },
     { step: 'conditions', text: [facts.heat && 'heat', facts.light && 'light', facts.peroxide && 'peroxides'].filter(Boolean).join(', ') || 'no heat or light' },
   ];
   if (!t.build) return { ...res, notCovered: 'addition_not_yet', session: t.session };
-  if (t.build !== 'ozonolysis'){
+  if (t.build !== 'ozonolysis' && !ep){
     const prob = alkeneProblem(OCL, m, cc);
     if (prob) return { ...res, notCovered: prob };
     if (cc.length > 1) return { ...res, notCovered: 'several_alkenes' };
@@ -184,15 +335,30 @@ export function predictAddition(OCL, mol, r, opts = {}, data){
   res.reasons.push(...(t.reasons || []));
   const out = { lamp: 'major', stereospecific: t.stereospecific === 'Y', products: [], notes: [] };
   const nu = r.addNu || r.nu;
-  const [x, y] = cc[0];
+  const [x, y] = cc[0] || [];
+  const K = additions.faces;
+  let stop = null;
   if (t.build === 'markovnikov') buildMarkovnikov(OCL, m, x, y, nu, out);
   else if (t.build === 'radical') buildRadical(OCL, m, x, y, nu, out);
-  else buildOzonolysis(OCL, m, cc, out);
+  else if (t.build === 'ozonolysis') buildOzonolysis(OCL, m, cc, out);
+  else if (t.build === 'epoxideOpen') stop = buildEpoxideOpening(OCL, m, ep, t, K, out);
+  else stop = buildStereo(OCL, m, x, y, t, r, K, out);
+  if (stop) return { ...res, notCovered: stop };
   if (!out.products.length) return { ...res, notCovered: 'no_rule' };
-  if (out.notes.includes('markovnikov_tie')) res.reasons.push('markovnikov_tie');
+  for (const k of ['markovnikov_tie', 'boron_tie', 'epoxide_tie', 'epoxide_acid_mixed', 'opening_undecided', 'alkene_geometry_unknown', 'substrate_stereo_undefined']) if (out.notes.includes(k)) res.reasons.push(k);
+  if (out.face){
+    if (out.face.tier) res.reasons.push('face_tier' + out.face.tier);
+    if (out.face.tier === 2 && !res.addition.tags.includes('course')) res.addition.tags.push('course');
+  }
+  // racemic / mixture at a flat C⁺ or radical, vs racemic / meso / single from a syn or anti (3D-built) addition
   const st = new Set(out.products.map((p) => p.stereo).filter(Boolean));
-  if (st.has('racemic')) res.reasons.push('racemic_flat');
-  if (st.has('mixture')) res.reasons.push('mixture_flat');
+  const flat = t.build === 'markovnikov' || t.build === 'radical';
+  if (st.has('racemic')) res.reasons.push(flat ? 'racemic_flat' : 'racemic_faces');
+  if (st.has('mixture') && flat) res.reasons.push('mixture_flat');
+  if (st.has('meso')) res.reasons.push('meso_product');
+  if (st.has('achiral')) res.reasons.push('achiral_cis_trans');
+  if (st.has('single')) res.reasons.push('single_isomer');
+  if (st.has('relative')) res.reasons.push('relative_only');
   res.pathways.Addition = out;
   res.lamps.Addition = 'major';
   return res;

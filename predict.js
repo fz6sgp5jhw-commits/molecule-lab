@@ -6,7 +6,7 @@
 import { analyse, cationPathways, alkenesFrom, alkeneProducts, buildProduct, LG_LABEL } from './reactivity.js';
 import { findReagent, findSolvent } from './reagents.js';
 import { findChairRings, buildChairs } from './chair.js';
-import { predictAddition, alkeneBonds } from './addition.js';
+import { predictAddition, alkeneBonds, epoxideOf } from './addition.js';
 import { antiConformers, cis2D } from './anti.js';
 
 export const PATHWAYS = ['SN1', 'SN2', 'E1', 'E2'];
@@ -41,6 +41,11 @@ function resolveReagent(cat, reagent){ return typeof reagent === 'string' ? find
 const ALSO_ADDS = ['HX', 'X2', 'H3O'];
 export function predict(OCL, mol, reagent, opts = {}, data){
   const r = resolveReagent(data.cat, reagent);
+  // HO⁻ (`open`) only goes to the addition engine for an epoxide (SN2 ring opening); elsewhere it is an SN/E reagent
+  if (r && r.open && !r.add && data.additions && epoxideOf(OCL, mol.getCompactCopy())){
+    const a = predictAddition(OCL, mol, r, opts, data);
+    if (a) return a;
+  }
   if (r && r.add && data.additions){
     const an = analyse(OCL, mol);
     if (!an.sites.length || !r.box){
