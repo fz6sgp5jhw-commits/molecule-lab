@@ -281,6 +281,12 @@
   .rx-ranklist li.plan{grid-template-columns:34px minmax(0,1fr)}
   .rx-ranklist .rx-route{font:19px var(--crt)}
   .rx-ranklist .rx-rankhead{display:block;background:none;box-shadow:none;font-weight:600}
+  #rxClassifyIn{width:100%;box-sizing:border-box;font:18px var(--crt);box-shadow:var(--sunken);border:0;padding:4px}
+  .rx-classwrap{max-width:100%;overflow-x:auto}
+  .rx-classtab{border-collapse:collapse;margin-top:8px;font-size:14px;background:#fff;box-shadow:var(--sunken)}
+  .rx-classtab th,.rx-classtab td{border:1px solid #c0c0c0;padding:3px 6px;text-align:left;vertical-align:top}
+  .rx-classtab td.y{color:#006400;font-weight:700}.rx-classtab td.n{color:var(--muted)}
+  .rx-classtab .rx-route{font:18px var(--crt)}
   .rx-place{font:26px/1 var(--crt);text-align:center}
   .rx-thumb svg{width:110px;height:auto}
   #mechClose{min-height:16px;width:18px;height:16px;padding:0;font:700 11px/1 var(--ui)}
@@ -631,6 +637,13 @@
             <div class="rx-cards" id="rxCards"></div>
           </div>
         </div>
+        <details class="rx-help" id="rxClassifyBox">
+          <summary>Classify additions (pick all that apply)</summary>
+          <p>One line per option: the alkene as SMILES, then <b>&gt;&gt;</b>, then the reagent. Each row is the same answer the Addition card gives.</p>
+          <textarea id="rxClassifyIn" rows="4" spellcheck="false" placeholder="C=CC(C)(C)C >> H2SO4&#10;CC1=CCCCC1 >> BH3·THF; H2O2/OH-&#10;CC1=CCCCC1 >> Br2, H2O"></textarea>
+          <div class="row"><button type="button" id="rxClassify">Classify</button></div>
+          <div class="rx-classwrap"><table class="rx-classtab" id="rxClassifyOut" hidden></table></div>
+        </details>
         <details class="rx-help">
           <summary>How to use this for homework</summary>
           <ol>
@@ -640,6 +653,8 @@
             <li>Each result card gives the product, its name, R/S or E/Z and “Stereospecific Y/N”. Tap a lit lamp to step through the mechanism and press WHY? for the reasons.</li>
             <li>Sequences (e.g. 1) TsCl, pyridine 2) NaCN, DMF): type the whole line into the reagent box and press Set, or press “+ Add step 2” and set each step’s reagent, solvent and heat. Predict runs every step on the product of the step before; tap a step in the strip to see it, “Continue from this” to carry on from a minor product instead, and “▶ Watch all steps” for the mechanisms one after another.</li>
             <li>Ranking problems: draw all the molecules side by side in the Draw window, then press “Rank by SN1 rate” or “Rank by SN2 rate”.</li>
+            <li>Synthesis problems: draw the start and the target side by side (start first), then press “Plan: first → second”. Short SN/E routes are tried first, then a forward search (alkanes, alcohols, halides, alkenes, epoxides; up to 4 steps) lists the shortest routes.</li>
+            <li>“Pick all that apply” (Markovnikov, anti-Markovnikov, stereospecific): open “Classify additions”, paste one line per option and press Classify.</li>
           </ol>
         </details>
       </div>

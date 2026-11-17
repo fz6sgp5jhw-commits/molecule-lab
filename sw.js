@@ -1,7 +1,7 @@
 // Molecule Lab service worker: keeps the whole app on the device so drawing, 3D and
 // the calculated facts work offline. Naming lookups (PubChem, OPSIN) always go to the network.
 // Bump VERSION whenever any file below changes, so phones pick up the new copy.
-const VERSION = 'molecule-lab-v33';
+const VERSION = 'molecule-lab-v34';
 const ASSETS = [
   './',
   './index.html',
@@ -12,7 +12,7 @@ const ASSETS = [
   './newman.js',
   './newman-ui.js',
   './name-check.js',
-  './planner.js',
+  './planner.js', './classify.js',
   './addition.js',
   './faces.js',
   './data/additions.json',

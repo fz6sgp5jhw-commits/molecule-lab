@@ -1,6 +1,6 @@
 {
  "_about": "Study sheet: quick cards (shown in this order) and extra glossary terms live here; the other glossary terms come from data/mech-text.json (one copy only). Examples must work in Predict (tests/reactions.test.mjs checks each one gives its card's pathway as major). Rows are [label, text]. For which pathway wins, cards point to the grid built from rules.json instead of repeating the rules.",
- "intro": "Quick cards for the four mechanisms and Ch 7 alkenes, then the glossary. Search finds both. “Which pathway wins?” on the Reactions tab has the full decision table.",
+ "intro": "Quick cards for the four mechanisms, Ch 7 alkenes and Ch 8/10 additions and radicals, then the glossary. Search finds both. “Which pathway wins?” on the Reactions tab has the full decision table.",
  "cards": [
   {
    "id": "SN2", "title": "SN2", "sub": "Substitution, Nucleophilic, bimolecular",
@@ -93,8 +93,102 @@
     ["PBr₃, SOCl₂ + pyridine", "Turn OH into Br or Cl by SN2 at 1°/2°: no carbocation, no rearrangement; inversion at the carbon."],
     ["TsCl, pyridine", "Turns OH into OTs. The C–O bond isn't broken: retention. Then do SN2 or E2 on the OTs."]
    ]
+  },
+  {
+   "id": "addHX", "title": "Electrophilic addition: HX, H₃O⁺", "sub": "Ch 8: through a carbocation",
+   "rows": [
+    ["Steps", "1) The C=C's π electrons take H⁺, making the more stable carbocation (slow). 2) X⁻ or H₂O bonds to C⁺; with water, a proton transfer then gives the OH."],
+    ["Regio", "Markovnikov: H goes to the C=C carbon with more H's, X or OH to the more substituted carbon."],
+    ["Shifts?", "Yes: a 1,2-H or methyl shift happens if it gives a more stable cation."],
+    ["Stereo", "The flat C⁺ is attacked from both faces: a new stereocentre comes out racemic. Not stereospecific."],
+    ["Conditions", "Dilute acid (H₃O⁺) adds water. Concentrated H₂SO₄ with heat goes the other way: dehydration (E1)."]
+   ],
+   "example": {"smiles": "CC1=CCCC1", "reagent": "HBr", "solvent": "H2O", "heat": false, "pw": "Addition", "product": "CC1(Br)CCCC1", "text": "1-methylcyclopentene + HBr → 1-bromo-1-methylcyclopentane"}
+  },
+  {
+   "id": "halonium", "title": "Halogenation and halohydrins", "sub": "Ch 8: X₂ and X₂/H₂O, through a bridged ion",
+   "rows": [
+    ["Steps", "1) The C=C attacks X₂: a bridged halonium ion and X⁻. 2) X⁻ (or H₂O) attacks one carbon from the back side and opens the bridge. With water, a proton transfer gives the OH."],
+    ["Stereo", "Anti addition: the two new groups end up trans on a ring. An achiral alkene gives the trans product as a racemic pair."],
+    ["Regio", "X₂: the same group on both carbons. X₂/H₂O: water (the solvent) attacks the more substituted carbon (more δ⁺), so OH ends there and X on the less substituted carbon."],
+    ["Shifts?", "No: the bridged ion doesn't rearrange."],
+    ["Stereospecific?", "Your course counts it as stereospecific (an anti mechanism)."]
+   ],
+   "example": {"smiles": "C1=CCCCC1", "reagent": "Br2", "solvent": null, "heat": false, "pw": "Addition", "product": "Br[C@H]1CCCC[C@@H]1Br", "text": "cyclohexene + Br₂ → trans-1,2-dibromocyclohexane (±)"}
+  },
+  {
+   "id": "hydroboration", "title": "Hydroboration–oxidation", "sub": "Ch 8: BH₃·THF, then H₂O₂/HO⁻",
+   "rows": [
+    ["Steps", "1) BH₃ adds in one concerted step (four-centre transition state): B to the less substituted carbon, H to the more substituted one. 2) H₂O₂, HO⁻ replaces B by OH with retention."],
+    ["Regio", "Anti-Markovnikov: OH on the less substituted carbon."],
+    ["Stereo", "Syn addition: H and OH add to the same face. Stereospecific."],
+    ["Shifts?", "Never: there is no carbocation."]
+   ],
+   "example": {"smiles": "CC1=CCCCC1", "reagent": "hydroboration", "solvent": "THF", "heat": false, "pw": "Addition", "product": "C[C@@H]1CCCC[C@H]1O", "text": "1-methylcyclohexene → trans-2-methylcyclohexanol (±)"}
+  },
+  {
+   "id": "hydrogenation", "title": "Catalytic hydrogenation", "sub": "Ch 8: H₂ with Pd, Pt or Ni",
+   "rows": [
+    ["Steps", "H₂ and the alkene bind to the metal surface; two H atoms move to the same face of the C=C."],
+    ["Stereo", "Syn addition, from the less hindered face. Stereospecific."],
+    ["Regio", "None: H on both carbons. No shifts."],
+    ["Needs", "A metal catalyst: H₂ alone doesn't add."]
+   ],
+   "example": {"smiles": "CC1=C(C)CCCC1", "reagent": "H2, Pd", "solvent": null, "heat": false, "pw": "Addition", "product": "C[C@H]1CCCC[C@H]1C", "text": "1,2-dimethylcyclohexene + H₂, Pd → cis-1,2-dimethylcyclohexane (meso)"}
+  },
+  {
+   "id": "epoxide", "title": "Epoxidation and epoxide opening", "sub": "Ch 8: peroxy acid, then acid or base",
+   "rows": [
+    ["Epoxidation", "A peroxy acid (mCPBA) gives one O to the C=C in one concerted step: syn, stereospecific. A cis alkene gives a cis epoxide, trans gives trans."],
+    ["Opening, acid", "H₃O⁺: the O is protonated, then water attacks the more substituted carbon from the back side."],
+    ["Opening, base", "HO⁻: SN2 at the less substituted (less hindered) carbon, from the back side."],
+    ["Stereo", "Opening is anti: the two OH's of the diol end up trans."]
+   ],
+   "example": {"smiles": "C/C=C\\C", "reagent": "mCPBA", "solvent": null, "heat": false, "pw": "Addition", "product": "C[C@H]1O[C@H]1C", "text": "cis-but-2-ene + mCPBA → cis-2,3-dimethyloxirane (meso)"}
+  },
+  {
+   "id": "ozonolysis", "title": "Ozonolysis", "sub": "Ch 8: O₃, then DMS or Zn/HOAc",
+   "rows": [
+    ["What happens", "The C=C is cut. Each of its carbons becomes C=O (through an ozonide, then the reductive workup)."],
+    ["Products", "A C=C carbon with an H gives an aldehyde; one with two carbons gives a ketone. A C=C in a ring gives one chain with a C=O at each end."],
+    ["Cut and number", "Erase the C=C, put =O on both carbons, then number the new chain to name it."],
+    ["Workup", "DMS or Zn/HOAc (reductive) keeps aldehydes. H₂O₂ (oxidative) gives acids instead; the app doesn't build that one."],
+    ["Stereo", "None: the C=C is gone."]
+   ],
+   "example": {"smiles": "CC1=CCCCC1", "reagent": "O3, DMS", "solvent": null, "heat": false, "pw": "Addition", "product": "CC(=O)CCCCC=O", "text": "1-methylcyclohexene + O₃, DMS → 6-oxoheptanal"}
+  },
+  {
+   "id": "radicalX", "title": "Radical halogenation", "sub": "Ch 10: alkane + X₂, light",
+   "rows": [
+    ["Steps", "Initiation: light breaks X–X into 2 X• (homolytic). Propagation 1: X• takes an H, giving a carbon radical and HX. Propagation 2: the radical takes X from X₂, giving R–X and a new X•. Termination: two radicals meet."],
+    ["Where", "At the weakest C–H, which gives the most stable radical: 3° > 2° > 1°."],
+    ["Br₂ vs Cl₂", "Br₂ is selective: one major product (its H-abstraction step is uphill, with a late, radical-like transition state: Hammond). Cl₂ isn't: a mixture."],
+    ["Needs", "Light (hν) or heat. Allylic or benzylic C–H: use NBS instead."],
+    ["Stereo", "A new stereocentre comes out racemic (the radical is flat)."]
+   ],
+   "example": {"smiles": "CC1CCCCC1", "reagent": "Br2, hv", "solvent": null, "heat": false, "pw": "Addition", "product": "CC1(Br)CCCCC1", "text": "methylcyclohexane + Br₂, hν → 1-bromo-1-methylcyclohexane"}
+  },
+  {
+   "id": "radicalHBr", "title": "Radical HBr addition", "sub": "Ch 10: HBr with peroxides (ROOR)",
+   "rows": [
+    ["Steps", "Peroxides make Br•. Br• adds to the less substituted C=C carbon, giving the more stable carbon radical; that radical takes H from HBr and makes a new Br•."],
+    ["Regio", "Anti-Markovnikov: Br on the less substituted carbon."],
+    ["Only HBr", "With HCl or HI one propagation step is uphill, so peroxides don't change them: still Markovnikov."],
+    ["Stereo", "Not stereospecific; new stereocentres come out as a mixture."]
+   ],
+   "example": {"smiles": "CC1=CCCCC1", "reagent": "HBr, ROOR", "solvent": null, "heat": false, "pw": "Addition", "product": "CC1CCCCC1Br", "text": "1-methylcyclohexene + HBr, ROOR → 1-bromo-2-methylcyclohexane"}
   }
  ],
+ "summaryCard": {
+  "id": "addSummary", "title": "Additions at a glance", "sub": "Reagent → intermediate → regio → stereo → stereospecific? (built from the same rows Predict uses)",
+  "rows": [["HX", "hx"], ["H₃O⁺", "hydration"], ["HBr, ROOR", "hbr_radical"], ["X₂", "x2"], ["X₂, H₂O", "halohydrin"], ["BH₃; H₂O₂, HO⁻", "hydroboration"], ["H₂, Pd", "hydrogenation"], ["mCPBA", "epoxidation"], ["O₃; DMS", "ozonolysis"], ["epoxide + H₃O⁺", "epoxide_acid"], ["epoxide + HO⁻", "epoxide_base"], ["alkane + Br₂, hν", "radical_br"], ["alkane + Cl₂, hν", "radical_cl"]],
+  "words": {
+   "intermediate": { "cation": "carbocation", "halonium": "bridged halonium ion", "radical": "radical", "concerted": "none (concerted)", "surface": "none (metal surface)", "ozonide": "ozonide", "sn2": "none (SN2 opening)" },
+   "regio": { "markovnikov": "Markovnikov", "anti-markovnikov": "anti-Markovnikov", "none": "none", "more-substituted": "Nu to the more substituted C", "less-substituted": "Nu to the less substituted C", "weakest-ch": "weakest C–H (3° > 2° > 1°)", "every-ch": "every C–H (mixture)" },
+   "stereo": { "syn": "syn", "anti": "anti", "none": "none" },
+   "shifts": "shifts possible"
+  }
+ },
  "reagentCard": { "id": "types", "title": "Reagent types", "sub": "Spot the type, then you know what it does" },
  "glossary": {
   "Newman projection": "Newman projection: a view straight down one C–C bond. The front carbon is a dot with three bonds, the back carbon a circle with three bonds coming from its edge.",
@@ -121,6 +215,20 @@
   "aprotic solvent": "Polar aprotic solvent: polar but with no O–H or N–H (DMSO, DMF, acetone, CH₃CN). Leaves anions free, so SN2 is fast.",
   "molecularity": "Molecularity: how many species take part in the slow step: 1 = unimolecular (SN1, E1), 2 = bimolecular (SN2, E2).",
   "rate law": "Rate law: how the rate depends on concentrations. SN1/E1: rate = k[substrate]. SN2/E2: rate = k[substrate][Nu or base].",
-  "concerted": "Concerted: all bond changes happen in one step, through one transition state (SN2, E2)."
+  "concerted": "Concerted: all bond changes happen in one step, through one transition state (SN2, E2).",
+  "anti-Markovnikov": "anti-Markovnikov: the opposite of Markovnikov's rule: H (or the H-like group) ends on the more substituted carbon and the other group on the less substituted one. Hydroboration–oxidation and HBr with peroxides.",
+  "facial selectivity": "Facial selectivity: a reagent adding to one face of a C=C more than the other, usually the less hindered face.",
+  "halohydrin": "Halohydrin: a product with a halogen and an OH on neighbouring carbons, from X₂ in water (anti; OH on the more substituted carbon).",
+  "meso compound": "Meso compound: has stereocentres but also a mirror plane, so it is achiral and not optically active (e.g. cis-1,2-dimethylcyclohexane).",
+  "hydroboration": "Hydroboration: BH₃ adding across a C=C in one concerted step (B to the less substituted carbon, syn). Oxidation with H₂O₂/HO⁻ then puts OH where B was.",
+  "ozonolysis": "Ozonolysis: O₃ cuts a C=C; after the workup each of its carbons becomes C=O.",
+  "ozonide": "Ozonide: the unstable ring formed when O₃ adds to a C=C and rearranges; the workup turns it into two C=O compounds.",
+  "oxidative cleavage": "Oxidative cleavage: breaking a C=C (or C–C) bond while adding O to both carbons, as in ozonolysis.",
+  "reductive workup": "Reductive workup: DMS or Zn/HOAc after O₃. It stops at aldehydes and ketones (an oxidative workup with H₂O₂ gives acids).",
+  "initiation": "Initiation: the step that makes the first radicals, e.g. light breaking X–X into two X•.",
+  "propagation": "Propagation: radical steps that use up one radical and make another, so the chain keeps going.",
+  "termination": "Termination: two radicals meet and bond, ending a chain.",
+  "bond dissociation energy": "Bond dissociation energy (BDE): the energy needed to break a bond homolytically. A weaker C–H gives a more stable radical.",
+  "radical stability": "Radical stability: 3° > 2° > 1° > methyl (hyperconjugation); allylic and benzylic radicals are stabilised by resonance."
  }
 }

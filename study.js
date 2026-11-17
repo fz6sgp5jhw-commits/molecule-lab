@@ -1,4 +1,4 @@
-// Study sheet: quick cards (data/study.json) + glossary (data/mech-text.json's terms plus study.json's
+// Study sheet: quick cards (data/study.json; the additions summary is built from data/additions.json) + glossary (data/mech-text.json's terms plus study.json's
 // Ch 7 terms), in a window opened from the header on either app tab. Search filters both. "Try it" sends
 // the card's example to the Reactions tab (ml:try event, handled in reactions-ui.js). Print prints only
 // the sheet. Text helpers are exported for the Node test.
@@ -13,18 +13,30 @@ export function glossaryOf(mechText, study){
 }
 
 // the reagent-types card is built from mech-text's reagentTypes (the same text the reagent box uses)
-export function cardsOf(mechText, study){
+export function cardsOf(mechText, study, additions){
   const rt = mechText.reagentTypes;
   const types = { ...study.reagentCard, rows: ['nuc', 'nucbase', 'bulky', 'weak'].map((k) => [rt[k].name, `${rt[k].spot} ${rt[k].does}`]) };
-  return [...study.cards, types];
+  return [...study.cards, ...(additions && study.summaryCard ? [summaryCard(study.summaryCard, additions)] : []), types];
+}
+
+// "Additions at a glance": each row read from the additions.json row Predict uses (never a second copy of the rules)
+export function summaryCard(sc, additions){
+  const w = sc.words;
+  const rows = sc.rows.map(([label, id]) => {
+    const r = additions.rows.find((x) => x.id === id);
+    if (!r || !r.then) return [label, `(no row ${id})`];
+    const t = r.then;
+    return [label, [w.intermediate[t.intermediate] || t.intermediate, w.regio[t.regio] || t.regio, (w.stereo[t.stereo] || t.stereo) + (t.shifts ? ', ' + w.shifts : ''), 'stereospecific: ' + (t.stereospecific === 'Y' ? 'Y' : 'N')].join(' → ')];
+  });
+  return { id: sc.id, title: sc.title, sub: sc.sub, rows };
 }
 
 const matches = (q, ...texts) => !q || texts.some((t) => String(t).toLowerCase().includes(q));
 
 export async function mountStudy(){
   const $ = (id) => document.getElementById(id);
-  const [mechText, study] = await Promise.all(['./data/mech-text.json', './data/study.json'].map((u) => fetch(u).then((r) => r.json())));
-  const cards = cardsOf(mechText, study), gloss = glossaryOf(mechText, study);
+  const [mechText, study, additions] = await Promise.all(['./data/mech-text.json', './data/study.json', './data/additions.json'].map((u) => fetch(u).then((r) => r.json())));
+  const cards = cardsOf(mechText, study, additions), gloss = glossaryOf(mechText, study);
   const win = $('studyWin');
   $('studyIntro').textContent = study.intro;
 

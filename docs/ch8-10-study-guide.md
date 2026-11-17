@@ -134,7 +134,7 @@ R/S labels below belong to the enantiomer used in the app's tests. If your drawi
 | E: Br₂/light on an alkane | no | radical substitution (✅ the app builds it: S3) |
 | F: BH₃·THF; H₂O₂/OH⁻ | ✔ | concerted syn |
 
-- **App:** ✅ every addition card says *Intermediate*, *Regiochemistry* and *Stereospecific?* (Q6/Q7 options A–F, also for B and Q8's S2 reagents, which aren't built yet but are classified). Products for Q8 B, C, F ✅ (S2). Q8C is counted as stereospecific because the course key does (an anti mechanism); the decision path's *rule* box also gives the stricter textbook meaning ⚠️ question 7. ⏳ S5 *Classify* checks a whole list at once.
+- **App:** ✅ every addition card says *Intermediate*, *Regiochemistry* and *Stereospecific?* (Q6/Q7 options A–F, also for B and Q8's S2 reagents, which aren't built yet but are classified). Products for Q8 B, C, F ✅ (S2). Q8C is counted as stereospecific because the course key does (an anti mechanism); the decision path's *rule* box also gives the stricter textbook meaning ⚠️ question 7. ✅ *Classify additions* (Reactions tab, below the results) checks a whole list at once: paste one `SMILES >> reagent` line per option and press Classify.
 
 ### Q9 Which mechanism for Cl₂/H₂O on 1-methylcyclohex-1-ene? (key: E)
 - **Look for three things:**
@@ -152,12 +152,12 @@ R/S labels below belong to the enantiomer used in the app's tests. If your drawi
   - That comes from E2 of **1-bromo-1-methylcyclohexane** with a small base (Zaitsev).
   - That comes from **Br₂/hν**, which picks the 3° H.
 - Note: the question says "cyclohexane" but draws methylcyclohexane ⚠️.
-- **App:** ✅ type the whole route “1) Br2, light 2) NaOEt/EtOH 3) Br2/H2O” (trans, racemic). Finding the route by itself ⏳ S5 (forward planner).
+- **App:** ✅ type the whole route “1) Br2, light 2) NaOEt/EtOH 3) Br2/H2O” (trans, racemic). ✅ Finding the route by itself: draw methylcyclohexane and the target side by side, press *Plan: first → second*; the forward search finds this 3-step route as the shortest (racemic: the target or its mirror image).
 
 ### Q11 2,2-Dimethylcyclopentan-1-ol → heptane-2,6-dione (key: H₂SO₄ (cat)/Δ; O₃, DMS)
 - **Work backwards:** two C=O groups 4 carbons apart in a 7-carbon chain come from opening a **ring** C=O pair, so the alkene is **1,2-dimethylcyclopentene**.
 - That alkene comes from the alcohol by E1 with a **methyl shift** (2° → 3° cation): Ch 7 Q9l/Q13a.
-- **App:** step 1 ✅ (the methyl-shift E1); step 2 ✅ (type “1) H2SO4, heat 2) O3 then DMS”); the whole route by itself ⏳ S5.
+- **App:** step 1 ✅ (the methyl-shift E1); step 2 ✅ (type “1) H2SO4, heat 2) O3 then DMS”); ✅ the whole route by itself: *Plan: first → second* finds 1) H₂SO₄, heat 2) O₃; DMS as the shortest route.
 
 ---
 

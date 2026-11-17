@@ -189,6 +189,20 @@ for (const q of seed.sequences){
       if (q.built && (res.notCovered || !res.pathways.Addition?.products?.length)) fail(q.id, `expected a product, got ${res.notCovered || 'none'}`);
     } catch (err){ fail(q.id, `threw ${String(err && err.message || err).split('\n')[0]}`); }
   }
+  // the Classify table (classify.js) gives the same answers from pasted "SMILES >> reagent" lines
+  const { classify } = await import('../classify.js');
+  const qs = seed.classify || [];
+  const rows = classify(OCL, qs.map((q) => `${q.substrate} >> ${q.reagent}`).join('\n') + '\nnot a line\nCC=CC >> unobtainium', data);
+  qs.forEach((q, i) => {
+    const r = rows[i];
+    if (r.error){ fail(q.id, `classify: ${r.error}`); return; }
+    const mk = q.regio === 'markovnikov' ? 'Y' : q.regio === 'anti-markovnikov' ? 'N' : null;
+    if (q.regio && r.markovnikov !== mk) fail(q.id, `classify Markovnikov: expected ${mk}, got ${r.markovnikov}`);
+    if (q.regio && r.anti !== (q.regio === 'anti-markovnikov' ? 'Y' : mk === null ? null : 'N')) fail(q.id, `classify anti-Markovnikov: got ${r.anti}`);
+    if (q.stereospecific && r.stereospecific !== q.stereospecific) fail(q.id, `classify stereospecific: expected ${q.stereospecific}, got ${r.stereospecific}`);
+    if ((q.tags || []).includes('course') && !r.course) fail(q.id, 'classify: course tag missing');
+  });
+  if (rows.length !== qs.length + 2 || !rows[qs.length].error || !rows[qs.length + 1].error) fail('classify', 'bad lines must give an error row, not an answer');
   for (const row of data.additions.rows) for (const k of [...(row.then?.reasons || []), row.notCovered].filter(Boolean)) if (!data.additions.reasons[k] && !data.rules.reasons[k]) fail('additions', `missing reason text for ${k}`);
 }
 
@@ -272,6 +286,11 @@ for (const row of data.rules.rows) for (const k of [...(row.reasons || []), row.
         const m = r.misses.find((x) => x.id === id);
         if (!m || m.verdict !== v) fail(c.id, `route ${id}: expected miss (${v}), got ${m ? m.verdict : works.includes(id) ? 'works' : 'not tried'}`);
       }
+      if (c.search){
+        const sr = r.search;
+        if (sr.depth !== c.search.depth) fail(c.id, `forward search: expected shortest depth ${c.search.depth}, got ${sr.depth} [${sr.routes.map((x) => x.id)}]`);
+        if (c.search.route && !sr.routes.some((x) => x.id === c.search.route)) fail(c.id, `forward search: expected ${c.search.route} among the shortest routes, got [${sr.routes.map((x) => x.id)}]`);
+      }
     } catch (err){ fail(c.id, `threw ${String(err && err.message || err).split('\n')[0]}`); }
   }
 }
@@ -281,14 +300,20 @@ for (const row of data.rules.rows) for (const k of [...(row.reasons || []), row.
   const { cardsOf, glossaryOf } = await import('../study.js');
   const { predict } = await import('../predict.js');
   const study = JSON.parse(readFileSync(here('../data/study.json'))), T = JSON.parse(readFileSync(here('../data/mech-text.json')));
-  const cards = cardsOf(T, study);
+  const cards = cardsOf(T, study, data.additions);
+  const sum = cards.find((c) => c.id === 'addSummary');
+  if (!sum || sum.rows.some(([, v]) => /no row|undefined/.test(v))) fail('study', `additions summary card: missing or a row without its additions.json row`);
   for (const c of cards){
     if (!c.title || !c.rows.length || c.rows.some((r) => r.length !== 2 || !r[0] || !r[1])) fail('study', `card ${c.id}: empty title or bad row`);
     if (!c.example) continue;
     const e = c.example;
     if (!findReagent(data.cat, e.reagent)) { fail('study', `card ${c.id}: reagent ${e.reagent} not in the catalogue`); continue; }
-    const res = predict(OCL, M.fromSmiles(e.smiles), e.reagent, { solvent: e.solvent, heat: e.heat }, data);
-    if (res.lamps[c.id] !== 'major') fail('study', `card ${c.id}: example ${e.smiles} + ${e.reagent} gives ${c.id} ${res.lamps[c.id] || 'none'}, not major`);
+    const pw = e.pw || c.id;
+    const res = predict(OCL, M.fromSmiles(e.smiles), findReagent(data.cat, e.reagent), { solvent: e.solvent, heat: e.heat }, data);
+    if (res.lamps[pw] !== 'major') { fail('study', `card ${c.id}: example ${e.smiles} + ${e.reagent} gives ${pw} ${res.lamps[pw] || 'none'}, not major`); continue; }
+    // Ch 8/10 cards name their product: it must be the engine's major product (either enantiomer when racemic)
+    const p0 = res.pathways[pw].products[0];
+    if (e.product && !sameOrMirror(p0.idcode, e.product, p0.stereo === 'racemic')) fail('study', `card ${c.id}: example says ${e.product}, the engine's major product is ${p0.smiles}`);
   }
   const g = glossaryOf(T, study);
   if (g.length !== new Set(g.map((x) => x.term)).size || g.length < 50) fail('study', `glossary: ${g.length} terms (duplicates or too few)`);

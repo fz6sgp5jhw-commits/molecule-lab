@@ -370,7 +370,7 @@ Every session follows the "Saving tokens" rules in `mechanisms-plan.md`:
    - Templates `addHX`, `halonium`, `halohydrin`, `hbrRadical`, `radicalHalogenation`, `hydroboration`, `epoxidation`, `hydrogenation`, `ozonolysis`, `epoxideOpening`; text in `mech-text.json`; quiz points.
    - Extend `reactions-ui.test.mjs` to open each one once, with the overlap check on every frame.
    - Peter reviews the look once.
-5. **S5: planner, classify, Study sheet.**
+5. **S5: planner, classify, Study sheet.** ✅ 2026-11-16. `planner.js` keeps the 16 fixed routes and adds `searchRoutes` (breadth-first, depth ≤ 4, major product only, memoised, reagents chosen by each molecule's groups; a racemic product matches the target or its mirror image): P‑Q10 and P‑Q11 find the key's routes as the shortest, P‑none says no route. New `classify.js` + *Classify additions* box (one `SMILES >> reagent` line per option → Markovnikov / anti-Markovnikov / stereospecific / intermediate / major product, all from `res.addition`). Study sheet: 8 Ch 8/10 cards with examples checked against the engine's product, an *Additions at a glance* card built from `additions.json` rows, 14 glossary terms. Tests: `reactions.test.mjs` (plans, classify, cards), new `tests/s5-ui.test.mjs`. Speed: a ring-E2 start can take ~20 s (fixed routes and search both run the chair checks); the progress line shows it's working.
    - Forward-search planner (P‑Q10, P‑Q11, and the existing P‑10b/c/13b still pass).
    - *Classify* in ranking mode.
    - Study sheet cards and glossary (below); `reactions.test.mjs` checks each card's example.

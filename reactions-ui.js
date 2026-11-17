@@ -7,6 +7,7 @@
 import { analyse, cationPathways, buildProduct, LG_LABEL } from './reactivity.js';
 import { findReagent, matchMolecule, guessBox, notSNEReason, entryFromMolecule, findSolvent, parseSequence, parseStep } from './reagents.js';
 import { plan as planRoutes } from './planner.js';
+import { classify } from './classify.js';
 import { predict, runSequence, rankSN1, rankSN2, rankE1, rankAlkenes, rankRadicals, PATHWAYS, LAMPS } from './predict.js';
 import { mountGrid } from './pathway-grid-ui.js';
 import { TEMPLATES, PRELUDES, ACTIVATION, ADD_TEMPLATES } from './mech-templates.js';
@@ -184,12 +185,12 @@ export async function mountReactions(app){
     if (st.frags.length !== 2){ list.innerHTML = '<li class="rx-rankhead">The planner needs exactly two molecules: the start first, then the target.</li>'; return; }
     const [A, B] = st.frags, token = ++planToken;
     list.innerHTML = '<li class="rx-rankhead" id="rxPlanHead">Trying routes…</li>';
-    const res = await planRoutes(OCL, A, B, data, { onProgress: async (i, n) => { const h = $('rxPlanHead'); if (h) h.textContent = `Trying route ${i + 1} of ${n}…`; await new Promise((r) => setTimeout(r, 0)); } });
+    const res = await planRoutes(OCL, A, B, data, { onProgress: async (msg) => { const h = $('rxPlanHead'); if (h) h.textContent = msg; await new Promise((r) => setTimeout(r, 0)); } });
     if (token !== planToken) return;
-    if (res.error){ list.innerHTML = '<li class="rx-rankhead">The first molecule has no leaving group or OH, so none of the routes can start.</li>'; return; }
+    if (res.error){ list.innerHTML = '<li class="rx-rankhead">The first molecule has no leaving group, OH, C=C, epoxide or plain C–H (alkane) to start from, so no route can start.</li>'; return; }
     const nm = async (m) => m ? String((await nameOf(m)).name || 'another product').replace(/\.$/, '') : '';
     const rows = [`<li class="rx-rankhead">Get from <span class="rx-thumb">${svgOf(A, 160, 90)}</span> to <span class="rx-thumb">${svgOf(B, 160, 90)}</span></li>`];
-    rows.push(`<li class="rx-rankhead">${res.works.length ? `${res.works.length} route${res.works.length > 1 ? 's give' : ' gives'} the target as the major product:` : 'None of the routes tried gives the target as the major product.'}</li>`);
+    if (res.works.length || res.misses.length) rows.push(`<li class="rx-rankhead">${res.works.length ? `${res.works.length} route${res.works.length > 1 ? 's give' : ' gives'} the target as the major product:` : 'None of the fixed routes gives the target as the major product.'}</li>`);
     for (const r of res.works) rows.push(`<li class="plan"><b class="rx-place">✔</b><span><span class="rx-route">${esc(r.text)}</span><br>${esc(r.majorPw)}${r.via ? ' · ' + esc(r.via) : ''}${r.rank === 'competing' ? ' (competing with another product)' : ''}${r.stereoNote ? ' · ' + esc(r.stereoNote) : ''}</span></li>`);
     if (res.misses.length) rows.push('<li class="rx-rankhead">Why the others miss:</li>');
     for (const r of res.misses){
@@ -205,10 +206,47 @@ export async function mountReactions(app){
       if (token !== planToken) return;
       rows.push(`<li class="plan none"><b class="rx-place">✗</b><span><span class="rx-route">${esc(r.text)}</span><br>${esc(why)}</span></li>`);
     }
-    rows.push('<li class="rx-rankhead"><small>Only these short sequences are tried, each step on the major product of the step before; every verdict comes from the same forward predictions as Predict.</small></li>');
+    // forward search: all shortest routes (any start: alkane, alcohol, halide, alkene, epoxide), minus ones listed above
+    const sr = res.search, listed = new Set(res.works.map((r) => r.text));
+    const fresh = sr ? sr.routes.filter((r) => !listed.has(r.text)) : [];
+    rows.push(`<li class="rx-rankhead" data-search="${sr && sr.depth ? sr.depth : 0}">${!sr || !sr.depth ? `Forward search: no route of up to ${sr ? sr.maxDepth : 4} steps gives the target as the major product.`
+      : `Forward search: the shortest route${sr.routes.length > 1 ? 's take' : ' takes'} ${sr.depth} step${sr.depth > 1 ? 's' : ''}${fresh.length < sr.routes.length ? ` (${sr.routes.length - fresh.length} listed above)` : ''}${fresh.length ? ':' : '.'}`}</li>`);
+    for (const r of fresh){
+      const mids = [];
+      for (const c of r.chain.slice(0, -1)) mids.push(await nm(c.product.mol));
+      if (token !== planToken) return;
+      const via = mids.length ? 'via ' + mids.join(' → ') + ' · ' : '';
+      rows.push(`<li class="plan" data-route="${esc(r.id)}"><b class="rx-place">✔</b><span><span class="rx-route">${esc(r.text)}</span><br>${esc(via)}last step ${esc(r.majorPw)}${r.rank === 'competing' ? ' (competing with another product)' : ''}${r.mirror ? ' · racemic: gives the target and its mirror image' : ''}</span></li>`);
+    }
+    for (const r of sr ? sr.near : []) rows.push(`<li class="plan none"><b class="rx-place">~</b><span><span class="rx-route">${esc(r.text)}</span><br>${esc(r.why === 'competing' ? 'the target forms, but only as one of two equal products' : 'the target is only a minor product (' + r.minorPw + ')')}</span></li>`);
+    rows.push(`<li class="rx-rankhead"><small>The fixed routes are short SN/E sequences from an OH or a leaving group. The forward search tries every reagent that fits each molecule's groups (alkane, alcohol, halide, alkene, epoxide), up to ${sr ? sr.maxDepth : 4} steps, each step on the major product of the step before. Every verdict comes from the same forward predictions as Predict.</small></li>`);
     list.innerHTML = rows.join('');
   }
   $('rxPlan').onclick = () => showPlan();
+
+  // ---------- Classify (Q6–Q8 "pick all that apply"): one row per pasted line, cells from res.addition ----------
+  async function showClassify(){
+    const out = $('rxClassifyOut');
+    const rows = classify(OCL, $('rxClassifyIn').value, data);
+    if (!rows.length){ out.hidden = true; return; }
+    const yn = (v) => v === null || v === undefined ? '<td class="n">n/a</td>' : `<td class="${v === 'Y' ? 'y' : 'n'}">${v === 'Y' ? '✓ Y' : 'N'}</td>`;
+    const html = ['<tr><th>Line</th><th>Intermediate</th><th>Markovnikov</th><th>anti-Markovnikov</th><th>Stereo&shy;specific</th><th>Major product</th></tr>'];
+    for (const [i, r] of rows.entries()){
+      const line = `<td><span class="rx-route">${esc(r.line)}</span></td>`;
+      if (r.error){ html.push(`<tr data-row="${i}">${line}<td colspan="5" class="n">${esc(r.error)}</td></tr>`); continue; }
+      if (!r.intermediate){
+        const why = r.notCovered ? reason(r.notCovered) : r.notAddition ? `not an addition: the app predicts ${r.notAddition}` : 'no reaction predicted';
+        html.push(`<tr data-row="${i}">${line}<td colspan="5" class="n">${esc(why)}</td></tr>`); continue;
+      }
+      const name = r.major ? String((await nameOf(r.major.mol)).name || '').replace(/\.$/, '') : '';
+      const ss = yn(r.stereospecific).replace('</td>', r.course ? ' <small>(course: anti mechanism)</small></td>' : '</td>');
+      const prod = r.notCovered ? `<td class="n">${esc(reason(r.notCovered))}</td>` : `<td>${esc(name || '(no name offline)')}${r.major && r.major.stereo === 'racemic' ? ' (±)' : ''}</td>`;
+      html.push(`<tr data-row="${i}">${line}<td>${esc(INTERMEDIATE[r.intermediate] || r.intermediate)}</td>${yn(r.markovnikov)}${yn(r.anti)}${ss}${prod}</tr>`);
+    }
+    out.innerHTML = html.join('');
+    out.hidden = false;
+  }
+  $('rxClassify').onclick = () => showClassify();
 
   // ---------- reagent ----------
   function speciesText(r){

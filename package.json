@@ -15,6 +15,7 @@
     "test:study-ui": "node tests/run-all.mjs study-ui",
     "test:addition-ui": "node tests/run-all.mjs addition-ui",
     "test:mech-add-ui": "node tests/run-all.mjs mech-add-ui",
+    "test:s5-ui": "node tests/run-all.mjs s5-ui",
     "test:chair-report": "node tests/chair.test.mjs",
     "serve": "python3 -m http.server 8765"
   },
